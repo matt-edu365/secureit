@@ -1,0 +1,184 @@
+name: Maester Weekly
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_key:
+        description: Tenant key from config/tenants.json
+        required: true
+        default: contoso-prod
+      report_label:
+        description: Optional label for this run
+        required: false
+        default: manual-run
+      auth_mode:
+        description: Authentication mode to use
+        required: false
+        default: certificate
+        type: choice
+        options:
+          - certificate
+          - oidc
+  schedule:
+    - cron: '0 7 * * 1'
+
+jobs:
+  run-maester:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tenant_key: ${{ github.event_name == 'schedule' && fromJson(vars.MAESTER_TENANT_KEYS_JSON || '["contoso-prod"]') || fromJson(format('["{0}"]', github.event.inputs.tenant_key || 'contoso-prod')) }}
+    env:
+      MAESTER_AUTH_MODE: ${{ github.event.inputs.auth_mode || vars.MAESTER_AUTH_MODE || 'certificate' }}
+      CONFIG_PATH: config/tenants.json
+      WEBSITE_HOST: ${{ secrets.WEBSITE_HOST }}
+      WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
+      WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
+      WEBSITE_REMOTE_PATH: ${{ vars.WEBSITE_REMOTE_PATH || '/maester/' }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+      EMAIL_TO_DEFAULT: ${{ vars.EMAIL_TO_DEFAULT }}
+      AZURE_CLIENT_CERTIFICATE_B64_CONTOSO_PROD: ${{ secrets.AZURE_CLIENT_CERTIFICATE_B64_CONTOSO_PROD }}
+      AZURE_CLIENT_CERTIFICATE_PASSWORD_CONTOSO_PROD: ${{ secrets.AZURE_CLIENT_CERTIFICATE_PASSWORD_CONTOSO_PROD }}
+      AZURE_CLIENT_CERTIFICATE_B64_FABRIKAM_PROD: ${{ secrets.AZURE_CLIENT_CERTIFICATE_B64_FABRIKAM_PROD }}
+      AZURE_CLIENT_CERTIFICATE_PASSWORD_FABRIKAM_PROD: ${{ secrets.AZURE_CLIENT_CERTIFICATE_PASSWORD_FABRIKAM_PROD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure tenant config exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath $env:CONFIG_PATH)) {
+            throw "Missing tenant config file: $env:CONFIG_PATH"
+          }
+
+      - name: Resolve tenant configuration
+        shell: pwsh
+        run: |
+          $tenant = ./scripts/Get-ResolvedTenantConfig.ps1 -TenantKey "${{ matrix.tenant_key }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
+          if (-not $tenant.tenantId) { throw 'tenantId missing from resolved tenant config.' }
+          if (-not $tenant.clientId) { throw 'clientId missing from resolved tenant config.' }
+          if (-not $tenant.name) { throw 'name missing from resolved tenant config.' }
+          if ($tenant.authMode -eq 'certificate' -and -not $tenant.certificateBase64) {
+            throw "No certificate secret value was resolved for tenant key $($tenant.id)"
+          }
+
+          "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_TENANT_ID=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_CLIENT_ID=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_CLIENT_CERTIFICATE_B64=$($tenant.certificateBase64)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_CLIENT_CERTIFICATE_PASSWORD=$($tenant.certificatePassword)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "EMAIL_TO=$($tenant.emailTo)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Apply default email recipient if tenant email is unset
+        shell: pwsh
+        run: |
+          if (-not $env:EMAIL_TO -and $env:EMAIL_TO_DEFAULT) {
+            "EMAIL_TO=$env:EMAIL_TO_DEFAULT" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+
+      - name: Setup PowerShell modules cache directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$HOME/Documents/PowerShell/Modules" | Out-Null
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force
+          Install-Module Maester -Scope CurrentUser -Force
+          Install-MaesterTests -Force
+
+      - name: Run Maester assessment
+        shell: pwsh
+        run: |
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID" -ClientId "$env:AZURE_CLIENT_ID" -AuthMode "$env:MAESTER_AUTH_MODE" -CertificateBase64 "$env:AZURE_CLIENT_CERTIFICATE_B64" -CertificatePassword "$env:AZURE_CLIENT_CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maester-report-${{ matrix.tenant_key }}-${{ github.run_number }}
+          path: output/${{ matrix.tenant_key }}/
+
+      - name: Publish reports to website
+        if: ${{ env.WEBSITE_HOST != '' && env.WEBSITE_USERNAME != '' && env.WEBSITE_PASSWORD != '' }}
+        shell: pwsh
+        run: |
+          ./scripts/Publish-WebsiteReport.ps1 `
+            -SourcePath "output/${{ matrix.tenant_key }}" `
+            -WebsiteHost "$env:WEBSITE_HOST" `
+            -Username "$env:WEBSITE_USERNAME" `
+            -Password "$env:WEBSITE_PASSWORD" `
+            -RemotePath "$env:WEBSITE_REMOTE_PATH/${{ matrix.tenant_key }}"
+
+      - name: Send weekly summary email
+        if: ${{ env.SMTP_HOST != '' && env.EMAIL_FROM != '' && env.EMAIL_TO != '' }}
+        shell: pwsh
+        run: |
+          $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
+          $subject = "Maester Weekly Report - $($summary.tenantName) - $($summary.failed) failed of $($summary.total)"
+          $body = @"
+Maester weekly report
+
+Tenant: $($summary.tenantName)
+Tenant key: $($summary.tenantKey)
+Generated: $($summary.generatedAt)
+Total tests: $($summary.total)
+Passed: $($summary.passed)
+Failed: $($summary.failed)
+Skipped: $($summary.skipped)
+Report: $($summary.reportUrl)
+"@
+
+          $securePassword = ConvertTo-SecureString $env:SMTP_PASSWORD -AsPlainText -Force
+          $credential = if ($env:SMTP_USERNAME) {
+            New-Object System.Management.Automation.PSCredential($env:SMTP_USERNAME, $securePassword)
+          }
+          else {
+            $null
+          }
+
+          $params = @{
+            SmtpServer = $env:SMTP_HOST
+            Port = [int]($env:SMTP_PORT | ForEach-Object { if ($_ ) { $_ } else { '587' } })
+            From = $env:EMAIL_FROM
+            To = $env:EMAIL_TO
+            Subject = $subject
+            Body = $body
+            UseSsl = $true
+          }
+          if ($credential) { $params.Credential = $credential }
+
+          Send-MailMessage @params
+
+      - name: Workflow summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path $env:MAESTER_SUMMARY_PATH) {
+            $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: $($summary.tenantName)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Tenant key: $($summary.tenantKey)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Total: $($summary.total)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Passed: $($summary.passed)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Failed: $($summary.failed)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Skipped: $($summary.skipped)"
+            if ($summary.reportUrl) {
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report: $($summary.reportUrl)"
+            }
+          }
+          else {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: ${{ matrix.tenant_key }}"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- No summary file was generated.'
+          }

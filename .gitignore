@@ -1,0 +1,30 @@
+# PowerShell / tooling
+*.log
+*.tmp
+*.bak
+
+# Local editor files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime/output artifacts
+output/latest/*
+output/history/*
+!output/latest/.gitkeep
+!output/history/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
+
+# Secrets / local-only files
+secrets/
+*.pfx
+*.cer
+*.key
+*.pem
+.env
+.env.*
+
+# PHP / Apache noise
+app/.phpunit.result.cache

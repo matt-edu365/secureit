@@ -1,0 +1,16 @@
+{
+  "tenantKey": "fabrikam-prod",
+  "tenantName": "Fabrikam Production",
+  "generatedAt": "2026-06-09T07:00:00+01:00",
+  "timestamp": "2026-06-09_070000",
+  "total": 142,
+  "passed": 136,
+  "failed": 4,
+  "skipped": 2,
+  "changed": 1,
+  "critical": 0,
+  "reportUrl": "https://example.ict365.uk/maester/fabrikam-prod/latest/index.html",
+  "notes": [
+    "Prototype sample report data"
+  ]
+}

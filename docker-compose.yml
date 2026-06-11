@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  secureit:
+    image: ghcr.io/matt-edu365/secureit:latest
+    container_name: secureit
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    environment:
+      SECUREIT_APP_NAME: "SecureIt"
+      SECUREIT_BASE_URL: "https://example.ict365.uk"
+      SECUREIT_TENANTS_FILE: "/var/www/data/tenants.json"
+      SECUREIT_REPORTS_ROOT: "/var/www/data/reports"
+    volumes:
+      - ./data:/var/www/data

@@ -28,6 +28,13 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
+
+      - name: Show Azure account context
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az account show || true
 
       - name: Verify Key Vault secret access
         id: kv
@@ -49,11 +56,12 @@ jobs:
             echo "Successfully retrieved secret metadata without printing the secret value."
 
       - name: Workflow summary
+        if: always()
         run: |
           {
             echo "# Azure Key Vault smoke test"
             echo "- Key Vault: ${{ github.event.inputs.key_vault_name }}"
             echo "- Secret name: ${{ github.event.inputs.secret_name }}"
-            echo "- Retrieval: success"
-            echo "- Secret length: ${{ steps.kv.outputs.secret_length }} characters"
+            echo "- Login attempted with OIDC: yes"
+            echo "- Secret length: ${{ steps.kv.outputs.secret_length || 'not retrieved' }}"
           } >> "$GITHUB_STEP_SUMMARY"

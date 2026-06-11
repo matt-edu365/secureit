@@ -7,6 +7,30 @@ on:
         description: Tenant key from config/tenants.json
         required: true
         default: ict365
+      tenant_name:
+        description: Tenant display name
+        required: true
+        default: ICT365 Cayman
+      tenant_id:
+        description: Microsoft 365 tenant ID
+        required: true
+        default: 7c7c9c8d-8e91-4fbb-af84-16af4739c726
+      client_id:
+        description: Microsoft 365 application ID
+        required: true
+        default: 68cddeaf-29f7-4d60-b04c-12ce7663079e
+      client_secret_name:
+        description: Azure Key Vault secret name for the tenant app secret
+        required: true
+        default: AZURE-CLIENT-SECRET-ICT365
+      report_base_url:
+        description: Base URL for published reports
+        required: false
+        default: https://example.ict365.uk/ict365
+      email_to:
+        description: Report recipient email
+        required: false
+        default: matt.fletcher@ict365.ky
 
 jobs:
   run-maester:
@@ -26,6 +50,27 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
+
+      - name: Create runtime tenant config
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $env:CONFIG_PATH) | Out-Null
+          $tenant = [ordered]@{
+            tenants = @(
+              [ordered]@{
+                id = "${{ github.event.inputs.tenant_key }}"
+                name = "${{ github.event.inputs.tenant_name }}"
+                tenantId = "${{ github.event.inputs.tenant_id }}"
+                clientId = "${{ github.event.inputs.client_id }}"
+                authMode = 'client-secret'
+                clientSecretName = "${{ github.event.inputs.client_secret_name }}"
+                reportBaseUrl = "${{ github.event.inputs.report_base_url }}"
+                emailTo = "${{ github.event.inputs.email_to }}"
+              }
+            )
+          }
+          $tenant | ConvertTo-Json -Depth 10 | Set-Content -Path $env:CONFIG_PATH -Encoding UTF8
+          Get-Content -Raw -Path $env:CONFIG_PATH
 
       - name: Ensure tenant config exists
         shell: pwsh
@@ -93,7 +138,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          if (Test-Path $env:MAESTER_SUMMARY_PATH) {
+          if ($env:MAESTER_SUMMARY_PATH -and (Test-Path $env:MAESTER_SUMMARY_PATH)) {
             $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: $($summary.tenantName)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Tenant key: $($summary.tenantKey)"

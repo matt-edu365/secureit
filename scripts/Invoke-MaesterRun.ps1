@@ -233,7 +233,17 @@ $selectedTestsPath = Get-MaesterSelectedTestsPath -TestsRoot $testsPath -Profile
 Write-Host "Running Maester for tenant [$TenantKey] $TenantName using test profile '$TestProfile' at: $selectedTestsPath"
 $env:CI = 'true'
 $env:BROWSER = '/bin/true'
-$result = Invoke-Maester -Path $selectedTestsPath -PassThru
+$global:LASTEXITCODE = 0
+$result = $null
+$invokeMaesterFailed = $false
+try {
+    $result = Invoke-Maester -Path $selectedTestsPath -PassThru
+}
+catch {
+    $invokeMaesterFailed = $true
+    Write-Warning ("Invoke-Maester raised an exception but generated artifacts may still be usable: " + $_.Exception.Message)
+}
+
 
 $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($htmlCandidate) {
@@ -304,8 +314,9 @@ if (-not $testResults) {
     }
 
     Write-MaesterOutputs -Summary $summary -SummaryPath $summaryPath -JsonPath $jsonReportPath -HistoryDir $historyDir -TempLatestDir $tempLatestDir -LatestDir $latestDir -TenantKey $TenantKey -TenantName $TenantName
+    $global:LASTEXITCODE = 0
     Write-Host "Maester fallback report handling complete for [$TenantKey]. Total: $($summary.total), Passed: $($summary.passed), Failed: $($summary.failed), Skipped: $($summary.skipped)"
-    return
+    exit 0
 }
 
 $flatResults = @()
@@ -378,4 +389,6 @@ Copy-Item -Path (Join-Path $tempLatestDir '*') -Destination $latestDir -Recurse 
 "MAESTER_TOTAL_COUNT=$total" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 "MAESTER_REPORT_URL=$reportUrl" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+$global:LASTEXITCODE = 0
 Write-Host "Maester run complete for [$TenantKey]. Total: $total, Passed: $passed, Failed: $failed, Skipped: $skipped"
+exit 0

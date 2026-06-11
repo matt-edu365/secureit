@@ -210,7 +210,7 @@ if (-not $result) {
     throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
 }
 
-$result | ConvertTo-Json -Depth 100 | Set-Content -Path $jsonReportPath -Encoding UTF8
+$result | ConvertTo-Json -Depth 1000 | Set-Content -Path $jsonReportPath -Encoding UTF8
 
 $html = Get-MtHtmlReport -MaesterResults $result
 if (-not $html) {

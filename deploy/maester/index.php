@@ -42,7 +42,8 @@ function tenant_summary(string $tenantId): ?array {
       <h1>SecureIT Dashboard</h1>
       <div class="muted">Prototype multi-tenant Microsoft 365 security reporting</div>
     </div>
-    <div>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <a class="button" href="admin.php">Admin Actions</a>
       <a class="button" href="onboard.php">Customer Onboarding</a>
     </div>
   </div>

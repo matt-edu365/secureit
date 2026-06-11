@@ -1,0 +1,14 @@
+{
+  "azure": {
+    "keyVaultName": "secureit-prod-kv",
+    "keyVaultUri": "https://secureit-prod-kv.vault.azure.net/",
+    "certificateStorageMode": "key-vault"
+  },
+  "notifications": {
+    "defaultFromName": "SecureIT Reports",
+    "defaultReplyTo": "security@example.com"
+  },
+  "reports": {
+    "baseSiteUrl": "https://example.ict365.uk"
+  }
+}

@@ -1,7 +1,9 @@
 <?php
 $tenantsPath = __DIR__ . '/tenants.json';
-$examplePath = __DIR__ . '/tenants.json';
-$baseSiteUrl = 'https://example.ict365.uk';
+$examplePath = __DIR__ . '/tenants.example.json';
+$adminConfigPath = __DIR__ . '/admin-config.json';
+$adminConfig = file_exists($adminConfigPath) ? json_decode(file_get_contents($adminConfigPath), true) : [];
+$baseSiteUrl = $adminConfig['reports']['baseSiteUrl'] ?? 'https://example.ict365.uk';
 $messages = [];
 $errors = [];
 $example = file_exists($examplePath) ? json_decode(file_get_contents($examplePath), true) : ['tenants' => []];

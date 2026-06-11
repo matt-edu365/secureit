@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  diagnostic:
+  tenant_login_diagnostic:
+    name: Tenant-only login diagnostic
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -65,8 +66,39 @@ jobs:
           validate_guid "AZURE_TENANT_ID" "${{ secrets.AZURE_TENANT_ID }}"
           validate_guid "AZURE_SUBSCRIPTION_ID" "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
-      - name: Attempt Azure login via OIDC
-        id: azure_login
+      - name: Attempt tenant-only Azure login via OIDC
+        id: tenant_login
+        uses: azure/login@v2
+        continue-on-error: true
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Summarise tenant-only login result
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo ""
+            echo "## Tenant-only Azure login result"
+            echo "- Outcome: ${{ steps.tenant_login.outcome }}"
+            echo "- Conclusion: ${{ steps.tenant_login.conclusion }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  subscription_login_diagnostic:
+    name: Subscription-scoped login diagnostic
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    needs: tenant_login_diagnostic
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Attempt subscription-scoped Azure login via OIDC
+        id: subscription_login
         uses: azure/login@v2
         continue-on-error: true
         with:
@@ -75,15 +107,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           allow-no-subscriptions: true
 
-      - name: Summarise login result
+      - name: Summarise subscription-scoped login result
         if: always()
         shell: bash
         run: |
           {
+            echo "# Subscription-scoped Azure login result"
+            echo "- Outcome: ${{ steps.subscription_login.outcome }}"
+            echo "- Conclusion: ${{ steps.subscription_login.conclusion }}"
             echo ""
-            echo "## Azure login result"
-            echo "- Outcome: ${{ steps.azure_login.outcome }}"
-            echo "- Conclusion: ${{ steps.azure_login.conclusion }}"
-            echo ""
-            echo "If login failed but GUID shape passed, the likely causes are federated credential mismatch, wrong app registration, wrong tenant, or incorrect subscription context."
+            echo "If tenant-only login succeeds but subscription-scoped login fails, the remaining problem is subscription visibility, tenant mismatch, or incorrect subscription linkage for this principal."
           } >> "$GITHUB_STEP_SUMMARY"

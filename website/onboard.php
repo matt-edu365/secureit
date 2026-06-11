@@ -89,12 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
     .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; max-width: 900px; }
     label { display: block; margin-top: 1rem; font-weight: 600; }
-    input { width: 100%; padding: 0.7rem; margin-top: 0.35rem; border: 1px solid #d1d5db; border-radius: 8px; }
+    input { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0.7rem; margin-top: 0.35rem; border: 1px solid #d1d5db; border-radius: 8px; }
     input[readonly] { background: #f3f4f6; color: #4b5563; }
     button { margin-top: 1.25rem; padding: 0.8rem 1rem; background: #0b5fff; color: white; border: 0; border-radius: 8px; cursor: pointer; }
     pre { background: #111827; color: #f9fafb; padding: 1rem; border-radius: 10px; overflow: auto; }
     .muted { color: #6b7280; }
-    .field-note { margin-top: 0.35rem; color: #6b7280; font-size: 0.92rem; font-style: italic; }
+    .field-note { margin-top: 0.35rem; color: #6b7280; font-size: 0.84rem; font-style: italic; }
     .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     a { color: #0b5fff; text-decoration: none; }
@@ -131,11 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input id="tenant_name" name="tenant_name" placeholder="Contoso Production" required value="<?php echo htmlspecialchars($_POST['tenant_name'] ?? ''); ?>">
       <p class="field-note">The tenant name is the customer-facing display name shown in the dashboard and reports. It is also chosen by the admin during setup and can be more descriptive than the tenant key.</p>
 
-      <label for="tenant_id">Tenant ID</label>
+      <label for="tenant_id">M365 Tenant ID</label>
       <input id="tenant_id" name="tenant_id" placeholder="00000000-0000-0000-0000-000000000000" required value="<?php echo htmlspecialchars($_POST['tenant_id'] ?? ''); ?>">
 
-      <label for="client_id">Client ID</label>
+      <label for="client_id">M365 Application ID</label>
       <input id="client_id" name="client_id" placeholder="11111111-1111-1111-1111-111111111111" required value="<?php echo htmlspecialchars($_POST['client_id'] ?? ''); ?>">
+      <p class="field-note">The M365 Application ID is the client ID of the Entra app registration used to run SecureIT checks against this customer tenant. It is provided by the admin during setup.</p>
 
       <label for="email_to">Report email recipient</label>
       <input id="email_to" name="email_to" placeholder="security@example.com" value="<?php echo htmlspecialchars($_POST['email_to'] ?? ''); ?>">

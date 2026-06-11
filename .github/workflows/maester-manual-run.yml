@@ -128,6 +128,10 @@ jobs:
         shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
+          if (Get-Module -ListAvailable -Name Pester) {
+            Get-InstalledModule Pester -ErrorAction SilentlyContinue | Uninstall-Module -AllVersions -Force -ErrorAction SilentlyContinue
+          }
+          Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
           if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
             Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
           }
@@ -139,6 +143,8 @@ jobs:
               Install-Module Maester -Scope CurrentUser -Force -AllowClobber
             }
           }
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          Import-Module Maester -Force
           Install-MaesterTests
 
       - name: Run Maester assessment

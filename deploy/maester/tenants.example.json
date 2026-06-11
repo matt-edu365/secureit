@@ -1,0 +1,15 @@
+{
+  "tenants": [
+    {
+      "id": "example-tenant",
+      "name": "Example Tenant",
+      "tenantId": "00000000-0000-0000-0000-000000000000",
+      "clientId": "11111111-1111-1111-1111-111111111111",
+      "authMode": "certificate",
+      "certificateSecretName": "AZURE_CLIENT_CERTIFICATE_B64_EXAMPLE_TENANT",
+      "certificatePasswordSecretName": "AZURE_CLIENT_CERTIFICATE_PASSWORD_EXAMPLE_TENANT",
+      "reportBaseUrl": "https://example.ict365.uk/example-tenant",
+      "emailTo": "security@example.com"
+    }
+  ]
+}

@@ -55,13 +55,19 @@ website/
 
 Tracked example files should be used as templates.
 
+Available tracked templates:
+- `config/tenants.example.json`
+- `data/tenants.example.json`
+- `deploy/config.tenants.example.json`
+- `deploy/maester/tenants.example.json`
+
 Expected local/runtime files include:
 - `config/tenants.json`
 - `data/tenants.json`
 - `deploy/config.tenants.json`
 - `deploy/maester/tenants.json`
 
-Those files are ignored so real tenant metadata, report locations, and environment-specific settings do not get committed by accident.
+Those runtime files are ignored so real tenant metadata, report locations, and environment-specific settings do not get committed by accident.
 
 ## Next sensible steps
 

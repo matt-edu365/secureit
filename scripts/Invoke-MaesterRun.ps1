@@ -11,7 +11,9 @@ param(
     [string]$CertificateBase64,
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
-    [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json')
+    [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
+    [ValidateSet('full','light')]
+    [string]$TestProfile = 'light'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -88,6 +90,46 @@ function Connect-MaesterTenant {
     }
 }
 
+
+function Get-MaesterSelectedTestsPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$TestsRoot,
+        [Parameter(Mandatory = $true)][string]$Profile,
+        [Parameter(Mandatory = $true)][string]$WorkingRoot
+    )
+
+    if ($Profile -eq 'full') {
+        return $TestsRoot
+    }
+
+    $selected = @(
+        'entra',
+        'identity',
+        'security',
+        'exchange',
+        'teams',
+        'sharepoint',
+        'conditionalaccess'
+    )
+
+    $lightRoot = Join-Path $WorkingRoot '_selected_tests'
+    Ensure-DirectoryClean -Path $lightRoot
+
+    foreach ($name in $selected) {
+        $source = Join-Path $TestsRoot $name
+        if (Test-Path -LiteralPath $source) {
+            Copy-Item -Path $source -Destination $lightRoot -Recurse -Force
+        }
+    }
+
+    $copied = Get-ChildItem -LiteralPath $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
+    if (-not $copied) {
+        throw "No test files were copied for test profile '$Profile' from root '$TestsRoot'."
+    }
+
+    return $lightRoot
+}
+
 function Get-MaesterTestsPath {
     $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
     if (-not $maesterModule) {
@@ -156,11 +198,12 @@ Import-Module Maester -ErrorAction Stop
 Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword
 
 $testsPath = Get-MaesterTestsPath
-Write-Host "Running Maester for tenant [$TenantKey] $TenantName using tests at: $testsPath"
-$result = Invoke-Maester -Path $testsPath -PassThru
+$selectedTestsPath = Get-MaesterSelectedTestsPath -TestsRoot $testsPath -Profile $TestProfile -WorkingRoot $tenantRoot
+Write-Host "Running Maester for tenant [$TenantKey] $TenantName using test profile '$TestProfile' at: $selectedTestsPath"
+$result = Invoke-Maester -Path $selectedTestsPath -PassThru
 
 if (-not $result) {
-    throw "Invoke-Maester returned no results for tests path '$testsPath'."
+    throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
 }
 
 $result | ConvertTo-Json -Depth 20 | Set-Content -Path $jsonReportPath -Encoding UTF8

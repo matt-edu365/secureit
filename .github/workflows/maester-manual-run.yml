@@ -31,6 +31,14 @@ on:
         description: Report recipient email
         required: false
         default: matt.fletcher@ict365.ky
+      test_profile:
+        description: Test profile to run
+        required: true
+        default: light
+        type: choice
+        options:
+          - light
+          - full
 
 jobs:
   run-maester:
@@ -131,7 +139,7 @@ jobs:
       - name: Run Maester assessment
         shell: pwsh
         run: |
-          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH"
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4

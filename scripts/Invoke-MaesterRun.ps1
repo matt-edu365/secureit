@@ -202,13 +202,15 @@ Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMod
 $testsPath = Get-MaesterTestsPath
 $selectedTestsPath = Get-MaesterSelectedTestsPath -TestsRoot $testsPath -Profile $TestProfile -WorkingRoot $tenantRoot
 Write-Host "Running Maester for tenant [$TenantKey] $TenantName using test profile '$TestProfile' at: $selectedTestsPath"
+$env:CI = 'true'
+$env:BROWSER = '/bin/true'
 $result = Invoke-Maester -Path $selectedTestsPath -PassThru
 
 if (-not $result) {
     throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
 }
 
-$result | ConvertTo-Json -Depth 20 | Set-Content -Path $jsonReportPath -Encoding UTF8
+$result | ConvertTo-Json -Depth 100 | Set-Content -Path $jsonReportPath -Encoding UTF8
 
 $html = Get-MtHtmlReport -MaesterResults $result
 if (-not $html) {

@@ -17,6 +17,16 @@ output/history/*
 data/reports/*
 !data/reports/.gitkeep
 
+# Local tenant/runtime config
+config/tenants.json
+data/tenants.json
+deploy/config.tenants.json
+deploy/maester/tenants.json
+
+# Published or generated sample site/report content
+deploy/maester/*/latest/
+deploy/maester/*/history/
+
 # Secrets / local-only files
 secrets/
 *.pfx

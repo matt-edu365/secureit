@@ -39,7 +39,7 @@ function tenant_summary(string $tenantId): ?array {
 <body>
   <div class="topbar">
     <div>
-      <h1>Maester Dashboard</h1>
+      <h1>SecureIT Dashboard</h1>
       <div class="muted">Prototype multi-tenant Microsoft 365 security reporting</div>
     </div>
     <div>

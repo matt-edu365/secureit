@@ -1,0 +1,59 @@
+name: Azure Key Vault Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      key_vault_name:
+        description: Azure Key Vault name
+        required: true
+        default: secureit
+      secret_name:
+        description: Secret name to test retrieval for
+        required: true
+        default: AZURE_CLIENT_SECRET_ICT365
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Key Vault secret access
+        id: kv
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            set -euo pipefail
+            SECRET_VALUE=$(az keyvault secret show \
+              --vault-name "${{ github.event.inputs.key_vault_name }}" \
+              --name "${{ github.event.inputs.secret_name }}" \
+              --query value -o tsv)
+
+            if [ -z "$SECRET_VALUE" ]; then
+              echo "Secret retrieval returned an empty value." >&2
+              exit 1
+            fi
+
+            echo "secret_length=${#SECRET_VALUE}" >> "$GITHUB_OUTPUT"
+            echo "Successfully retrieved secret metadata without printing the secret value."
+
+      - name: Workflow summary
+        run: |
+          {
+            echo "# Azure Key Vault smoke test"
+            echo "- Key Vault: ${{ github.event.inputs.key_vault_name }}"
+            echo "- Secret name: ${{ github.event.inputs.secret_name }}"
+            echo "- Retrieval: success"
+            echo "- Secret length: ${{ steps.kv.outputs.secret_length }} characters"
+          } >> "$GITHUB_STEP_SUMMARY"

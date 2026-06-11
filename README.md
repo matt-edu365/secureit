@@ -21,6 +21,21 @@ At this stage:
 - sample tenant and report artifacts have been removed from version control
 - local/runtime tenant files should be created from examples and kept out of Git
 
+## Working alignment rule
+
+For this project, keep the three environments aligned as work progresses:
+- local working copy
+- GitHub repository
+- prototype environment at `example.ict365.uk`
+
+Default workflow:
+1. make changes locally
+2. commit and push to GitHub
+3. sync the prototype environment to match
+4. verify there is no unexpected drift
+
+If one environment intentionally differs for a short period, document it clearly in the commit, notes, or handoff.
+
 ## Planned architecture
 
 - App name: SecureIt

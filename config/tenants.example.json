@@ -5,9 +5,8 @@
       "name": "Contoso Production",
       "tenantId": "00000000-0000-0000-0000-000000000000",
       "clientId": "11111111-1111-1111-1111-111111111111",
-      "authMode": "certificate",
-      "certificateSecretName": "AZURE_CLIENT_CERTIFICATE_B64_CONTOSO_PROD",
-      "certificatePasswordSecretName": "AZURE_CLIENT_CERTIFICATE_PASSWORD_CONTOSO_PROD",
+      "authMode": "client-secret",
+      "clientSecretName": "AZURE_CLIENT_SECRET_CONTOSO_PROD",
       "reportBaseUrl": "https://reports.example.com/maester/contoso-prod",
       "emailTo": "security@example.com"
     },
@@ -16,9 +15,8 @@
       "name": "Fabrikam Production",
       "tenantId": "22222222-2222-2222-2222-222222222222",
       "clientId": "33333333-3333-3333-3333-333333333333",
-      "authMode": "certificate",
-      "certificateSecretName": "AZURE_CLIENT_CERTIFICATE_B64_FABRIKAM_PROD",
-      "certificatePasswordSecretName": "AZURE_CLIENT_CERTIFICATE_PASSWORD_FABRIKAM_PROD",
+      "authMode": "client-secret",
+      "clientSecretName": "AZURE_CLIENT_SECRET_FABRIKAM_PROD",
       "reportBaseUrl": "https://reports.example.com/maester/fabrikam-prod",
       "emailTo": "security@example.com"
     }

@@ -33,8 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tenantName = trim($_POST['tenant_name'] ?? '');
     $tenantId = trim($_POST['tenant_id'] ?? '');
     $clientId = trim($_POST['client_id'] ?? '');
+    $authMode = trim($_POST['auth_mode'] ?? 'client-secret');
+    $clientSecretName = trim($_POST['client_secret_name'] ?? '');
     $emailTo = trim($_POST['email_to'] ?? '');
     $reportBaseUrl = build_report_base_url($baseSiteUrl, $tenantKey);
+
+    if (!$clientSecretName && $tenantKey) {
+        $clientSecretName = 'AZURE_CLIENT_SECRET_' . strtoupper(str_replace('-', '_', $tenantKey));
+    }
 
     if (!$tenantKey || !valid_tenant_key($tenantKey)) {
         $errors[] = 'Tenant key must contain only lowercase letters, numbers, and hyphens.';
@@ -48,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$clientId) {
         $errors[] = 'Client ID is required.';
     }
+    if (!$authMode) {
+        $errors[] = 'Authentication method is required.';
+    }
+    if ($authMode === 'client-secret' && !$clientSecretName) {
+        $errors[] = 'Client secret name is required for client secret authentication.';
+    }
     if (tenant_exists($config['tenants'], $tenantKey)) {
         $errors[] = 'That tenant key already exists.';
     }
@@ -58,9 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'name' => $tenantName,
             'tenantId' => $tenantId,
             'clientId' => $clientId,
-            'authMode' => 'certificate',
-            'certificateSecretName' => 'AZURE_CLIENT_CERTIFICATE_B64_' . strtoupper(str_replace('-', '_', $tenantKey)),
-            'certificatePasswordSecretName' => 'AZURE_CLIENT_CERTIFICATE_PASSWORD_' . strtoupper(str_replace('-', '_', $tenantKey)),
+            'authMode' => $authMode,
+            'clientSecretName' => $authMode === 'client-secret' ? $clientSecretName : '',
             'reportBaseUrl' => $reportBaseUrl,
             'emailTo' => $emailTo,
         ];
@@ -139,6 +150,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label for="client_id">M365 Application ID</label>
       <input id="client_id" name="client_id" placeholder="11111111-1111-1111-1111-111111111111" required value="<?php echo htmlspecialchars($_POST['client_id'] ?? ''); ?>">
       <p class="field-note">The M365 Application ID is the client ID of the Entra app registration used to run SecureIT checks against this customer tenant. It is provided by the admin during setup.</p>
+
+      <label for="auth_mode">Authentication method</label>
+      <?php $authModeValue = $_POST['auth_mode'] ?? 'client-secret'; ?>
+      <select id="auth_mode" name="auth_mode">
+        <option value="client-secret"<?php echo $authModeValue === 'client-secret' ? ' selected' : ''; ?>>Client secret</option>
+        <option value="certificate"<?php echo $authModeValue === 'certificate' ? ' selected' : ''; ?>>Certificate</option>
+      </select>
+      <p class="field-note">Choose how SecureIT will authenticate to this customer tenant. For your current design, client secret auth with Azure Key Vault storage is the default path.</p>
+
+      <label for="client_secret_name">Key Vault client secret name</label>
+      <input id="client_secret_name" name="client_secret_name" placeholder="AZURE_CLIENT_SECRET_EXAMPLE_TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
+      <p class="field-note">Name of the customer-specific client secret stored in the shared Azure Key Vault. If left blank, SecureIT will derive one automatically from the tenant key.</p>
 
       <label for="email_to">Report email recipient</label>
       <input id="email_to" name="email_to" placeholder="security@example.com" value="<?php echo htmlspecialchars($_POST['email_to'] ?? ''); ?>">

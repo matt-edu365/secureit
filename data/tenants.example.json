@@ -5,11 +5,10 @@
       "name": "Example Tenant",
       "tenantId": "00000000-0000-0000-0000-000000000000",
       "clientId": "11111111-1111-1111-1111-111111111111",
-      "authMode": "certificate",
+      "authMode": "client-secret",
       "keyVaultName": "",
       "keyVaultUri": "",
-      "certificateSecretName": "secureit-example-tenant-pfx",
-      "certificatePasswordSecretName": "secureit-example-tenant-pfx-password",
+      "clientSecretName": "AZURE_CLIENT_SECRET_EXAMPLE_TENANT",
       "reportBaseUrl": "https://example.ict365.uk/example-tenant",
       "emailTo": "security@example.com"
     }

@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="card">
     <h1>Admin Actions</h1>
     <p class="muted">Manage shared SecureIT settings here. Customer-specific values belong on the Customer Onboarding page.</p>
+    <p class="field-note">Shared platform metadata entered here is stored in local runtime configuration for this environment. Sensitive secrets should stay in Azure Key Vault or another secure secret store, not in this page.</p>
 
     <?php if ($messages): ?>
       <div class="success"><?php echo htmlspecialchars($messages[0]); ?></div>
@@ -63,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <label for="key_vault_name">Azure Key Vault name</label>
       <input id="key_vault_name" name="key_vault_name" placeholder="secureit-prod-kv" value="<?php echo htmlspecialchars($config['azure']['keyVaultName'] ?? ''); ?>">
-      <p class="field-note">Shared Key Vault name used to store certificates and related secrets for customer tenants.</p>
+      <p class="field-note">Shared Key Vault name used to store tenant authentication secrets and related values for customer tenants.</p>
 
       <label for="key_vault_uri">Azure Key Vault URI</label>
       <input id="key_vault_uri" name="key_vault_uri" placeholder="https://secureit-prod-kv.vault.azure.net/" value="<?php echo htmlspecialchars($config['azure']['keyVaultUri'] ?? ''); ?>">
@@ -75,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="key-vault"<?php echo $mode === 'key-vault' ? ' selected' : ''; ?>>Azure Key Vault</option>
         <option value="local"<?php echo $mode === 'local' ? ' selected' : ''; ?>>Local / manual storage</option>
       </select>
-      <p class="field-note">Defines where customer certificate material is expected to be managed by default.</p>
+      <p class="field-note">Defines where tenant authentication secrets are expected to be managed by default.</p>
 
       <h2 class="section-title">Shared notification defaults</h2>
 

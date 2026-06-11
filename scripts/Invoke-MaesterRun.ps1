@@ -103,13 +103,13 @@ function Get-MaesterSelectedTestsPath {
     }
 
     $selected = @(
-        'entra',
-        'identity',
-        'security',
-        'exchange',
-        'teams',
-        'sharepoint',
-        'conditionalaccess'
+        'CISA',
+        'Defender',
+        'Entra',
+        'Exchange',
+        'Identity',
+        'SharePoint',
+        'Teams'
     )
 
     $lightRoot = Join-Path $WorkingRoot '_selected_tests'

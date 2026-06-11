@@ -132,7 +132,12 @@ jobs:
             Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
           }
           if (-not (Get-Module -ListAvailable -Name Maester)) {
-            Install-Module Maester -Scope CurrentUser -Force -AllowClobber
+            if (Get-PSResourceRepository -ErrorAction SilentlyContinue) {
+              Install-PSResource Maester -TrustRepository -Scope CurrentUser
+            }
+            else {
+              Install-Module Maester -Scope CurrentUser -Force -AllowClobber
+            }
           }
           Install-MaesterTests
 

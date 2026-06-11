@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reportBaseUrl = build_report_base_url($baseSiteUrl, $tenantKey);
 
     if (!$clientSecretName && $tenantKey) {
-        $clientSecretName = 'AZURE_CLIENT_SECRET_' . strtoupper(str_replace('-', '_', $tenantKey));
+        $clientSecretName = 'AZURE-CLIENT-SECRET-' . strtoupper(preg_replace('/[^A-Za-z0-9-]/', '-', $tenantKey));
     }
 
     if (!$tenantKey || !valid_tenant_key($tenantKey)) {
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <script>
     function deriveSecretName(tenantKey) {
       if (!tenantKey) return '';
-      return `AZURE_CLIENT_SECRET_${tenantKey.toUpperCase().replace(/-/g, '_')}`;
+      return `AZURE-CLIENT-SECRET-${tenantKey.toUpperCase().replace(/_/g, '-').replace(/[^A-Z0-9-]/g, '-')}`;
     }
 
     function updateReportBaseUrl() {
@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <label for="client_secret_name">Key Vault client secret name</label>
       <div class="lock-row">
-        <input id="client_secret_name" placeholder="AZURE_CLIENT_SECRET_EXAMPLE_TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
+        <input id="client_secret_name" placeholder="AZURE-CLIENT-SECRET-EXAMPLE-TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
         <input type="hidden" id="client_secret_name_hidden" name="client_secret_name" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
         <button type="button" id="client_secret_unlock" class="icon-button" onclick="toggleSecretNameLock()" aria-label="Unlock Key Vault client secret name field" title="Unlock field">🔒</button>
       </div>

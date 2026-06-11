@@ -8,7 +8,7 @@
       "authMode": "client-secret",
       "keyVaultName": "",
       "keyVaultUri": "",
-      "clientSecretName": "AZURE_CLIENT_SECRET_EXAMPLE_TENANT",
+      "clientSecretName": "AZURE-CLIENT-SECRET-EXAMPLE-TENANT",
       "reportBaseUrl": "https://example.ict365.uk/example-tenant",
       "emailTo": "security@example.com"
     }

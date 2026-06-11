@@ -10,7 +10,7 @@ on:
       secret_name:
         description: Secret name to test retrieval for
         required: true
-        default: AZURE_CLIENT_SECRET_ICT365
+        default: AZURE-CLIENT-SECRET-ICT365
 
 jobs:
   smoke-test:

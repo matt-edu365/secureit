@@ -53,7 +53,11 @@ function Connect-MaesterTenant {
             $credential = New-Object System.Management.Automation.PSCredential($ClientId, $secureSecret)
 
             Connect-MgGraph -TenantId $TenantId -ClientSecretCredential $credential -NoWelcome
-            Connect-Maester -Service Graph -TenantId $TenantId -GraphClientId $ClientId
+            $context = Get-MgContext
+            if (-not $context) {
+                throw 'Connect-MgGraph did not create a Graph context for client-secret authentication.'
+            }
+            Write-Host "Connected to Microsoft Graph app-only context for tenant $TenantId"
         }
         'certificate' {
             if (-not $CertificateBase64) {
@@ -72,7 +76,11 @@ function Connect-MaesterTenant {
             $certificate.Import($certBytes, $securePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
 
             Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -Certificate $certificate -NoWelcome
-            Connect-Maester -Service Graph -TenantId $TenantId -GraphClientId $ClientId
+            $context = Get-MgContext
+            if (-not $context) {
+                throw 'Connect-MgGraph did not create a Graph context for certificate authentication.'
+            }
+            Write-Host "Connected to Microsoft Graph certificate context for tenant $TenantId"
         }
         default {
             throw "Unsupported auth mode: $AuthMode"

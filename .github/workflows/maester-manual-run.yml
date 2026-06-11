@@ -161,44 +161,44 @@ jobs:
             exit 0
           fi
           python3 - <<'PY'
-import os
-from ftplib import FTP_TLS, error_perm
-from pathlib import Path
+          import os
+          from ftplib import FTP_TLS
+          from pathlib import Path
 
-host = os.environ['FTPS_HOST']
-user = os.environ['FTPS_USERNAME']
-password = os.environ['FTPS_PASSWORD']
-tenant_key = os.environ['TENANT_KEY']
-local_root = Path(f'output/{tenant_key}/latest')
-remote_root = f'/example.ict365.uk/{tenant_key}/latest'
+          host = os.environ['FTPS_HOST']
+          user = os.environ['FTPS_USERNAME']
+          password = os.environ['FTPS_PASSWORD']
+          tenant_key = os.environ['TENANT_KEY']
+          local_root = Path(f'output/{tenant_key}/latest')
+          remote_root = f'/example.ict365.uk/{tenant_key}/latest'
 
-ftp = FTP_TLS()
-ftp.connect(host, 21, timeout=30)
-ftp.login(user, password)
-ftp.prot_p()
-ftp.set_pasv(True)
+          ftp = FTP_TLS()
+          ftp.connect(host, 21, timeout=30)
+          ftp.login(user, password)
+          ftp.prot_p()
+          ftp.set_pasv(True)
 
-def ensure_dir(path):
-    parts = [p for p in path.split('/') if p]
-    current = ''
-    for part in parts:
-        current += '/' + part
-        try:
-            ftp.mkd(current)
-        except Exception:
-            pass
+          def ensure_dir(path):
+              parts = [p for p in path.split('/') if p]
+              current = ''
+              for part in parts:
+                  current += '/' + part
+                  try:
+                      ftp.mkd(current)
+                  except Exception:
+                      pass
 
-ensure_dir(remote_root)
-for file in local_root.rglob('*'):
-    if file.is_file():
-        rel = file.relative_to(local_root).as_posix()
-        remote_path = f'{remote_root}/{rel}'
-        remote_dir = remote_path.rsplit('/', 1)[0]
-        ensure_dir(remote_dir)
-        with open(file, 'rb') as fh:
-            ftp.storbinary(f'STOR {remote_path}', fh)
-ftp.quit()
-PY
+          ensure_dir(remote_root)
+          for file in local_root.rglob('*'):
+              if file.is_file():
+                  rel = file.relative_to(local_root).as_posix()
+                  remote_path = f'{remote_root}/{rel}'
+                  remote_dir = remote_path.rsplit('/', 1)[0]
+                  ensure_dir(remote_dir)
+                  with open(file, 'rb') as fh:
+                      ftp.storbinary(f'STOR {remote_path}', fh)
+          ftp.quit()
+          PY
 
       - name: Upload workflow artifacts
         if: always()

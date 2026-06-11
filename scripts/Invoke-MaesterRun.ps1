@@ -115,16 +115,18 @@ function Get-MaesterSelectedTestsPath {
     $lightRoot = Join-Path $WorkingRoot '_selected_tests'
     Ensure-DirectoryClean -Path $lightRoot
 
+    $availableDirs = Get-ChildItem -LiteralPath $TestsRoot -Directory -ErrorAction SilentlyContinue
     foreach ($name in $selected) {
-        $source = Join-Path $TestsRoot $name
-        if (Test-Path -LiteralPath $source) {
-            Copy-Item -Path $source -Destination $lightRoot -Recurse -Force
+        $match = $availableDirs | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
+        if ($match) {
+            Copy-Item -Path $match.FullName -Destination $lightRoot -Recurse -Force
         }
     }
 
     $copied = Get-ChildItem -LiteralPath $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
     if (-not $copied) {
-        throw "No test files were copied for test profile '$Profile' from root '$TestsRoot'."
+        $available = ($availableDirs | Select-Object -ExpandProperty Name) -join ', '
+        throw "No test files were copied for test profile '$Profile' from root '$TestsRoot'. Available test directories: $available"
     }
 
     return $lightRoot

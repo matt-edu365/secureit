@@ -210,8 +210,22 @@ if (-not $result) {
     throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
 }
 
+$testResults = @()
+if ($null -ne $result) {
+    if ($result.PSObject.Properties.Name -contains 'TestResult') {
+        $testResults = @($result.TestResult)
+    }
+    elseif ($result -is [System.Array]) {
+        $testResults = @($result)
+    }
+}
+
+if (-not $testResults) {
+    throw 'Invoke-Maester returned no consumable test result records.'
+}
+
 $flatResults = @()
-foreach ($test in @($result.TestResult)) {
+foreach ($test in $testResults) {
     $flatResults += [ordered]@{
         Name = if ($test.Name) { [string]$test.Name } else { '' }
         Describe = if ($test.Describe) { [string]$test.Describe } else { '' }
@@ -228,12 +242,12 @@ $persistedResult = [ordered]@{
     TenantName = $TenantName
     GeneratedAt = (Get-Date).ToString('o')
     Summary = [ordered]@{
-        Total = @($result.TestResult).Count
-        Passed = @($result.TestResult | Where-Object { $_.Result -eq 'Passed' }).Count
-        Failed = @($result.TestResult | Where-Object { $_.Result -eq 'Failed' }).Count
-        Skipped = @($result.TestResult | Where-Object { $_.Result -eq 'Skipped' }).Count
-        Error = @($result.TestResult | Where-Object { $_.Result -eq 'Error' }).Count
-        Investigate = @($result.TestResult | Where-Object { $_.Result -eq 'Investigate' }).Count
+        Total = @($testResults).Count
+        Passed = @($testResults | Where-Object { $_.Result -eq 'Passed' }).Count
+        Failed = @($testResults | Where-Object { $_.Result -eq 'Failed' }).Count
+        Skipped = @($testResults | Where-Object { $_.Result -eq 'Skipped' }).Count
+        Error = @($testResults | Where-Object { $_.Result -eq 'Error' }).Count
+        Investigate = @($testResults | Where-Object { $_.Result -eq 'Investigate' }).Count
     }
     Tests = $flatResults
 }
@@ -246,10 +260,10 @@ if (-not $html) {
 }
 $html | Set-Content -Path $htmlReportPath -Encoding UTF8
 
-$failed = @($result.TestResult | Where-Object { $_.Result -eq 'Failed' }).Count
-$passed = @($result.TestResult | Where-Object { $_.Result -eq 'Passed' }).Count
-$skipped = @($result.TestResult | Where-Object { $_.Result -eq 'Skipped' }).Count
-$total = @($result.TestResult).Count
+$failed = @($testResults | Where-Object { $_.Result -eq 'Failed' }).Count
+$passed = @($testResults | Where-Object { $_.Result -eq 'Passed' }).Count
+$skipped = @($testResults | Where-Object { $_.Result -eq 'Skipped' }).Count
+$total = @($testResults).Count
 
 $reportUrl = ''
 if ($WebsiteBaseUrl) {

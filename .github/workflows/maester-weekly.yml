@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tenant_key: ${{ github.event_name == 'schedule' && fromJson(vars.MAESTER_TENANT_KEYS_JSON || '["contoso-prod"]') || fromJson(format('["{0}"]', github.event.inputs.tenant_key || 'contoso-prod')) }}
+        tenant_key: ${{ fromJson(format('["{0}"]', github.event.inputs.tenant_key || 'contoso-prod')) }}
     env:
       MAESTER_AUTH_MODE: ${{ github.event.inputs.auth_mode || vars.MAESTER_AUTH_MODE || 'certificate' }}
       CONFIG_PATH: config/tenants.json
@@ -76,37 +76,44 @@ jobs:
           "AZURE_CLIENT_CERTIFICATE_B64=$($tenant.certificateBase64)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "AZURE_CLIENT_CERTIFICATE_PASSWORD=$($tenant.certificatePassword)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "EMAIL_TO=$($tenant.emailTo)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "EMAIL_TO=$([string]($tenant.emailTo || $env:EMAIL_TO_DEFAULT))" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Apply default email recipient if tenant email is unset
+      - name: Setup isolated PowerShell module path
         shell: pwsh
         run: |
-          if (-not $env:EMAIL_TO -and $env:EMAIL_TO_DEFAULT) {
-            "EMAIL_TO=$env:EMAIL_TO_DEFAULT" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          }
-
-      - name: Setup PowerShell modules cache directory
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "$HOME/Documents/PowerShell/Modules" | Out-Null
+          $moduleRoot = Join-Path $HOME 'secureit-psmodules'
+          New-Item -ItemType Directory -Force -Path $moduleRoot | Out-Null
+          "PSMODULEPATH_ROOT=$moduleRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Install PowerShell modules
         shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force
-          Install-Module Maester -Scope CurrentUser -Force
-          Install-MaesterTests -Force
+          Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+          if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
+            Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
+          }
+          if (-not (Get-Module -ListAvailable -Name Maester)) {
+            Install-Module Maester -Scope CurrentUser -Force -AllowClobber
+          }
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          Import-Module Maester -Force
+          Install-MaesterTests
 
       - name: Run Maester assessment
         shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
           ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID" -ClientId "$env:AZURE_CLIENT_ID" -AuthMode "$env:MAESTER_AUTH_MODE" -CertificateBase64 "$env:AZURE_CLIENT_CERTIFICATE_B64" -CertificatePassword "$env:AZURE_CLIENT_CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH"
 
       - name: Upload workflow artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maester-report-${{ matrix.tenant_key }}-${{ github.run_number }}
+          name: maester-weekly-${{ matrix.tenant_key }}-${{ github.run_number }}
           path: output/${{ matrix.tenant_key }}/
 
       - name: Publish reports to website
@@ -126,18 +133,19 @@ jobs:
         run: |
           $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
           $subject = "Maester Weekly Report - $($summary.tenantName) - $($summary.failed) failed of $($summary.total)"
-          $body = @"
-Maester weekly report
-
-Tenant: $($summary.tenantName)
-Tenant key: $($summary.tenantKey)
-Generated: $($summary.generatedAt)
-Total tests: $($summary.total)
-Passed: $($summary.passed)
-Failed: $($summary.failed)
-Skipped: $($summary.skipped)
-Report: $($summary.reportUrl)
-"@
+          $bodyLines = @(
+            'Maester weekly report',
+            '',
+            "Tenant: $($summary.tenantName)",
+            "Tenant key: $($summary.tenantKey)",
+            "Generated: $($summary.generatedAt)",
+            "Total tests: $($summary.total)",
+            "Passed: $($summary.passed)",
+            "Failed: $($summary.failed)",
+            "Skipped: $($summary.skipped)",
+            "Report: $($summary.reportUrl)"
+          )
+          $body = $bodyLines -join [Environment]::NewLine
 
           $securePassword = ConvertTo-SecureString $env:SMTP_PASSWORD -AsPlainText -Force
           $credential = if ($env:SMTP_USERNAME) {

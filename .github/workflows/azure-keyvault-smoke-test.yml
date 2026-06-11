@@ -22,12 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure login via OIDC
+      - name: Azure login via OIDC (tenant scope)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           allow-no-subscriptions: true
 
       - name: Show Azure account context
@@ -62,6 +61,6 @@ jobs:
             echo "# Azure Key Vault smoke test"
             echo "- Key Vault: ${{ github.event.inputs.key_vault_name }}"
             echo "- Secret name: ${{ github.event.inputs.secret_name }}"
-            echo "- Login attempted with OIDC: yes"
+            echo "- Login scope: tenant only"
             echo "- Secret length: ${{ steps.kv.outputs.secret_length || 'not retrieved' }}"
           } >> "$GITHUB_STEP_SUMMARY"

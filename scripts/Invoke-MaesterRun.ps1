@@ -88,6 +88,33 @@ function Connect-MaesterTenant {
     }
 }
 
+function Get-MaesterTestsPath {
+    $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+    if (-not $maesterModule) {
+        throw 'Maester module is not installed.'
+    }
+
+    $moduleRoot = Split-Path -Parent $maesterModule.Path
+    $candidates = @(
+        (Join-Path $moduleRoot 'tests'),
+        (Join-Path $moduleRoot 'Test'),
+        (Join-Path $moduleRoot 'Tests'),
+        (Join-Path $HOME '.maester/tests'),
+        (Join-Path $HOME '.config/maester/tests')
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $testFiles = Get-ChildItem -LiteralPath $candidate -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
+            if ($testFiles) {
+                return $candidate
+            }
+        }
+    }
+
+    throw "Unable to find installed Maester tests. Checked: $($candidates -join ', ')"
+}
+
 if (-not $TenantName -or -not $TenantId -or -not $ClientId -or (($AuthMode -eq 'client-secret') -and -not $ClientSecret) -or (($AuthMode -eq 'certificate') -and -not $CertificateBase64)) {
     $resolvedJson = & (Join-Path $PSScriptRoot 'Get-ResolvedTenantConfig.ps1') -TenantKey $TenantKey -ConfigPath $ConfigPath
     $resolved = $resolvedJson | ConvertFrom-Json
@@ -128,12 +155,20 @@ Import-Module Maester -ErrorAction Stop
 
 Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword
 
-Write-Host "Running Maester for tenant [$TenantKey] $TenantName"
-$result = Invoke-Maester -Path . -PassThru
+$testsPath = Get-MaesterTestsPath
+Write-Host "Running Maester for tenant [$TenantKey] $TenantName using tests at: $testsPath"
+$result = Invoke-Maester -Path $testsPath -PassThru
+
+if (-not $result) {
+    throw "Invoke-Maester returned no results for tests path '$testsPath'."
+}
 
 $result | ConvertTo-Json -Depth 20 | Set-Content -Path $jsonReportPath -Encoding UTF8
 
 $html = Get-MtHtmlReport -MaesterResults $result
+if (-not $html) {
+    throw 'Get-MtHtmlReport returned no HTML output.'
+}
 $html | Set-Content -Path $htmlReportPath -Encoding UTF8
 
 $failed = @($result.TestResult | Where-Object { $_.Result -eq 'Failed' }).Count

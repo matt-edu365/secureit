@@ -43,7 +43,7 @@ function tenant_summary(string $tenantId): ?array {
       <div class="muted">Prototype multi-tenant Microsoft 365 security reporting</div>
     </div>
     <div>
-      <a class="button" href="onboard.php">Onboard tenant</a>
+      <a class="button" href="onboard.php">Customer Onboarding</a>
     </div>
   </div>
 

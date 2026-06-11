@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Onboard Tenant - Maester</title>
+  <title>Customer Onboarding - SecureIT</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
     .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; max-width: 900px; }
@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     button { margin-top: 1.25rem; padding: 0.8rem 1rem; background: #0b5fff; color: white; border: 0; border-radius: 8px; cursor: pointer; }
     pre { background: #111827; color: #f9fafb; padding: 1rem; border-radius: 10px; overflow: auto; }
     .muted { color: #6b7280; }
+    .field-note { margin-top: 0.35rem; color: #6b7280; font-size: 0.92rem; font-style: italic; }
     .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     a { color: #0b5fff; text-decoration: none; }
@@ -110,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
   <p><a href="index.php">← Back to dashboard</a></p>
   <div class="card">
-    <h1>Onboard tenant</h1>
+    <h1>Customer Onboarding</h1>
     <p class="muted">Prototype onboarding flow that now saves tenant metadata locally in the prototype.</p>
 
     <?php foreach ($errors as $error): ?>
@@ -124,9 +125,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="post">
       <label for="tenant_key">Tenant key</label>
       <input id="tenant_key" name="tenant_key" placeholder="contoso-prod" required oninput="updateReportBaseUrl()" value="<?php echo htmlspecialchars($_POST['tenant_key'] ?? ''); ?>">
+      <p class="field-note">The tenant key is the internal short name used in URLs, folders, and configuration. It is chosen by the admin during setup and should stay simple, lowercase, and consistent.</p>
 
       <label for="tenant_name">Tenant name</label>
       <input id="tenant_name" name="tenant_name" placeholder="Contoso Production" required value="<?php echo htmlspecialchars($_POST['tenant_name'] ?? ''); ?>">
+      <p class="field-note">The tenant name is the customer-facing display name shown in the dashboard and reports. It is also chosen by the admin during setup and can be more descriptive than the tenant key.</p>
 
       <label for="tenant_id">Tenant ID</label>
       <input id="tenant_id" name="tenant_id" placeholder="00000000-0000-0000-0000-000000000000" required value="<?php echo htmlspecialchars($_POST['tenant_id'] ?? ''); ?>">
@@ -140,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label for="report_base_url">Report Base URL (auto-generated)</label>
       <input id="report_base_url" name="report_base_url" readonly>
 
-      <button type="submit">Save tenant</button>
+      <button type="submit">Save customer</button>
     </form>
 
     <?php if (count($messages) > 1): ?>

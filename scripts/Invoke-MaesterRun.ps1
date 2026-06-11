@@ -192,7 +192,13 @@ $htmlReportPath = Join-Path $historyDir 'index.html'
 $jsonReportPath = Join-Path $historyDir 'results.json'
 $summaryPath = Join-Path $historyDir 'summary.json'
 
+$legacyPester = Join-Path $HOME '.local/share/powershell/Modules/Pester/4.0.3'
+if (Test-Path -LiteralPath $legacyPester) {
+    Remove-Item -LiteralPath $legacyPester -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
+Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
 Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword

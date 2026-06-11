@@ -1,0 +1,111 @@
+name: Maester Manual Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_key:
+        description: Tenant key from config/tenants.json
+        required: true
+        default: ict365
+
+jobs:
+  run-maester:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CONFIG_PATH: config/tenants.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login via OIDC (tenant scope)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Ensure tenant config exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath $env:CONFIG_PATH)) {
+            throw "Missing tenant config file: $env:CONFIG_PATH"
+          }
+
+      - name: Resolve tenant configuration
+        shell: pwsh
+        run: |
+          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey "${{ github.event.inputs.tenant_key }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
+          if (-not $tenant.tenantId) { throw 'tenantId missing from tenant config.' }
+          if (-not $tenant.clientId) { throw 'clientId missing from tenant config.' }
+          if (-not $tenant.name) { throw 'name missing from tenant config.' }
+          if (-not $tenant.authMode) { throw 'authMode missing from tenant config.' }
+          if ($tenant.authMode -eq 'client-secret' -and -not $tenant.clientSecretName) {
+            throw 'clientSecretName missing from tenant config for client-secret auth.'
+          }
+
+          "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_TENANT_ID_TARGET=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_CLIENT_ID_TARGET=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Fetch client secret from Azure Key Vault
+        if: ${{ env.MAESTER_AUTH_MODE == 'client-secret' }}
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            $secretValue = az keyvault secret show --vault-name secureit --name "$env:CLIENT_SECRET_NAME" --query value -o tsv
+            if (-not $secretValue) {
+              throw "Secret '$env:CLIENT_SECRET_NAME' was not retrieved from Key Vault."
+            }
+            Add-Content -Path $env:GITHUB_ENV -Value "CLIENT_SECRET=$secretValue"
+
+      - name: Setup PowerShell modules cache directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$HOME/Documents/PowerShell/Modules" | Out-Null
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force
+          Install-Module Maester -Scope CurrentUser -Force
+          Install-MaesterTests -Force
+
+      - name: Run Maester assessment
+        shell: pwsh
+        run: |
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maester-report-${{ github.event.inputs.tenant_key }}-${{ github.run_number }}
+          path: output/${{ github.event.inputs.tenant_key }}/
+
+      - name: Workflow summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path $env:MAESTER_SUMMARY_PATH) {
+            $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: $($summary.tenantName)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Tenant key: $($summary.tenantKey)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Total: $($summary.total)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Passed: $($summary.passed)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Failed: $($summary.failed)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Skipped: $($summary.skipped)"
+            if ($summary.reportUrl) {
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report: $($summary.reportUrl)"
+            }
+          }
+          else {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: ${{ github.event.inputs.tenant_key }}"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- No summary file was generated.'
+          }

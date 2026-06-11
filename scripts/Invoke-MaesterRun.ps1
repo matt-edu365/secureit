@@ -5,8 +5,9 @@ param(
     [string]$OutputRoot = (Join-Path (Join-Path $PSScriptRoot '..') 'output'),
     [string]$TenantId,
     [string]$ClientId,
-    [ValidateSet('oidc','certificate')]
-    [string]$AuthMode = 'certificate',
+    [ValidateSet('oidc','certificate','client-secret')]
+    [string]$AuthMode = 'client-secret',
+    [string]$ClientSecret,
     [string]$CertificateBase64,
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
@@ -32,6 +33,7 @@ function Connect-MaesterTenant {
         [Parameter(Mandatory = $true)][string]$TenantId,
         [Parameter(Mandatory = $true)][string]$ClientId,
         [Parameter(Mandatory = $true)][string]$AuthMode,
+        [string]$ClientSecret,
         [string]$CertificateBase64,
         [string]$CertificatePassword
     )
@@ -40,7 +42,18 @@ function Connect-MaesterTenant {
 
     switch ($AuthMode) {
         'oidc' {
-            throw 'OIDC auth is not implemented in this scaffold yet. Use certificate mode for the first production setup.'
+            throw 'OIDC auth is not implemented in this scaffold yet.'
+        }
+        'client-secret' {
+            if (-not $ClientSecret) {
+                throw 'ClientSecret is required for client-secret auth.'
+            }
+
+            $secureSecret = ConvertTo-SecureString -String $ClientSecret -AsPlainText -Force
+            $credential = New-Object System.Management.Automation.PSCredential($ClientId, $secureSecret)
+
+            Connect-MgGraph -TenantId $TenantId -ClientSecretCredential $credential -NoWelcome
+            Connect-Maester -Service Graph -TenantId $TenantId -GraphClientId $ClientId
         }
         'certificate' {
             if (-not $CertificateBase64) {
@@ -59,7 +72,7 @@ function Connect-MaesterTenant {
             $certificate.Import($certBytes, $securePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
 
             Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -Certificate $certificate -NoWelcome
-            Connect-Maester -Service 'Graph'
+            Connect-Maester -Service Graph -TenantId $TenantId -GraphClientId $ClientId
         }
         default {
             throw "Unsupported auth mode: $AuthMode"
@@ -67,7 +80,7 @@ function Connect-MaesterTenant {
     }
 }
 
-if (-not $TenantName -or -not $TenantId -or -not $ClientId -or -not $CertificateBase64) {
+if (-not $TenantName -or -not $TenantId -or -not $ClientId -or (($AuthMode -eq 'client-secret') -and -not $ClientSecret) -or (($AuthMode -eq 'certificate') -and -not $CertificateBase64)) {
     $resolvedJson = & (Join-Path $PSScriptRoot 'Get-ResolvedTenantConfig.ps1') -TenantKey $TenantKey -ConfigPath $ConfigPath
     $resolved = $resolvedJson | ConvertFrom-Json
 
@@ -75,6 +88,7 @@ if (-not $TenantName -or -not $TenantId -or -not $ClientId -or -not $Certificate
     if (-not $TenantId) { $TenantId = [string]$resolved.tenantId }
     if (-not $ClientId) { $ClientId = [string]$resolved.clientId }
     if (-not $AuthMode) { $AuthMode = [string]$resolved.authMode }
+    if (-not $ClientSecret) { $ClientSecret = [string]$resolved.clientSecret }
     if (-not $CertificateBase64) { $CertificateBase64 = [string]$resolved.certificateBase64 }
     if (-not $CertificatePassword) { $CertificatePassword = [string]$resolved.certificatePassword }
     if (-not $WebsiteBaseUrl) { $WebsiteBaseUrl = [string]$resolved.reportBaseUrl }
@@ -83,6 +97,8 @@ if (-not $TenantName -or -not $TenantId -or -not $ClientId -or -not $Certificate
 if (-not $TenantName) { throw 'TenantName could not be resolved.' }
 if (-not $TenantId) { throw 'TenantId could not be resolved.' }
 if (-not $ClientId) { throw 'ClientId could not be resolved.' }
+if ($AuthMode -eq 'client-secret' -and -not $ClientSecret) { throw 'ClientSecret could not be resolved.' }
+if ($AuthMode -eq 'certificate' -and -not $CertificateBase64) { throw 'CertificateBase64 could not be resolved.' }
 
 $timestamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $datedFolderName = Get-Date -Format 'yyyy-MM-dd'
@@ -102,7 +118,7 @@ $summaryPath = Join-Path $historyDir 'summary.json'
 Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
-Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword
+Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword
 
 Write-Host "Running Maester for tenant [$TenantKey] $TenantName"
 $result = Invoke-Maester -Path . -PassThru

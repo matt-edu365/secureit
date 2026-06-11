@@ -34,7 +34,7 @@ on:
 
 jobs:
   run-maester:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
@@ -101,14 +101,15 @@ jobs:
 
       - name: Fetch client secret from Azure Key Vault
         if: ${{ env.MAESTER_AUTH_MODE == 'client-secret' }}
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            $secretValue = az keyvault secret show --vault-name secureit --name "$env:CLIENT_SECRET_NAME" --query value -o tsv
-            if (-not $secretValue) {
-              throw "Secret '$env:CLIENT_SECRET_NAME' was not retrieved from Key Vault."
-            }
-            Add-Content -Path $env:GITHUB_ENV -Value "CLIENT_SECRET=$secretValue"
+        shell: bash
+        run: |
+          set -euo pipefail
+          SECRET_VALUE=$(az keyvault secret show --vault-name secureit --name "$CLIENT_SECRET_NAME" --query value -o tsv)
+          if [ -z "$SECRET_VALUE" ]; then
+            echo "Secret '$CLIENT_SECRET_NAME' was not retrieved from Key Vault." >&2
+            exit 1
+          fi
+          echo "CLIENT_SECRET=$SECRET_VALUE" >> "$GITHUB_ENV"
 
       - name: Setup PowerShell modules cache directory
         shell: pwsh

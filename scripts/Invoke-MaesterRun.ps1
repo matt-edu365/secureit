@@ -221,7 +221,58 @@ if ($null -ne $result) {
 }
 
 if (-not $testResults) {
-    throw 'Invoke-Maester returned no consumable test result records.'
+    Write-Warning 'Invoke-Maester returned no consumable test result records; attempting fallback parse from generated report artifacts.'
+    $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $htmlCandidate) {
+        throw 'Invoke-Maester returned no consumable test result records and no HTML report artifact was found for fallback.'
+    }
+
+    $htmlFallback = Get-Content -Raw -Path $htmlCandidate.FullName
+    Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
+
+    $summaryMatches = [regex]::Matches($htmlFallback, 'Tests\s+(Passed|Failed|Investigate|Skipped|Error|Not Run)\s+.*?:\s*(\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $summaryMap = @{}
+    foreach ($match in $summaryMatches) {
+        $summaryMap[$match.Groups[1].Value.ToLowerInvariant()] = [int]$match.Groups[2].Value
+    }
+
+    $summary = [ordered]@{
+        tenantKey = $TenantKey
+        tenantName = $TenantName
+        generatedAt = (Get-Date).ToString('o')
+        timestamp = $timestamp
+        total = (($summaryMap['passed'] ?? 0) + ($summaryMap['failed'] ?? 0) + ($summaryMap['investigate'] ?? 0) + ($summaryMap['skipped'] ?? 0) + ($summaryMap['error'] ?? 0) + ($summaryMap['not run'] ?? 0))
+        passed = ($summaryMap['passed'] ?? 0)
+        failed = ($summaryMap['failed'] ?? 0)
+        skipped = ($summaryMap['skipped'] ?? 0)
+        changed = 0
+        critical = 0
+        reportUrl = ''
+        notes = @('Fallback summary extracted from generated HTML report because structured Maester results were unavailable.')
+    }
+    if ($WebsiteBaseUrl) {
+        $summary.reportUrl = ($WebsiteBaseUrl.TrimEnd('/') + '/latest/index.html')
+    }
+
+    $summary | ConvertTo-Json -Depth 10 | Set-Content -Path $summaryPath -Encoding UTF8
+    $summary | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonReportPath -Encoding UTF8
+
+    Ensure-DirectoryClean -Path $tempLatestDir
+    Copy-Item -Path (Join-Path $historyDir '*') -Destination $tempLatestDir -Recurse -Force
+    Ensure-DirectoryClean -Path $latestDir
+    Copy-Item -Path (Join-Path $tempLatestDir '*') -Destination $latestDir -Recurse -Force
+
+    "MAESTER_TENANT_KEY=$TenantKey" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_TENANT_NAME=$TenantName" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_HISTORY_DIR=$historyDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_LATEST_DIR=$latestDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_SUMMARY_PATH=$summaryPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_FAILED_COUNT=$($summary.failed)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_TOTAL_COUNT=$($summary.total)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_REPORT_URL=$($summary.reportUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+    Write-Host "Maester fallback report handling complete for [$TenantKey]. Total: $($summary.total), Passed: $($summary.passed), Failed: $($summary.failed), Skipped: $($summary.skipped)"
+    return
 }
 
 $flatResults = @()

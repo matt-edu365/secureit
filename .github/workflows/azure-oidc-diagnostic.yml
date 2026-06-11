@@ -1,0 +1,89 @@
+name: Azure OIDC Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show masked input presence and shape
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          check_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "- $name: MISSING" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::add-mask::$value"
+              echo "- $name: present, length ${#value}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          }
+
+          {
+            echo "# Azure OIDC diagnostic"
+            echo "## Secret presence"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          check_secret "AZURE_CLIENT_ID" "${{ secrets.AZURE_CLIENT_ID }}"
+          check_secret "AZURE_TENANT_ID" "${{ secrets.AZURE_TENANT_ID }}"
+          check_secret "AZURE_SUBSCRIPTION_ID" "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Validate GUID formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          guid_regex='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+
+          validate_guid() {
+            local name="$1"
+            local value="$2"
+            if [[ "$value" =~ $guid_regex ]]; then
+              echo "- $name: valid GUID shape" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- $name: INVALID GUID SHAPE" >> "$GITHUB_STEP_SUMMARY"
+              echo "$name is not in GUID format" >&2
+              exit 1
+            fi
+          }
+
+          {
+            echo ""
+            echo "## GUID format validation"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          validate_guid "AZURE_CLIENT_ID" "${{ secrets.AZURE_CLIENT_ID }}"
+          validate_guid "AZURE_TENANT_ID" "${{ secrets.AZURE_TENANT_ID }}"
+          validate_guid "AZURE_SUBSCRIPTION_ID" "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Attempt Azure login via OIDC
+        id: azure_login
+        uses: azure/login@v2
+        continue-on-error: true
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
+
+      - name: Summarise login result
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo ""
+            echo "## Azure login result"
+            echo "- Outcome: ${{ steps.azure_login.outcome }}"
+            echo "- Conclusion: ${{ steps.azure_login.conclusion }}"
+            echo ""
+            echo "If login failed but GUID shape passed, the likely causes are federated credential mismatch, wrong app registration, wrong tenant, or incorrect subscription context."
+          } >> "$GITHUB_STEP_SUMMARY"

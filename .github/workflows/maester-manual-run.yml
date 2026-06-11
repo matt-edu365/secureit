@@ -120,9 +120,13 @@ jobs:
         shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force
-          Install-Module Maester -Scope CurrentUser -Force
-          Install-MaesterTests -Force
+          if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
+            Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
+          }
+          if (-not (Get-Module -ListAvailable -Name Maester)) {
+            Install-Module Maester -Scope CurrentUser -Force -AllowClobber
+          }
+          Install-MaesterTests
 
       - name: Run Maester assessment
         shell: pwsh

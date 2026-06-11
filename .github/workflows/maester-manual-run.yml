@@ -123,6 +123,10 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "$HOME/Documents/PowerShell/Modules" | Out-Null
+          $legacyPester = Join-Path $HOME '.local/share/powershell/Modules/Pester/4.0.3'
+          if (Test-Path -LiteralPath $legacyPester) {
+            Remove-Item -LiteralPath $legacyPester -Recurse -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Install PowerShell modules
         shell: pwsh

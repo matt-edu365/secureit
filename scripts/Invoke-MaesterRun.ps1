@@ -113,7 +113,7 @@ function Get-MaesterSelectedTestsPath {
     foreach ($name in $selected) {
         $match = $availableDirs | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
         if ($match) {
-            Copy-Item -Path $match.FullName -Destination $lightRoot -Recurse -Force
+            Copy-Item -Path (Join-Path $match.FullName '*') -Destination $lightRoot -Recurse -Force
         }
     }
 

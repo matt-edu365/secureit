@@ -90,7 +90,6 @@ function Connect-MaesterTenant {
     }
 }
 
-
 function Get-MaesterSelectedTestsPath {
     param(
         [Parameter(Mandatory = $true)][string]$TestsRoot,
@@ -117,7 +116,7 @@ function Get-MaesterSelectedTestsPath {
         }
     }
 
-    $copied = Get-ChildItem -LiteralPath $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
+    $copied = Get-ChildItem -Path $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
     if (-not $copied) {
         $available = ($availableDirs | Select-Object -ExpandProperty Name) -join ', '
         throw "No test files were copied for test profile '$Profile' from root '$TestsRoot'. Available test directories: $available"
@@ -143,7 +142,7 @@ function Get-MaesterTestsPath {
 
     foreach ($candidate in $candidates) {
         if (Test-Path -LiteralPath $candidate) {
-            $testFiles = Get-ChildItem -LiteralPath $candidate -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
+            $testFiles = Get-ChildItem -Path $candidate -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
             if ($testFiles) {
                 return $candidate
             }
@@ -151,6 +150,36 @@ function Get-MaesterTestsPath {
     }
 
     throw "Unable to find installed Maester tests. Checked: $($candidates -join ', ')"
+}
+
+function Write-MaesterOutputs {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Summary,
+        [Parameter(Mandatory = $true)][string]$SummaryPath,
+        [Parameter(Mandatory = $true)][string]$JsonPath,
+        [Parameter(Mandatory = $true)][string]$HistoryDir,
+        [Parameter(Mandatory = $true)][string]$TempLatestDir,
+        [Parameter(Mandatory = $true)][string]$LatestDir,
+        [Parameter(Mandatory = $true)][string]$TenantKey,
+        [Parameter(Mandatory = $true)][string]$TenantName
+    )
+
+    $Summary | ConvertTo-Json -Depth 10 | Set-Content -Path $SummaryPath -Encoding UTF8
+    $Summary | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonPath -Encoding UTF8
+
+    Ensure-DirectoryClean -Path $TempLatestDir
+    Copy-Item -Path (Join-Path $HistoryDir '*') -Destination $TempLatestDir -Recurse -Force
+    Ensure-DirectoryClean -Path $LatestDir
+    Copy-Item -Path (Join-Path $TempLatestDir '*') -Destination $LatestDir -Recurse -Force
+
+    "MAESTER_TENANT_KEY=$TenantKey" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_TENANT_NAME=$TenantName" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_HISTORY_DIR=$HistoryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_LATEST_DIR=$LatestDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_SUMMARY_PATH=$SummaryPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_FAILED_COUNT=$($Summary.failed)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_TOTAL_COUNT=$($Summary.total)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "MAESTER_REPORT_URL=$($Summary.reportUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 }
 
 if (-not $TenantName -or -not $TenantId -or -not $ClientId -or (($AuthMode -eq 'client-secret') -and -not $ClientSecret) -or (($AuthMode -eq 'certificate') -and -not $CertificateBase64)) {
@@ -206,8 +235,9 @@ $env:CI = 'true'
 $env:BROWSER = '/bin/true'
 $result = Invoke-Maester -Path $selectedTestsPath -PassThru
 
-if (-not $result) {
-    throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
+$htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($htmlCandidate) {
+    Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
 }
 
 $testResults = @()
@@ -222,18 +252,40 @@ if ($null -ne $result) {
 
 if (-not $testResults) {
     Write-Warning 'Invoke-Maester returned no consumable test result records; attempting fallback parse from generated report artifacts.'
-    $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if (-not $htmlCandidate) {
         throw 'Invoke-Maester returned no consumable test result records and no HTML report artifact was found for fallback.'
     }
 
     $htmlFallback = Get-Content -Raw -Path $htmlCandidate.FullName
-    Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
 
-    $summaryMatches = [regex]::Matches($htmlFallback, 'Tests\s+(Passed|Failed|Investigate|Skipped|Error|Not Run)\s+.*?:\s*(\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    $summaryMap = @{}
-    foreach ($match in $summaryMatches) {
-        $summaryMap[$match.Groups[1].Value.ToLowerInvariant()] = [int]$match.Groups[2].Value
+    $summaryMap = @{
+        'passed' = 0
+        'failed' = 0
+        'investigate' = 0
+        'skipped' = 0
+        'error' = 0
+        'not run' = 0
+    }
+
+    $patterns = @{
+        'passed' = 'Tests Passed[^:]*:\s*(\d+)'
+        'failed' = 'Failed[^:]*:\s*(\d+)'
+        'investigate' = 'Investigate[^:]*:\s*(\d+)'
+        'skipped' = 'Skipped[^:]*:\s*(\d+)'
+        'error' = 'Error[^:]*:\s*(\d+)'
+        'not run' = 'Not Run[^:]*:\s*(\d+)'
+    }
+
+    foreach ($key in $patterns.Keys) {
+        $m = [regex]::Match($htmlFallback, $patterns[$key], [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        if ($m.Success) {
+            $summaryMap[$key] = [int]$m.Groups[1].Value
+        }
+    }
+
+    $reportUrl = ''
+    if ($WebsiteBaseUrl) {
+        $reportUrl = ($WebsiteBaseUrl.TrimEnd('/') + '/latest/index.html')
     }
 
     $summary = [ordered]@{
@@ -241,36 +293,17 @@ if (-not $testResults) {
         tenantName = $TenantName
         generatedAt = (Get-Date).ToString('o')
         timestamp = $timestamp
-        total = (($summaryMap['passed'] ?? 0) + ($summaryMap['failed'] ?? 0) + ($summaryMap['investigate'] ?? 0) + ($summaryMap['skipped'] ?? 0) + ($summaryMap['error'] ?? 0) + ($summaryMap['not run'] ?? 0))
-        passed = ($summaryMap['passed'] ?? 0)
-        failed = ($summaryMap['failed'] ?? 0)
-        skipped = ($summaryMap['skipped'] ?? 0)
+        total = ($summaryMap['passed'] + $summaryMap['failed'] + $summaryMap['investigate'] + $summaryMap['skipped'] + $summaryMap['error'] + $summaryMap['not run'])
+        passed = $summaryMap['passed']
+        failed = $summaryMap['failed']
+        skipped = $summaryMap['skipped']
         changed = 0
         critical = 0
-        reportUrl = ''
+        reportUrl = $reportUrl
         notes = @('Fallback summary extracted from generated HTML report because structured Maester results were unavailable.')
     }
-    if ($WebsiteBaseUrl) {
-        $summary.reportUrl = ($WebsiteBaseUrl.TrimEnd('/') + '/latest/index.html')
-    }
 
-    $summary | ConvertTo-Json -Depth 10 | Set-Content -Path $summaryPath -Encoding UTF8
-    $summary | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonReportPath -Encoding UTF8
-
-    Ensure-DirectoryClean -Path $tempLatestDir
-    Copy-Item -Path (Join-Path $historyDir '*') -Destination $tempLatestDir -Recurse -Force
-    Ensure-DirectoryClean -Path $latestDir
-    Copy-Item -Path (Join-Path $tempLatestDir '*') -Destination $latestDir -Recurse -Force
-
-    "MAESTER_TENANT_KEY=$TenantKey" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_TENANT_NAME=$TenantName" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_HISTORY_DIR=$historyDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_LATEST_DIR=$latestDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_SUMMARY_PATH=$summaryPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_FAILED_COUNT=$($summary.failed)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_TOTAL_COUNT=$($summary.total)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "MAESTER_REPORT_URL=$($summary.reportUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
+    Write-MaesterOutputs -Summary $summary -SummaryPath $summaryPath -JsonPath $jsonReportPath -HistoryDir $historyDir -TempLatestDir $tempLatestDir -LatestDir $latestDir -TenantKey $TenantKey -TenantName $TenantName
     Write-Host "Maester fallback report handling complete for [$TenantKey]. Total: $($summary.total), Passed: $($summary.passed), Failed: $($summary.failed), Skipped: $($summary.skipped)"
     return
 }
@@ -287,29 +320,6 @@ foreach ($test in $testResults) {
         Tag = if ($test.Tag) { @($test.Tag) } else { @() }
     }
 }
-
-$persistedResult = [ordered]@{
-    TenantKey = $TenantKey
-    TenantName = $TenantName
-    GeneratedAt = (Get-Date).ToString('o')
-    Summary = [ordered]@{
-        Total = @($testResults).Count
-        Passed = @($testResults | Where-Object { $_.Result -eq 'Passed' }).Count
-        Failed = @($testResults | Where-Object { $_.Result -eq 'Failed' }).Count
-        Skipped = @($testResults | Where-Object { $_.Result -eq 'Skipped' }).Count
-        Error = @($testResults | Where-Object { $_.Result -eq 'Error' }).Count
-        Investigate = @($testResults | Where-Object { $_.Result -eq 'Investigate' }).Count
-    }
-    Tests = $flatResults
-}
-
-$persistedResult | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonReportPath -Encoding UTF8
-
-$html = Get-MtHtmlReport -MaesterResults $result
-if (-not $html) {
-    throw 'Get-MtHtmlReport returned no HTML output.'
-}
-$html | Set-Content -Path $htmlReportPath -Encoding UTF8
 
 $failed = @($testResults | Where-Object { $_.Result -eq 'Failed' }).Count
 $passed = @($testResults | Where-Object { $_.Result -eq 'Passed' }).Count
@@ -336,11 +346,26 @@ $summary = [ordered]@{
     notes = @()
 }
 
+$persistedResult = [ordered]@{
+    TenantKey = $TenantKey
+    TenantName = $TenantName
+    GeneratedAt = (Get-Date).ToString('o')
+    Summary = [ordered]@{
+        Total = $total
+        Passed = $passed
+        Failed = $failed
+        Skipped = $skipped
+        Error = @($testResults | Where-Object { $_.Result -eq 'Error' }).Count
+        Investigate = @($testResults | Where-Object { $_.Result -eq 'Investigate' }).Count
+    }
+    Tests = $flatResults
+}
+
+$persistedResult | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonReportPath -Encoding UTF8
 $summary | ConvertTo-Json -Depth 10 | Set-Content -Path $summaryPath -Encoding UTF8
 
 Ensure-DirectoryClean -Path $tempLatestDir
 Copy-Item -Path (Join-Path $historyDir '*') -Destination $tempLatestDir -Recurse -Force
-
 Ensure-DirectoryClean -Path $latestDir
 Copy-Item -Path (Join-Path $tempLatestDir '*') -Destination $latestDir -Recurse -Force
 

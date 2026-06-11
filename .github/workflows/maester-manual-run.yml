@@ -119,22 +119,19 @@ jobs:
           fi
           echo "CLIENT_SECRET=$SECRET_VALUE" >> "$GITHUB_ENV"
 
-      - name: Setup PowerShell modules cache directory
+      - name: Setup isolated PowerShell module path
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "$HOME/Documents/PowerShell/Modules" | Out-Null
-          $legacyPester = Join-Path $HOME '.local/share/powershell/Modules/Pester/4.0.3'
-          if (Test-Path -LiteralPath $legacyPester) {
-            Remove-Item -LiteralPath $legacyPester -Recurse -Force -ErrorAction SilentlyContinue
-          }
+          $moduleRoot = Join-Path $HOME 'secureit-psmodules'
+          New-Item -ItemType Directory -Force -Path $moduleRoot | Out-Null
+          "PSMODULEPATH_ROOT=$moduleRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Install PowerShell modules
         shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          if (Get-Module -ListAvailable -Name Pester) {
-            Get-InstalledModule Pester -ErrorAction SilentlyContinue | Uninstall-Module -AllVersions -Force -ErrorAction SilentlyContinue
-          }
           Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
           if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
             Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
@@ -153,6 +150,8 @@ jobs:
 
       - name: Run Maester assessment
         shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
           ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
 

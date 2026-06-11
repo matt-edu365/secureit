@@ -210,7 +210,35 @@ if (-not $result) {
     throw "Invoke-Maester returned no results for tests path '$selectedTestsPath'."
 }
 
-$result | ConvertTo-Json -Depth 1000 | Set-Content -Path $jsonReportPath -Encoding UTF8
+$flatResults = @()
+foreach ($test in @($result.TestResult)) {
+    $flatResults += [ordered]@{
+        Name = if ($test.Name) { [string]$test.Name } else { '' }
+        Describe = if ($test.Describe) { [string]$test.Describe } else { '' }
+        Context = if ($test.Context) { [string]$test.Context } else { '' }
+        Result = if ($test.Result) { [string]$test.Result } else { '' }
+        FailureMessage = if ($test.FailureMessage) { [string]$test.FailureMessage } else { '' }
+        Path = if ($test.Path) { [string]$test.Path } else { '' }
+        Tag = if ($test.Tag) { @($test.Tag) } else { @() }
+    }
+}
+
+$persistedResult = [ordered]@{
+    TenantKey = $TenantKey
+    TenantName = $TenantName
+    GeneratedAt = (Get-Date).ToString('o')
+    Summary = [ordered]@{
+        Total = @($result.TestResult).Count
+        Passed = @($result.TestResult | Where-Object { $_.Result -eq 'Passed' }).Count
+        Failed = @($result.TestResult | Where-Object { $_.Result -eq 'Failed' }).Count
+        Skipped = @($result.TestResult | Where-Object { $_.Result -eq 'Skipped' }).Count
+        Error = @($result.TestResult | Where-Object { $_.Result -eq 'Error' }).Count
+        Investigate = @($result.TestResult | Where-Object { $_.Result -eq 'Investigate' }).Count
+    }
+    Tests = $flatResults
+}
+
+$persistedResult | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonReportPath -Encoding UTF8
 
 $html = Get-MtHtmlReport -MaesterResults $result
 if (-not $html) {

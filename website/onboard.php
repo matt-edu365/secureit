@@ -102,23 +102,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
     .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; max-width: 900px; }
     label { display: block; margin-top: 1rem; font-weight: 600; }
-    input { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0.7rem; margin-top: 0.35rem; border: 1px solid #d1d5db; border-radius: 8px; }
-    input[readonly] { background: #f3f4f6; color: #4b5563; }
+    input, select { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0.7rem; margin-top: 0.35rem; border: 1px solid #d1d5db; border-radius: 8px; }
+    input[readonly], input[disabled] { background: #f3f4f6; color: #4b5563; }
     button { margin-top: 1.25rem; padding: 0.8rem 1rem; background: #0b5fff; color: white; border: 0; border-radius: 8px; cursor: pointer; }
     pre { background: #111827; color: #f9fafb; padding: 1rem; border-radius: 10px; overflow: auto; }
     .muted { color: #6b7280; }
     .field-note { margin-top: 0.35rem; color: #6b7280; font-size: 0.84rem; font-style: italic; }
+    .lock-row { display: flex; gap: 0.5rem; align-items: center; }
+    .lock-row input { margin-top: 0.35rem; }
+    .icon-button { margin-top: 0.35rem; padding: 0.7rem 0.9rem; min-width: 48px; background: #e5e7eb; color: #1f2937; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; }
+    .icon-button:hover { background: #dbe1e8; }
     .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.75rem 1rem; border-radius: 10px; margin-top: 1rem; }
     a { color: #0b5fff; text-decoration: none; }
   </style>
   <script>
+    function deriveSecretName(tenantKey) {
+      if (!tenantKey) return '';
+      return `AZURE_CLIENT_SECRET_${tenantKey.toUpperCase().replace(/-/g, '_')}`;
+    }
+
     function updateReportBaseUrl() {
       const tenantKey = document.getElementById('tenant_key').value.trim().toLowerCase();
       const baseUrl = <?php echo json_encode($baseSiteUrl, JSON_UNESCAPED_SLASHES); ?>;
       document.getElementById('report_base_url').value = tenantKey ? `${baseUrl}/${encodeURIComponent(tenantKey)}` : '';
+
+      const secretInput = document.getElementById('client_secret_name');
+      const secretHidden = document.getElementById('client_secret_name_hidden');
+      if (secretInput.dataset.locked === 'true') {
+        const derived = deriveSecretName(tenantKey);
+        secretInput.value = derived;
+        secretHidden.value = derived;
+      } else {
+        secretHidden.value = secretInput.value;
+      }
     }
-    window.addEventListener('DOMContentLoaded', updateReportBaseUrl);
+
+    function toggleSecretNameLock() {
+      const input = document.getElementById('client_secret_name');
+      const button = document.getElementById('client_secret_unlock');
+      const locked = input.dataset.locked === 'true';
+      if (locked) {
+        input.dataset.locked = 'false';
+        input.disabled = false;
+        input.focus();
+        button.textContent = '🔓';
+        button.setAttribute('aria-label', 'Lock Key Vault client secret name field');
+        button.title = 'Lock field';
+      } else {
+        input.dataset.locked = 'true';
+        input.disabled = true;
+        const derived = deriveSecretName(document.getElementById('tenant_key').value.trim().toLowerCase());
+        input.value = derived;
+        document.getElementById('client_secret_name_hidden').value = derived;
+        button.textContent = '🔒';
+        button.setAttribute('aria-label', 'Unlock Key Vault client secret name field');
+        button.title = 'Unlock field';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('client_secret_name');
+      const hidden = document.getElementById('client_secret_name_hidden');
+      if (input) {
+        input.dataset.locked = 'true';
+        input.disabled = true;
+        hidden.value = input.value;
+        input.addEventListener('input', () => { hidden.value = input.value; });
+      }
+      updateReportBaseUrl();
+    });
   </script>
 </head>
 <body>
@@ -160,8 +213,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p class="field-note">Choose how SecureIT will authenticate to this customer tenant. For your current design, client secret auth with Azure Key Vault storage is the default path.</p>
 
       <label for="client_secret_name">Key Vault client secret name</label>
-      <input id="client_secret_name" name="client_secret_name" placeholder="AZURE_CLIENT_SECRET_EXAMPLE_TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
-      <p class="field-note">Name of the customer-specific client secret stored in the shared Azure Key Vault. If left blank, SecureIT will derive one automatically from the tenant key.</p>
+      <div class="lock-row">
+        <input id="client_secret_name" placeholder="AZURE_CLIENT_SECRET_EXAMPLE_TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
+        <input type="hidden" id="client_secret_name_hidden" name="client_secret_name" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
+        <button type="button" id="client_secret_unlock" class="icon-button" onclick="toggleSecretNameLock()" aria-label="Unlock Key Vault client secret name field" title="Unlock field">🔒</button>
+      </div>
+      <p class="field-note">By default this is derived automatically from the tenant key and kept locked. Use the padlock button if you need to override it manually.</p>
 
       <label for="email_to">Report email recipient</label>
       <input id="email_to" name="email_to" placeholder="security@example.com" value="<?php echo htmlspecialchars($_POST['email_to'] ?? ''); ?>">

@@ -12,7 +12,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light')]
+    [ValidateSet('full','light','exchange-online')]
     [string]$TestProfile = 'light'
 )
 
@@ -101,31 +101,101 @@ function Get-MaesterSelectedTestsPath {
         return $TestsRoot
     }
 
-    $selected = @(
-        'Maester',
-        'cis',
-        'cisa',
-        'EIDSCA'
-    )
+    $profilePatterns = @{
+        'light' = @(
+            'exchange',
+            'exo',
+            'mailbox',
+            'transport',
+            'accepteddomain',
+            'dkim',
+            'dmarc',
+            'spf',
+            'defender for office',
+            'safe attachment',
+            'safe links',
+            'anti-phish',
+            'anti spam',
+            'authentication policy',
+            'conditional access',
+            'mfa',
+            'security default',
+            'tenant'
+        )
+        'exchange-online' = @(
+            'exchange',
+            'exo',
+            'mailbox',
+            'transport',
+            'accepteddomain',
+            'dkim',
+            'dmarc',
+            'spf',
+            'defender for office',
+            'safe attachment',
+            'safe links',
+            'anti-phish',
+            'anti spam',
+            'outbound spam',
+            'inbound spam',
+            'quarantine',
+            'authentication policy'
+        )
+    }
 
-    $lightRoot = Join-Path $WorkingRoot '_selected_tests'
-    Ensure-DirectoryClean -Path $lightRoot
+    $selectedPatterns = $profilePatterns[$Profile]
+    if (-not $selectedPatterns) {
+        throw "Unsupported test profile '$Profile'."
+    }
 
-    $availableDirs = Get-ChildItem -LiteralPath $TestsRoot -Directory -ErrorAction SilentlyContinue
-    foreach ($name in $selected) {
-        $match = $availableDirs | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
-        if ($match) {
-            Copy-Item -Path $match.FullName -Destination $lightRoot -Recurse -Force
+    $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
+    Ensure-DirectoryClean -Path $selectedRoot
+
+    $candidateFiles = Get-ChildItem -Path $TestsRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.FullName -notmatch '[\\/](unit|internal|examples?|demo|sample|harness|manifest|module|help|build|testdata)[\\/]' -and
+            $_.Name -notmatch '^(Failure|Help|Module|Manifest|PSScriptAnalyzer)\.Tests\.ps1$'
+        }
+
+    $matchedFiles = foreach ($file in $candidateFiles) {
+        $content = $null
+        try {
+            $content = Get-Content -Raw -LiteralPath $file.FullName -ErrorAction Stop
+        }
+        catch {
+            $content = ''
+        }
+
+        $haystacks = @(
+            $file.FullName,
+            $file.Name,
+            $content
+        ) -join "`n"
+
+        if ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) }) {
+            $file
         }
     }
 
-    $copied = Get-ChildItem -Path $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
-    if (-not $copied) {
-        $available = ($availableDirs | Select-Object -ExpandProperty Name) -join ', '
-        throw "No tenant-facing test files were copied for test profile '$Profile' from root '$TestsRoot'. Available test directories: $available"
+    $matchedFiles = @($matchedFiles | Sort-Object FullName -Unique)
+    if (-not $matchedFiles) {
+        $available = Get-ChildItem -Path $TestsRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue |
+            Select-Object -First 50 -ExpandProperty FullName
+        throw "No Maester test files matched profile '$Profile' from root '$TestsRoot'. Sample available files: $($available -join ', ')"
     }
 
-    return $lightRoot
+    foreach ($file in $matchedFiles) {
+        $relativePath = [System.IO.Path]::GetRelativePath($TestsRoot, $file.FullName)
+        $destinationPath = Join-Path $selectedRoot $relativePath
+        $destinationDir = Split-Path -Parent $destinationPath
+        New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
+    }
+
+    Write-Host "Selected $($matchedFiles.Count) Maester test files for profile '$Profile'."
+    $matchedFiles | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host " - $_" }
+
+    return $selectedRoot
 }
 
 function Get-MaesterTestsPath {

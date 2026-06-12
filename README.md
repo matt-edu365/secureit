@@ -15,6 +15,11 @@ It is intended to provide:
 
 This repository is the early project scaffold.
 
+Manual Maester runs currently support these test profiles:
+- `light` , a filtered tenant-facing baseline that now deliberately includes Exchange Online related checks instead of broad folder-based selection
+- `exchange-online` , a tighter Exchange Online focused profile for EXO and Defender for Office style checks
+- `full` , the full installed Maester test inventory
+
 At this stage:
 - there are no live tenants configured
 - no production secrets or certificates are stored here

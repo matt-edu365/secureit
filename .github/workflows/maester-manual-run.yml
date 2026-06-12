@@ -38,6 +38,7 @@ on:
         type: choice
         options:
           - light
+          - exchange-online
           - full
 
 jobs:

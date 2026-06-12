@@ -37,10 +37,13 @@ function Connect-MaesterTenant {
         [Parameter(Mandatory = $true)][string]$AuthMode,
         [string]$ClientSecret,
         [string]$CertificateBase64,
-        [string]$CertificatePassword
+        [string]$CertificatePassword,
+        [bool]$RequireExchangeOnline = $false
     )
 
     Write-Host "Connecting to tenant using auth mode: $AuthMode"
+
+    $certificate = $null
 
     switch ($AuthMode) {
         'oidc' {
@@ -60,6 +63,10 @@ function Connect-MaesterTenant {
                 throw 'Connect-MgGraph did not create a Graph context for client-secret authentication.'
             }
             Write-Host "Connected to Microsoft Graph app-only context for tenant $TenantId"
+
+            if ($RequireExchangeOnline) {
+                Write-Warning 'Exchange Online connection requested, but current auth mode is client-secret. ExchangeOnlineManagement app-only auth typically requires certificate-based authentication. EXO tests may still be skipped until certificate auth is configured.'
+            }
         }
         'certificate' {
             if (-not $CertificateBase64) {
@@ -86,6 +93,23 @@ function Connect-MaesterTenant {
         }
         default {
             throw "Unsupported auth mode: $AuthMode"
+        }
+    }
+
+    if ($RequireExchangeOnline) {
+        if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
+            throw 'Exchange Online connection requested but ExchangeOnlineManagement module is not installed.'
+        }
+
+        Import-Module ExchangeOnlineManagement -Force
+
+        if ($AuthMode -eq 'certificate') {
+            Write-Host "Connecting to Exchange Online using certificate-based app authentication"
+            Connect-ExchangeOnline -AppId $ClientId -Certificate $certificate -Organization $TenantId -ShowBanner:$false
+            Write-Host "Connected to Exchange Online app-only context for tenant $TenantId"
+        }
+        elseif ($AuthMode -eq 'client-secret') {
+            Write-Warning 'Skipping Connect-ExchangeOnline because certificate-based app authentication is not configured in this workflow yet.'
         }
     }
 }
@@ -300,7 +324,8 @@ Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
 Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
-Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword
+$requireExchangeOnline = $TestProfile -eq 'exchange-online'
+Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
 
 $testsPath = Get-MaesterTestsPath
 $selectedTestsPath = Get-MaesterSelectedTestsPath -TestsRoot $testsPath -Profile $TestProfile -WorkingRoot $tenantRoot

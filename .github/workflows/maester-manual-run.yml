@@ -21,8 +21,16 @@ on:
         default: 68cddeaf-29f7-4d60-b04c-12ce7663079e
       client_secret_name:
         description: Azure Key Vault secret name for the tenant app secret
-        required: true
+        required: false
         default: AZURE-CLIENT-SECRET-ICT365
+      auth_mode:
+        description: Authentication mode for this run
+        required: true
+        default: certificate
+        type: choice
+        options:
+          - certificate
+          - client-secret
       report_base_url:
         description: Base URL for published reports
         required: false
@@ -72,8 +80,10 @@ jobs:
                 name = "${{ github.event.inputs.tenant_name }}"
                 tenantId = "${{ github.event.inputs.tenant_id }}"
                 clientId = "${{ github.event.inputs.client_id }}"
-                authMode = 'client-secret'
+                authMode = "${{ github.event.inputs.auth_mode }}"
                 clientSecretName = "${{ github.event.inputs.client_secret_name }}"
+                certificateBase64 = "${{ secrets.AZURE_CLIENT_CERTIFICATE_B64_ICT365 }}"
+                certificatePassword = "${{ secrets.AZURE_CLIENT_CERTIFICATE_PASSWORD_ICT365 }}"
                 reportBaseUrl = "${{ github.event.inputs.report_base_url }}"
                 emailTo = "${{ github.event.inputs.email_to }}"
               }
@@ -92,6 +102,8 @@ jobs:
           "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CERTIFICATE_BASE64=$($tenant.certificateBase64)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CERTIFICATE_PASSWORD=$($tenant.certificatePassword)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Fetch client secret from Azure Key Vault
         if: ${{ env.MAESTER_AUTH_MODE == 'client-secret' }}
@@ -104,6 +116,16 @@ jobs:
             exit 1
           fi
           echo "CLIENT_SECRET=$SECRET_VALUE" >> "$GITHUB_ENV"
+
+      - name: Validate certificate inputs
+        if: ${{ env.MAESTER_AUTH_MODE == 'certificate' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CERTIFICATE_BASE64:-}" ]; then
+            echo "CERTIFICATE_BASE64 is empty for certificate auth mode." >&2
+            exit 1
+          fi
 
       - name: Setup isolated PowerShell module path
         shell: pwsh
@@ -145,7 +167,7 @@ jobs:
         env:
           PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
-          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -CertificateBase64 "$env:CERTIFICATE_BASE64" -CertificatePassword "$env:CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
 
       - name: Publish report to prototype FTPS
         if: always()

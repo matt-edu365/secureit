@@ -102,15 +102,10 @@ function Get-MaesterSelectedTestsPath {
     }
 
     $selected = @(
-        'smoketests',
-        'general'
-    )
-
-    $excludePatterns = @(
-        'Failure.Tests.ps1',
-        '*Failure*.Tests.ps1',
-        '*Tag*Filter*.Tests.ps1',
-        '*Parameter*Validation*.Tests.ps1'
+        'Maester',
+        'cis',
+        'cisa',
+        'EIDSCA'
     )
 
     $lightRoot = Join-Path $WorkingRoot '_selected_tests'
@@ -120,26 +115,14 @@ function Get-MaesterSelectedTestsPath {
     foreach ($name in $selected) {
         $match = $availableDirs | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
         if ($match) {
-            Get-ChildItem -Path $match.FullName -Recurse -File -Include '*.Tests.ps1','*.ps1' | ForEach-Object {
-                $shouldExclude = $false
-                foreach ($pattern in $excludePatterns) {
-                    if ($_.Name -like $pattern) {
-                        $shouldExclude = $true
-                        break
-                    }
-                }
-                if (-not $shouldExclude) {
-                    $destination = Join-Path $lightRoot $_.Name
-                    Copy-Item -Path $_.FullName -Destination $destination -Force
-                }
-            }
+            Copy-Item -Path $match.FullName -Destination $lightRoot -Recurse -Force
         }
     }
 
     $copied = Get-ChildItem -Path $lightRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
     if (-not $copied) {
         $available = ($availableDirs | Select-Object -ExpandProperty Name) -join ', '
-        throw "No test files were copied for test profile '$Profile' from root '$TestsRoot'. Available test directories: $available"
+        throw "No tenant-facing test files were copied for test profile '$Profile' from root '$TestsRoot'. Available test directories: $available"
     }
 
     return $lightRoot
@@ -152,12 +135,13 @@ function Get-MaesterTestsPath {
     }
 
     $moduleRoot = Split-Path -Parent $maesterModule.Path
+    $repoRoot = Split-Path -Parent $PSScriptRoot
     $candidates = @(
-        (Join-Path $moduleRoot 'tests'),
-        (Join-Path $moduleRoot 'Test'),
-        (Join-Path $moduleRoot 'Tests'),
-        (Join-Path $HOME '.maester/tests'),
-        (Join-Path $HOME '.config/maester/tests')
+        (Join-Path $repoRoot 'maester-tests'),
+        (Join-Path (Get-Location) 'maester-tests'),
+        (Join-Path $moduleRoot 'maester-tests'),
+        (Join-Path $HOME '.maester/maester-tests'),
+        (Join-Path $HOME '.config/maester/maester-tests')
     )
 
     foreach ($candidate in $candidates) {
@@ -169,7 +153,7 @@ function Get-MaesterTestsPath {
         }
     }
 
-    throw "Unable to find installed Maester tests. Checked: $($candidates -join ', ')"
+    throw "Unable to find installed Maester tenant-facing tests. Checked: $($candidates -join ', ')"
 }
 
 function Write-MaesterOutputs {
@@ -256,8 +240,15 @@ $env:BROWSER = '/bin/true'
 $global:LASTEXITCODE = 0
 $result = $null
 $invokeMaesterFailed = $false
+$invokeParams = @{
+    Path = $selectedTestsPath
+    PassThru = $true
+}
+if ($TestProfile -eq 'light') {
+    $invokeParams['ExcludeTag'] = @('Preview')
+}
 try {
-    $result = Invoke-Maester -Path $selectedTestsPath -PassThru
+    $result = Invoke-Maester @invokeParams
 }
 catch {
     $invokeMaesterFailed = $true

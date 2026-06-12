@@ -159,7 +159,12 @@ jobs:
           Import-Module ExchangeOnlineManagement -Force
           Import-Module Maester -Force
           $env:CI = 'true'
-          Install-MaesterTests -AcceptDisclaimer
+          $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+          $moduleRoot = Split-Path -Parent $maesterModule.Path
+          $testsRoot = Join-Path $moduleRoot 'maester-tests'
+          if (-not (Test-Path -LiteralPath $testsRoot)) {
+            'y' | Install-MaesterTests
+          }
 
       - name: Run Maester assessment
         id: maester

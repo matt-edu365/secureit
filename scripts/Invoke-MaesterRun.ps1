@@ -108,8 +108,14 @@ function Connect-MaesterTenant {
 
         if ($AuthMode -eq 'certificate') {
             Write-Host "Connecting to Exchange Online using certificate-based app authentication"
-            Connect-ExchangeOnline -AppId $ClientId -Certificate $certificate -Organization $TenantId -ShowBanner:$false
-            Write-Host "Connected to Exchange Online app-only context for tenant $TenantId"
+            try {
+                Connect-ExchangeOnline -AppId $ClientId -Certificate $certificate -Organization $TenantId -ShowBanner:$false -ErrorAction Stop
+                Write-Host "Connected to Exchange Online app-only context for tenant $TenantId"
+            }
+            catch {
+                Write-Warning ("Connect-ExchangeOnline failed: " + $_.Exception.Message)
+                throw
+            }
         }
         elseif ($AuthMode -eq 'client-secret') {
             Write-Warning 'Skipping Connect-ExchangeOnline because certificate-based app authentication is not configured in this workflow yet.'

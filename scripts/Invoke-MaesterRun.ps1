@@ -102,7 +102,15 @@ function Get-MaesterSelectedTestsPath {
     }
 
     $selected = @(
-        'smoketests'
+        'smoketests',
+        'general'
+    )
+
+    $excludePatterns = @(
+        'Failure.Tests.ps1',
+        '*Failure*.Tests.ps1',
+        '*Tag*Filter*.Tests.ps1',
+        '*Parameter*Validation*.Tests.ps1'
     )
 
     $lightRoot = Join-Path $WorkingRoot '_selected_tests'
@@ -112,7 +120,19 @@ function Get-MaesterSelectedTestsPath {
     foreach ($name in $selected) {
         $match = $availableDirs | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
         if ($match) {
-            Copy-Item -Path (Join-Path $match.FullName '*') -Destination $lightRoot -Recurse -Force
+            Get-ChildItem -Path $match.FullName -Recurse -File -Include '*.Tests.ps1','*.ps1' | ForEach-Object {
+                $shouldExclude = $false
+                foreach ($pattern in $excludePatterns) {
+                    if ($_.Name -like $pattern) {
+                        $shouldExclude = $true
+                        break
+                    }
+                }
+                if (-not $shouldExclude) {
+                    $destination = Join-Path $lightRoot $_.Name
+                    Copy-Item -Path $_.FullName -Destination $destination -Force
+                }
+            }
         }
     }
 

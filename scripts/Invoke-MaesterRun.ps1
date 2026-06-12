@@ -220,7 +220,7 @@ function Get-MaesterSelectedTestsPath {
         if ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) }) {
             if ($Profile -in @('light','graph-baseline')) {
                 if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
-                    return
+                    continue
                 }
             }
             $file

@@ -46,9 +46,10 @@ on:
       test_profile:
         description: Test profile to run
         required: true
-        default: light
+        default: graph-baseline
         type: choice
         options:
+          - graph-baseline
           - light
           - exchange-online
           - full

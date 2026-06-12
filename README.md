@@ -16,8 +16,9 @@ It is intended to provide:
 This repository is the early project scaffold.
 
 Manual Maester runs currently support these test profiles:
-- `light` , a filtered tenant-facing baseline that now deliberately includes Exchange Online related checks instead of broad folder-based selection
-- `exchange-online` , a tighter Exchange Online focused profile for EXO and Defender for Office style checks
+- `graph-baseline` , the recommended default, focused on Graph-accessible Entra, identity, compliance, configuration, and broader Microsoft 365 checks without requiring Exchange Online PowerShell auth
+- `light` , a smaller Graph-first baseline for faster validation runs
+- `exchange-online` , an advanced Exchange Online focused profile for EXO and Defender for Office style checks, which requires additional Exchange app auth and RBAC setup
 - `full` , the full installed Maester test inventory
 
 At this stage:

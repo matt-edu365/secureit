@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','exchange-online')]
+    [ValidateSet('full','light','graph-baseline','exchange-online')]
     [string]$TestProfile = 'light'
 )
 
@@ -139,24 +139,33 @@ function Get-MaesterSelectedTestsPath {
 
     $profilePatterns = @{
         'light' = @(
-            'exchange',
-            'exo',
-            'mailbox',
-            'transport',
-            'accepteddomain',
-            'dkim',
-            'dmarc',
-            'spf',
-            'defender for office',
-            'safe attachment',
-            'safe links',
-            'anti-phish',
-            'anti spam',
-            'authentication policy',
             'conditional access',
             'mfa',
             'security default',
-            'tenant'
+            'entra',
+            'app registration',
+            'privileged',
+            'directory',
+            'tenant',
+            'forms',
+            'sharepoint',
+            'intune',
+            'defender'
+        )
+        'graph-baseline' = @(
+            'conditional access',
+            'mfa',
+            'entra',
+            'app registration',
+            'privileged',
+            'directory',
+            'tenant',
+            'forms',
+            'sharepoint',
+            'intune',
+            'defender',
+            'identity',
+            'graph'
         )
         'exchange-online' = @(
             'exchange',
@@ -209,6 +218,11 @@ function Get-MaesterSelectedTestsPath {
         ) -join "`n"
 
         if ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) }) {
+            if ($Profile -in @('light','graph-baseline')) {
+                if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
+                    return
+                }
+            }
             $file
         }
     }

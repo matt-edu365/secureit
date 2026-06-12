@@ -11,6 +11,10 @@ on:
         description: Tenant display name
         required: true
         default: ICT365 Cayman
+      tenant_domain:
+        description: Primary tenant domain for Exchange Online connection
+        required: true
+        default: EDU365GroupCayman.onmicrosoft.com
       tenant_id:
         description: Microsoft 365 tenant ID
         required: true
@@ -79,6 +83,7 @@ jobs:
                 id = "${{ github.event.inputs.tenant_key }}"
                 name = "${{ github.event.inputs.tenant_name }}"
                 tenantId = "${{ github.event.inputs.tenant_id }}"
+                tenantDomain = "${{ github.event.inputs.tenant_domain }}"
                 clientId = "${{ github.event.inputs.client_id }}"
                 authMode = "${{ github.event.inputs.auth_mode }}"
                 clientSecretName = "${{ github.event.inputs.client_secret_name }}"
@@ -98,6 +103,7 @@ jobs:
           "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "AZURE_TENANT_ID_TARGET=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_TENANT_DOMAIN_TARGET=$($tenant.tenantDomain)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "AZURE_CLIENT_ID_TARGET=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
@@ -173,7 +179,7 @@ jobs:
         env:
           PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
-          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -CertificateBase64 "$env:CERTIFICATE_BASE64" -CertificatePassword "$env:CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -TenantDomain "$env:AZURE_TENANT_DOMAIN_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -CertificateBase64 "$env:CERTIFICATE_BASE64" -CertificatePassword "$env:CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
 
       - name: Publish report to prototype FTPS
         if: always()

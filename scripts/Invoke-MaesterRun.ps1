@@ -4,6 +4,7 @@ param(
     [string]$TenantName,
     [string]$OutputRoot = (Join-Path (Join-Path $PSScriptRoot '..') 'output'),
     [string]$TenantId,
+    [string]$TenantDomain,
     [string]$ClientId,
     [ValidateSet('oidc','certificate','client-secret')]
     [string]$AuthMode = 'client-secret',
@@ -33,6 +34,7 @@ function Ensure-DirectoryClean {
 function Connect-MaesterTenant {
     param(
         [Parameter(Mandatory = $true)][string]$TenantId,
+        [string]$TenantDomain,
         [Parameter(Mandatory = $true)][string]$ClientId,
         [Parameter(Mandatory = $true)][string]$AuthMode,
         [string]$ClientSecret,
@@ -109,8 +111,9 @@ function Connect-MaesterTenant {
         if ($AuthMode -eq 'certificate') {
             Write-Host "Connecting to Exchange Online using certificate-based app authentication"
             try {
-                Connect-ExchangeOnline -AppId $ClientId -Certificate $certificate -Organization $TenantId -ShowBanner:$false -ErrorAction Stop
-                Write-Host "Connected to Exchange Online app-only context for tenant $TenantId"
+                $exoOrganization = if ($TenantDomain) { $TenantDomain } else { $TenantId }
+                Connect-ExchangeOnline -AppId $ClientId -Certificate $certificate -Organization $exoOrganization -ShowBanner:$false -ErrorAction Stop
+                Write-Host "Connected to Exchange Online app-only context for organization $exoOrganization"
             }
             catch {
                 Write-Warning ("Connect-ExchangeOnline failed: " + $_.Exception.Message)
@@ -306,6 +309,9 @@ if (-not $TenantName -or -not $TenantId -or -not $ClientId -or (($AuthMode -eq '
 if (-not $TenantName) { throw 'TenantName could not be resolved.' }
 if (-not $TenantId) { throw 'TenantId could not be resolved.' }
 if (-not $ClientId) { throw 'ClientId could not be resolved.' }
+if (-not $TenantDomain) {
+    $TenantDomain = $TenantName
+}
 if ($AuthMode -eq 'client-secret' -and -not $ClientSecret) { throw 'ClientSecret could not be resolved.' }
 if ($AuthMode -eq 'certificate' -and -not $CertificateBase64) { throw 'CertificateBase64 could not be resolved.' }
 
@@ -334,7 +340,7 @@ Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
 $requireExchangeOnline = $TestProfile -eq 'exchange-online'
-Connect-MaesterTenant -TenantId $TenantId -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
+Connect-MaesterTenant -TenantId $TenantId -TenantDomain $TenantDomain -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
 
 $testsPath = Get-MaesterTestsPath
 $selectedTestsPath = Get-MaesterSelectedTestsPath -TestsRoot $testsPath -Profile $TestProfile -WorkingRoot $tenantRoot

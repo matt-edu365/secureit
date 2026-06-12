@@ -81,8 +81,11 @@ function Connect-MaesterTenant {
                 ConvertTo-SecureString -String '' -AsPlainText -Force
             }
 
-            $certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-            $certificate.Import($certBytes, $securePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+            $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+                $certBytes,
+                $securePassword,
+                [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
+            )
 
             Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -Certificate $certificate -NoWelcome
             $context = Get-MgContext

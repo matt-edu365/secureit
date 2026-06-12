@@ -158,7 +158,8 @@ jobs:
           Import-Module Pester -RequiredVersion 5.7.1 -Force
           Import-Module ExchangeOnlineManagement -Force
           Import-Module Maester -Force
-          Install-MaesterTests
+          $env:CI = 'true'
+          Install-MaesterTests -AcceptDisclaimer
 
       - name: Run Maester assessment
         id: maester

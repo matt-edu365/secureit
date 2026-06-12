@@ -137,6 +137,45 @@ function Get-MaesterSelectedTestsPath {
         return $TestsRoot
     }
 
+    $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
+    Ensure-DirectoryClean -Path $selectedRoot
+
+    $candidateFiles = Get-ChildItem -Path $TestsRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.FullName -notmatch '[\\/](unit|internal|examples?|demo|sample|harness|manifest|module|help|build|testdata)[\\/]' -and
+            $_.Name -notmatch '^(Failure|Help|Module|Manifest|PSScriptAnalyzer)\.Tests\.ps1$'
+        }
+
+    $baselineExcludedPathPatterns = @(
+        '[\\/]Maester[\\/]AzureDevOps[\\/]',
+        '[\\/]Maester[\\/]Teams[\\/]',
+        '[\\/]Maester[\\/]AIAgent[\\/]',
+        '[\\/]Maester[\\/]Azure[\\/]'
+    )
+
+    $baselineExcludedNamePatterns = @(
+        '^AZDO\.',
+        '^MT\.1037:',
+        '^MT\.1042:',
+        '^MT\.1046:',
+        '^MT\.1047:',
+        '^MT\.1048:',
+        '^MT\.1050:',
+        '^MT\.1100:',
+        '^MT\.1111:',
+        '^MT\.1114:',
+        '^MT\.1115:',
+        '^MT\.1116:',
+        '^MT\.1117:',
+        '^MT\.1118:',
+        '^MT\.1119:',
+        '^MT\.1120:',
+        '^MT\.1121:',
+        '^MT\.1122:',
+        '^CISA\.MS\.AAD\.5\.4:',
+        '^EIDSCA\.CP01:'
+    )
+
     $profilePatterns = @{
         'light' = @(
             'conditional access',
@@ -165,7 +204,11 @@ function Get-MaesterSelectedTestsPath {
             'intune',
             'defender',
             'identity',
-            'graph'
+            'graph',
+            'cisa',
+            'eidsca',
+            'authentication method',
+            'onpremisessynchronization'
         )
         'exchange-online' = @(
             'exchange',
@@ -193,15 +236,6 @@ function Get-MaesterSelectedTestsPath {
         throw "Unsupported test profile '$Profile'."
     }
 
-    $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
-    Ensure-DirectoryClean -Path $selectedRoot
-
-    $candidateFiles = Get-ChildItem -Path $TestsRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.FullName -notmatch '[\\/](unit|internal|examples?|demo|sample|harness|manifest|module|help|build|testdata)[\\/]' -and
-            $_.Name -notmatch '^(Failure|Help|Module|Manifest|PSScriptAnalyzer)\.Tests\.ps1$'
-        }
-
     $matchedFiles = foreach ($file in $candidateFiles) {
         $content = $null
         try {
@@ -217,14 +251,27 @@ function Get-MaesterSelectedTestsPath {
             $content
         ) -join "`n"
 
-        if ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) }) {
-            if ($Profile -in @('light','graph-baseline')) {
-                if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
-                    continue
-                }
-            }
-            $file
+        if (-not ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) })) {
+            continue
         }
+
+        if ($Profile -in @('light','graph-baseline')) {
+            if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
+                continue
+            }
+        }
+
+        if ($Profile -eq 'graph-baseline') {
+            if ($baselineExcludedPathPatterns | Where-Object { $file.FullName -match $_ }) {
+                continue
+            }
+
+            if ($baselineExcludedNamePatterns | Where-Object { $content -match $_ }) {
+                continue
+            }
+        }
+
+        $file
     }
 
     $matchedFiles = @($matchedFiles | Sort-Object FullName -Unique)

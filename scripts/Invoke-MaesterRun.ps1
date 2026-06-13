@@ -511,19 +511,37 @@ if (-not $testResults) {
         'not run' = 0
     }
 
-    $patterns = @{
-        'passed' = 'Tests Passed[^:]*:\s*(\d+)'
-        'failed' = 'Failed[^:]*:\s*(\d+)'
-        'investigate' = 'Investigate[^:]*:\s*(\d+)'
-        'skipped' = 'Skipped[^:]*:\s*(\d+)'
-        'error' = 'Error[^:]*:\s*(\d+)'
-        'not run' = 'Not Run[^:]*:\s*(\d+)'
+    $wsMatch = [regex]::Match($htmlFallback, 'var\s+ws\s*=\s*(\{.*?\});', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    if ($wsMatch.Success) {
+        try {
+            $wsSummary = $wsMatch.Groups[1].Value | ConvertFrom-Json -ErrorAction Stop
+            if ($null -ne $wsSummary.PassedCount) { $summaryMap['passed'] = [int]$wsSummary.PassedCount }
+            if ($null -ne $wsSummary.FailedCount) { $summaryMap['failed'] = [int]$wsSummary.FailedCount }
+            if ($null -ne $wsSummary.InvestigateCount) { $summaryMap['investigate'] = [int]$wsSummary.InvestigateCount }
+            if ($null -ne $wsSummary.SkippedCount) { $summaryMap['skipped'] = [int]$wsSummary.SkippedCount }
+            if ($null -ne $wsSummary.ErrorCount) { $summaryMap['error'] = [int]$wsSummary.ErrorCount }
+            if ($null -ne $wsSummary.NotRunCount) { $summaryMap['not run'] = [int]$wsSummary.NotRunCount }
+        }
+        catch {
+            Write-Warning ("Failed to parse embedded Maester summary JSON from HTML report: " + $_.Exception.Message)
+        }
     }
 
-    foreach ($key in $patterns.Keys) {
-        $m = [regex]::Match($htmlFallback, $patterns[$key], [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-        if ($m.Success) {
-            $summaryMap[$key] = [int]$m.Groups[1].Value
+    if (-not $wsMatch.Success) {
+        $patterns = @{
+            'passed' = 'Tests Passed[^:]*:\s*(\d+)'
+            'failed' = 'Failed[^:]*:\s*(\d+)'
+            'investigate' = 'Investigate[^:]*:\s*(\d+)'
+            'skipped' = 'Skipped[^:]*:\s*(\d+)'
+            'error' = 'Error[^:]*:\s*(\d+)'
+            'not run' = 'Not Run[^:]*:\s*(\d+)'
+        }
+
+        foreach ($key in $patterns.Keys) {
+            $m = [regex]::Match($htmlFallback, $patterns[$key], [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if ($m.Success) {
+                $summaryMap[$key] = [int]$m.Groups[1].Value
+            }
         }
     }
 

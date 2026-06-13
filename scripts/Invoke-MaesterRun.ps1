@@ -375,6 +375,78 @@ function Get-MaesterTestsPath {
     throw "Unable to find installed Maester tenant-facing tests. Checked: $($candidates -join ', ')"
 }
 
+function Set-SecureItReportBranding {
+    param(
+        [Parameter(Mandatory = $true)][string]$HtmlPath
+    )
+
+    if (-not (Test-Path -LiteralPath $HtmlPath)) {
+        return
+    }
+
+    $html = Get-Content -Raw -LiteralPath $HtmlPath -ErrorAction Stop
+
+    $brandCss = @"
+<style id="secureit-branding-overrides">
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: light;
+  }
+  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child,
+  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child a,
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] {
+    background: linear-gradient(135deg, #00635f 0%, #004f4c 24%, #66b3b1 72%, #99cccb 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.18) !important;
+  }
+  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child span,
+  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child a,
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] *,
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] a {
+    color: #ffffff !important;
+  }
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] button {
+    border-color: rgba(255,255,255,0.35) !important;
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] button:hover {
+    background: rgba(255,255,255,0.2) !important;
+  }
+  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] .h-5.w-px {
+    background: rgba(255,255,255,0.35) !important;
+  }
+  img[alt="EDU 365 Cayman Ltd"],
+  img[alt="ICT365 Security Reporting Suite"],
+  img[alt="Organization"] {
+    display: none !important;
+  }
+</style>
+"@
+
+    $replacements = @(
+        @{ Old = '<title>Maester</title>'; New = '<title>SecureIT</title>' },
+        @{ Old = 'Maester Logo (go home)'; New = 'SecureIT Logo (go home)' },
+        @{ Old = 'alt:`Maester`'; New = 'alt:`SecureIT`' },
+        @{ Old = 'children:`Maester`'; New = 'children:`SecureIT`' },
+        @{ Old = 'i?.TenantName||i?.TenantId||`Tenant`'; New = '`ICT365 Security Reporting Suite`' },
+        @{ Old = 'let[t,n]=(0,y.useState)(`system`)'; New = 'let[t,n]=(0,y.useState)(`light`)' },
+        @{ Old = 'let e=localStorage.getItem(`theme`);e&&n(e)'; New = 'let e=localStorage.getItem(`theme`);e?n(e):(n(`light`),localStorage.setItem(`theme`,`light`))' },
+        @{ Old = '</head>'; New = "$brandCss`n</head>" },
+        @{ Old = 'Maester Test Results'; New = 'SecureIT Test Results' },
+        @{ Old = 'Maester'; New = 'SecureIT' }
+    )
+
+    foreach ($replacement in $replacements) {
+        $html = $html.Replace($replacement.Old, $replacement.New)
+    }
+
+    Set-Content -LiteralPath $HtmlPath -Value $html -Encoding UTF8
+}
+
 function Write-MaesterOutputs {
     param(
         [Parameter(Mandatory = $true)][hashtable]$Summary,
@@ -482,6 +554,7 @@ catch {
 $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($htmlCandidate) {
     Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
+    Set-SecureItReportBranding -HtmlPath $htmlReportPath
 }
 
 $testResults = @()

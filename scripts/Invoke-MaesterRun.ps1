@@ -440,10 +440,8 @@ function Set-SecureItReportBranding {
     border-radius: 9999px;
     white-space: nowrap;
   }
-  aside[class*="w-16"] > div:first-child,
-  aside[class*="w-64"] > div:first-child,
-  header[class*="border-gray-200"],
-  header[class*="dark:border-gray-800"] {
+  div.flex.flex-col.overflow-hidden,
+  div.flex.h-16.items-center.justify-between.border-b.border-gray-200.bg-white.px-6.dark\:border-gray-700.dark\:bg-black {
     display: none !important;
   }
 </style>

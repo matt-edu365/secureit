@@ -387,6 +387,63 @@ function Set-SecureItReportBranding {
 
     $html = Get-Content -Raw -LiteralPath $HtmlPath -ErrorAction Stop
 
+    $brandScript = @"
+<script id="secureit-branding-script">
+(function() {
+  function moveControls() {
+    var target = document.getElementById('secureit-banner-controls');
+    if (!target) return;
+
+    var sidebarButton = document.querySelector('button[aria-label="Collapse sidebar"], button[aria-label="Expand sidebar"]');
+    var themeButton = document.querySelector('button[aria-label="Switch to light mode"], button[aria-label="Switch to dark mode"]');
+    var headerRow = sidebarButton ? sidebarButton.closest('div.flex.h-16.items-center.justify-between.border-b.border-gray-200.bg-white.px-6.dark\\:border-gray-700.dark\\:bg-black') : null;
+
+    if (sidebarButton && sidebarButton.parentElement !== target) {
+      sidebarButton.style.borderColor = 'rgba(255,255,255,0.38)';
+      sidebarButton.style.background = 'rgba(255,255,255,0.14)';
+      sidebarButton.style.color = '#ffffff';
+      sidebarButton.style.boxShadow = 'none';
+      target.appendChild(sidebarButton);
+    }
+
+    if (!target.querySelector('.secureit-controls-separator') && sidebarButton && themeButton) {
+      var separator = document.createElement('div');
+      separator.className = 'secureit-controls-separator';
+      target.appendChild(separator);
+    }
+
+    if (themeButton && themeButton.parentElement !== target) {
+      themeButton.style.color = '#ffffff';
+      target.appendChild(themeButton);
+    }
+
+    if (headerRow) {
+      headerRow.style.display = 'none';
+    }
+  }
+
+  function hideLegacyBrandBlock() {
+    document.querySelectorAll('div.flex.flex-col.overflow-hidden').forEach(function(node) {
+      var text = (node.textContent || '').trim();
+      if (text.indexOf('SecureIT') !== -1 || text.indexOf('Maester') !== -1) {
+        node.style.display = 'none';
+      }
+    });
+  }
+
+  function run() {
+    moveControls();
+    hideLegacyBrandBlock();
+  }
+
+  document.addEventListener('DOMContentLoaded', run);
+  window.addEventListener('load', run);
+  var observer = new MutationObserver(function() { run(); });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+"@
+
     $brandCss = @"
 <style id="secureit-branding-overrides">
   :root {
@@ -421,12 +478,17 @@ function Set-SecureItReportBranding {
     align-items: center;
     justify-content: center;
     flex: 1 1 auto;
+    gap: 12px;
   }
-  .secureit-brand-banner__toggle-placeholder {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.88;
+  .secureit-brand-banner__controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .secureit-brand-banner__controls .secureit-controls-separator {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.35);
   }
    .secureit-brand-banner__badge {
   .secureit-brand-banner__badge {
@@ -453,9 +515,7 @@ function Set-SecureItReportBranding {
     <div class="secureit-brand-banner__title">SecureIT</div>
     <div class="secureit-brand-banner__subtitle">ICT365 client security reporting</div>
   </div>
-  <div class="secureit-brand-banner__controls">
-    <div class="secureit-brand-banner__toggle-placeholder">Sidebar controls will be repositioned here</div>
-  </div>
+  <div class="secureit-brand-banner__controls" id="secureit-banner-controls"></div>
   <div class="secureit-brand-banner__badge">Powered by ICT365</div>
 </div>
 "@
@@ -465,7 +525,7 @@ function Set-SecureItReportBranding {
         @{ Old = 'https://maester.dev/img/favicon.ico'; New = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%230f4c81"/%3E%3Cpath d="M18 20h20c7 0 12 4 12 11 0 4-2 8-6 10l8 11H41l-6-8h-7v8H18V20zm10 8v8h9c3 0 5-2 5-4s-2-4-5-4h-9z" fill="%23ffffff"/%3E%3C/svg%3E' },
         @{ Old = '<meta name="description" content="Test results for your Microsoft 365 tenant" />'; New = '<meta name="description" content="SecureIT assessment results for your Microsoft 365 tenant" />' },
         @{ Old = '<body>'; New = "<body>`n$brandBanner" },
-        @{ Old = '</head>'; New = "$brandCss`n</head>" },
+        @{ Old = '</head>'; New = "$brandCss`n$brandScript`n</head>" },
         @{ Old = 'Maester Logo (go home)'; New = 'SecureIT Logo (go home)' },
         @{ Old = 'alt:`Maester`'; New = 'alt:`SecureIT`' },
         @{ Old = 'children:`Maester`'; New = 'children:`SecureIT`' },

@@ -394,31 +394,6 @@ function Set-SecureItReportBranding {
   .dark {
     color-scheme: light;
   }
-  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child,
-  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child a,
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] {
-    background: linear-gradient(135deg, #00635f 0%, #004f4c 24%, #66b3b1 72%, #99cccb 100%) !important;
-    color: #ffffff !important;
-    border-color: rgba(255,255,255,0.18) !important;
-  }
-  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child span,
-  div[class*="border-r border-gray-200 bg-white transition-all duration-300"] > div:first-child a,
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] *,
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] a {
-    color: #ffffff !important;
-  }
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] button {
-    border-color: rgba(255,255,255,0.35) !important;
-    background: rgba(255,255,255,0.12) !important;
-    color: #ffffff !important;
-    box-shadow: none !important;
-  }
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] button:hover {
-    background: rgba(255,255,255,0.2) !important;
-  }
-  div[class*="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6"] .h-5.w-px {
-    background: rgba(255,255,255,0.35) !important;
-  }
   img[alt="EDU 365 Cayman Ltd"],
   img[alt="ICT365 Security Reporting Suite"],
   img[alt="Organization"] {
@@ -429,6 +404,8 @@ function Set-SecureItReportBranding {
 
     $replacements = @(
         @{ Old = '<title>Maester</title>'; New = '<title>SecureIT</title>' },
+        @{ Old = 'https://maester.dev/img/favicon.ico'; New = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%23ffffff"/%3E%3Cpath d="M20 30v-6c0-6.627 5.373-12 12-12s12 5.373 12 12v6" fill="none" stroke="%230f172a" stroke-width="5" stroke-linecap="round"/%3E%3Crect x="14" y="28" width="36" height="24" rx="6" fill="%230f172a"/%3E%3Ccircle cx="32" cy="40" r="4" fill="%23ffffff"/%3E%3Cpath d="M32 40v6" stroke="%23ffffff" stroke-width="3" stroke-linecap="round"/%3E%3C/svg%3E' },
+        @{ Old = 'src:Yo,alt:`Maester`,width:32,height:32,className:`h-8 w-8 shrink-0`'; New = 'src:`data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%23ffffff"/%3E%3Cpath d="M20 30v-6c0-6.627 5.373-12 12-12s12 5.373 12 12v6" fill="none" stroke="%230f172a" stroke-width="5" stroke-linecap="round"/%3E%3Crect x="14" y="28" width="36" height="24" rx="6" fill="%230f172a"/%3E%3Ccircle cx="32" cy="40" r="4" fill="%23ffffff"/%3E%3Cpath d="M32 40v6" stroke="%23ffffff" stroke-width="3" stroke-linecap="round"/%3E%3C/svg%3E`,alt:`SecureIT`,width:32,height:32,className:`h-8 w-8 shrink-0`' },
         @{ Old = 'Maester Logo (go home)'; New = 'SecureIT Logo (go home)' },
         @{ Old = 'alt:`Maester`'; New = 'alt:`SecureIT`' },
         @{ Old = 'children:`Maester`'; New = 'children:`SecureIT`' },

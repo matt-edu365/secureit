@@ -401,9 +401,9 @@ function Set-SecureItReportBranding {
     justify-content: space-between;
     gap: 16px;
     padding: 14px 20px;
-    background: linear-gradient(135deg, #0f4c81 0%, #00a3e0 100%);
+    background: linear-gradient(135deg, #00635f 0%, #004f4c 24%, #66b3b1 72%, #99cccb 100%);
     color: #ffffff;
-    border-bottom: 4px solid #f59e0b;
+    border-bottom: 4px solid rgba(255,255,255,0.22);
     font-family: Arial, Helvetica, sans-serif;
   }
   .secureit-brand-banner__title {
@@ -416,6 +416,19 @@ function Set-SecureItReportBranding {
     opacity: 0.92;
     margin-top: 2px;
   }
+  .secureit-brand-banner__controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+  }
+  .secureit-brand-banner__toggle-placeholder {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    opacity: 0.88;
+  }
+   .secureit-brand-banner__badge {
   .secureit-brand-banner__badge {
     font-size: 12px;
     font-weight: 700;
@@ -427,6 +440,12 @@ function Set-SecureItReportBranding {
     border-radius: 9999px;
     white-space: nowrap;
   }
+  aside[class*="w-16"] > div:first-child,
+  aside[class*="w-64"] > div:first-child,
+  header[class*="border-gray-200"],
+  header[class*="dark:border-gray-800"] {
+    display: none !important;
+  }
 </style>
 "@
 
@@ -434,7 +453,10 @@ function Set-SecureItReportBranding {
 <div class="secureit-brand-banner">
   <div>
     <div class="secureit-brand-banner__title">SecureIT</div>
-    <div class="secureit-brand-banner__subtitle">ICT365 security assessment report for $TenantName</div>
+    <div class="secureit-brand-banner__subtitle">ICT365 client security reporting</div>
+  </div>
+  <div class="secureit-brand-banner__controls">
+    <div class="secureit-brand-banner__toggle-placeholder">Sidebar controls will be repositioned here</div>
   </div>
   <div class="secureit-brand-banner__badge">Powered by ICT365</div>
 </div>

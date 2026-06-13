@@ -46,9 +46,10 @@ on:
       test_profile:
         description: Test profile to run
         required: true
-        default: graph-baseline
+        default: client-secret-baseline
         type: choice
         options:
+          - client-secret-baseline
           - graph-baseline
           - light
           - exchange-online

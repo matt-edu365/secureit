@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','graph-baseline','exchange-online')]
+    [ValidateSet('full','light','graph-baseline','client-secret-baseline','exchange-online')]
     [string]$TestProfile = 'light'
 )
 
@@ -235,47 +235,95 @@ function Get-MaesterSelectedTestsPath {
         )
     }
 
-    $selectedPatterns = $profilePatterns[$Profile]
-    if (-not $selectedPatterns) {
-        throw "Unsupported test profile '$Profile'."
+    if ($Profile -eq 'client-secret-baseline') {
+        $allowList = @(
+            'Test-AppManagementPolicies.Tests.ps1',
+            'Test-AuthenticationMethodBaseline.Tests.ps1',
+            'Test-Groups.Tests.ps1',
+            'Test-MtEntraDeviceRegistrationPolicy.Tests.ps1',
+            'Test-MtSecurityGroupCreationRestricted.Tests.ps1',
+            'Test-MtTenantCreationRestricted.Tests.ps1',
+            'Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1',
+            'Test-MtCisCreateTenantDisallowed.Tests.ps1',
+            'Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1',
+            'Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1',
+            'Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1',
+            'Test-MtCisaAppAdminConsent.Tests.ps1',
+            'Test-MtCisaAppGroupOwnerConsent.Tests.ps1',
+            'Test-MtCisaAppRegistration.Tests.ps1',
+            'Test-MtCisaAppUserConsent.Tests.ps1',
+            'Test-MtCisaAuthenticatorContext.Tests.ps1',
+            'Test-MtCisaBlockHighRiskSignIns.Tests.ps1',
+            'Test-MtCisaBlockHighRiskUsers.Tests.ps1',
+            'Test-MtCisaBlockLegacyAuth.Tests.ps1',
+            'Test-MtCisaCloudGlobalAdmin.Tests.ps1',
+            'Test-MtCisaCrossTenantInboundDefault.Tests.ps1',
+            'Test-MtCisaGlobalAdminCount.Tests.ps1',
+            'Test-MtCisaGlobalAdminRatio.Tests.ps1',
+            'Test-MtCisaGuestInvitation.Tests.ps1',
+            'Test-MtCisaGuestUserAccess.Tests.ps1',
+            'Test-MtCisaMethodsMigration.Tests.ps1',
+            'Test-MtCisaMfa.Tests.ps1',
+            'Test-MtCisaNotifyHighRiskUsers.Tests.ps1',
+            'Test-MtCisaPasswordExpiration.Tests.ps1',
+            'Test-MtCisaPhishResistant.Tests.ps1',
+            'Test-MtCisaPrivilegedPhishResistant.Tests.ps1',
+            'Test-MtCisaWeakFactor.Tests.ps1'
+        )
+
+        $matchedFiles = foreach ($name in $allowList) {
+            $match = $candidateFiles | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
+            if ($match) {
+                $match
+            }
+            else {
+                Write-Warning "Baseline allowlist file not found in installed Maester tests: $name"
+            }
+        }
     }
-
-    $matchedFiles = foreach ($file in $candidateFiles) {
-        $content = $null
-        try {
-            $content = Get-Content -Raw -LiteralPath $file.FullName -ErrorAction Stop
-        }
-        catch {
-            $content = ''
+    else {
+        $selectedPatterns = $profilePatterns[$Profile]
+        if (-not $selectedPatterns) {
+            throw "Unsupported test profile '$Profile'."
         }
 
-        $haystacks = @(
-            $file.FullName,
-            $file.Name,
-            $content
-        ) -join "`n"
-
-        if (-not ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) })) {
-            continue
-        }
-
-        if ($Profile -in @('light','graph-baseline')) {
-            if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
-                continue
+        $matchedFiles = foreach ($file in $candidateFiles) {
+            $content = $null
+            try {
+                $content = Get-Content -Raw -LiteralPath $file.FullName -ErrorAction Stop
             }
-        }
+            catch {
+                $content = ''
+            }
 
-        if ($Profile -eq 'graph-baseline') {
-            if ($baselineExcludedPathPatterns | Where-Object { $file.FullName -match $_ }) {
+            $haystacks = @(
+                $file.FullName,
+                $file.Name,
+                $content
+            ) -join "`n"
+
+            if (-not ($selectedPatterns | Where-Object { $haystacks -match [regex]::Escape($_) })) {
                 continue
             }
 
-            if ($baselineExcludedNamePatterns | Where-Object { $content -match $_ }) {
-                continue
+            if ($Profile -in @('light','graph-baseline')) {
+                if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
+                    continue
+                }
             }
-        }
 
-        $file
+            if ($Profile -eq 'graph-baseline') {
+                if ($baselineExcludedPathPatterns | Where-Object { $file.FullName -match $_ }) {
+                    continue
+                }
+
+                if ($baselineExcludedNamePatterns | Where-Object { $content -match $_ }) {
+                    continue
+                }
+            }
+
+            $file
+        }
     }
 
     $matchedFiles = @($matchedFiles | Sort-Object FullName -Unique)
@@ -419,7 +467,7 @@ $invokeParams = @{
     Path = $selectedTestsPath
     PassThru = $true
 }
-if ($TestProfile -eq 'light') {
+if ($TestProfile -in @('light','graph-baseline','client-secret-baseline')) {
     $invokeParams['ExcludeTag'] = @('Preview')
 }
 try {

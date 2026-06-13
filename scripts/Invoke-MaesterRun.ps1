@@ -375,112 +375,6 @@ function Get-MaesterTestsPath {
     throw "Unable to find installed Maester tenant-facing tests. Checked: $($candidates -join ', ')"
 }
 
-function Set-SecureItReportBranding {
-    param(
-        [Parameter(Mandatory = $true)][string]$HtmlPath,
-        [Parameter(Mandatory = $true)][string]$TenantName
-    )
-
-    if (-not (Test-Path -LiteralPath $HtmlPath)) {
-        return
-    }
-
-    $html = Get-Content -Raw -LiteralPath $HtmlPath -ErrorAction Stop
-
-    $brandCss = @"
-<style id="secureit-branding-overrides">
-  :root {
-    color-scheme: light;
-  }
-  body {
-    background: #f4f7fb !important;
-  }
-  .secureit-brand-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, #00635f 0%, #004f4c 24%, #66b3b1 72%, #99cccb 100%);
-    color: #ffffff;
-    border-bottom: 4px solid rgba(255,255,255,0.22);
-    font-family: Arial, Helvetica, sans-serif;
-  }
-  .secureit-brand-banner__title {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-  .secureit-brand-banner__subtitle {
-    font-size: 13px;
-    opacity: 0.92;
-    margin-top: 2px;
-  }
-  .secureit-brand-banner__controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1 1 auto;
-  }
-  .secureit-brand-banner__toggle-placeholder {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.88;
-  }
-   .secureit-brand-banner__badge {
-  .secureit-brand-banner__badge {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    background: rgba(255,255,255,0.16);
-    border: 1px solid rgba(255,255,255,0.28);
-    padding: 6px 10px;
-    border-radius: 9999px;
-    white-space: nowrap;
-  }
-  div.flex.flex-col.overflow-hidden,
-  div.flex.h-16.items-center.justify-between.border-b.border-gray-200.bg-white.px-6.dark\:border-gray-700.dark\:bg-black {
-    display: none !important;
-  }
-</style>
-"@
-
-    $brandBanner = @"
-<div class="secureit-brand-banner">
-  <div>
-    <div class="secureit-brand-banner__title">SecureIT</div>
-    <div class="secureit-brand-banner__subtitle">ICT365 client security reporting</div>
-  </div>
-  <div class="secureit-brand-banner__controls">
-    <div class="secureit-brand-banner__toggle-placeholder">Sidebar controls will be repositioned here</div>
-  </div>
-  <div class="secureit-brand-banner__badge">Powered by ICT365</div>
-</div>
-"@
-
-    $replacements = @(
-        @{ Old = '<title>Maester</title>'; New = '<title>SecureIT</title>' },
-        @{ Old = 'https://maester.dev/img/favicon.ico'; New = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%230f4c81"/%3E%3Cpath d="M18 20h20c7 0 12 4 12 11 0 4-2 8-6 10l8 11H41l-6-8h-7v8H18V20zm10 8v8h9c3 0 5-2 5-4s-2-4-5-4h-9z" fill="%23ffffff"/%3E%3C/svg%3E' },
-        @{ Old = '<meta name="description" content="Test results for your Microsoft 365 tenant" />'; New = '<meta name="description" content="SecureIT assessment results for your Microsoft 365 tenant" />' },
-        @{ Old = '<body>'; New = "<body>`n$brandBanner" },
-        @{ Old = '</head>'; New = "$brandCss`n</head>" },
-        @{ Old = 'Maester Logo (go home)'; New = 'SecureIT Logo (go home)' },
-        @{ Old = 'alt:`Maester`'; New = 'alt:`SecureIT`' },
-        @{ Old = 'children:`Maester`'; New = 'children:`SecureIT`' },
-        @{ Old = '# Maester Test Results'; New = '# SecureIT Test Results' },
-        @{ Old = 'Maester Test Results'; New = 'SecureIT Test Results' },
-        @{ Old = 'Maester'; New = 'SecureIT' }
-    )
-
-    foreach ($replacement in $replacements) {
-        $html = $html.Replace($replacement.Old, $replacement.New)
-    }
-
-    Set-Content -LiteralPath $HtmlPath -Value $html -Encoding UTF8
-}
-
 function Write-MaesterOutputs {
     param(
         [Parameter(Mandatory = $true)][hashtable]$Summary,
@@ -588,7 +482,6 @@ catch {
 $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($htmlCandidate) {
     Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
-    Set-SecureItReportBranding -HtmlPath $htmlReportPath -TenantName $TenantName
 }
 
 $testResults = @()

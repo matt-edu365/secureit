@@ -47,7 +47,7 @@ These tests are intentionally not part of the onboarding baseline because they r
   - `MT.1048`
   - Excluded because they require a Teams connection and are not part of Graph-only onboarding.
 - **Azure-connected checks**
-  - `MT.1050`
+  - `CISA.MS.AAD.4.1`
   - `MT.1100`
   - Excluded because they require an Azure connection beyond the current Graph-first auth path.
 - **AI agent security family**
@@ -62,6 +62,11 @@ These tests are intentionally not part of the onboarding baseline because they r
   - `MT.1121`
   - `MT.1122`
   - Excluded because they were not reliable in tenant validation and are outside the current standard onboarding target.
+- **Exchange Online dependent CIS checks**
+  - `CIS.M365.2.1.2`
+  - `CIS.M365.3.1.1`
+  - `Test-MtCisAttachmentFilterComprehensive.Tests.ps1` helper gate
+  - Excluded because they require an Exchange Online connection and otherwise produce guaranteed `Not connected to Exchange Online` skips under Graph-only onboarding.
 - **Deprecated or unstable setting checks**
   - `CISA.MS.AAD.5.4`
     - Excluded because the referenced setting is no longer available for some tenants and produced a skip due to API or platform drift.

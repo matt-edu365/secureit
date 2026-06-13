@@ -150,7 +150,11 @@ function Get-MaesterSelectedTestsPath {
         '[\\/]Maester[\\/]AzureDevOps[\\/]',
         '[\\/]Maester[\\/]Teams[\\/]',
         '[\\/]Maester[\\/]AIAgent[\\/]',
-        '[\\/]Maester[\\/]Azure[\\/]'
+        '[\\/]Maester[\\/]Azure[\\/]',
+        '[\\/]cis[\\/]Test-MtCisAttachmentFilterComprehensive\.Tests\.ps1$',
+        '[\\/]cis[\\/]Test-MtCisAttachmentFilter\.Tests\.ps1$',
+        '[\\/]cis[\\/]Test-MtCisAuditLogSearch\.Tests\.ps1$',
+        '[\\/]cisa[\\/]entra[\\/]Test-MtCisaDiagnosticSettings\.Tests\.ps1$'
     )
 
     $baselineExcludedNamePatterns = @(

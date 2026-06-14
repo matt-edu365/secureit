@@ -1,11 +1,9 @@
 <?php
-require __DIR__ . '/_theme.php';
+require __DIR__ . '/lib.php';
 
-$configPath = __DIR__ . '/admin-config.json';
-$examplePath = __DIR__ . '/admin-config.example.json';
+$configPath = __DIR__ . '/../data/admin-config.json';
 $messages = [];
 $errors = [];
-$example = file_exists($examplePath) ? json_decode(file_get_contents($examplePath), true) : [];
 $config = file_exists($configPath) ? json_decode(file_get_contents($configPath), true) : [];
 $config = is_array($config) ? $config : [];
 
@@ -21,13 +19,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'defaultReplyTo' => trim($_POST['default_reply_to'] ?? ''),
         ],
         'reports' => [
-            'baseSiteUrl' => trim($_POST['base_site_url'] ?? 'https://example.ict365.uk'),
+            'baseSiteUrl' => trim($_POST['base_site_url'] ?? secureit_config()['base_url']),
         ],
     ];
 
+    $dir = dirname($configPath);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0775, true);
+    }
     file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     $messages[] = 'Admin settings saved successfully.';
 }
+
+$example = [
+    'azure' => [
+        'keyVaultName' => 'secureit',
+        'keyVaultUri' => 'https://secureit.vault.azure.net/',
+        'certificateStorageMode' => 'key-vault',
+    ],
+    'notifications' => [
+        'defaultFromName' => 'ICT365 SecureIT Reporting',
+        'defaultReplyTo' => 'security@example.com',
+    ],
+    'reports' => [
+        'baseSiteUrl' => secureit_config()['base_url'],
+    ],
+];
 
 ob_start();
 ?>
@@ -36,7 +53,7 @@ ob_start();
     <div class="section-header" style="margin-bottom:18px;">
       <div>
         <h2 class="section-title">Shared platform settings</h2>
-        <div class="muted">Manage the SecureIT platform values used across tenants in this prototype environment.</div>
+        <div class="muted">Manage the SecureIT platform values used across tenants in this container-oriented environment.</div>
       </div>
     </div>
 
@@ -80,7 +97,7 @@ ob_start();
       <h3 class="section-title">Reporting defaults</h3>
 
       <label for="base_site_url">Base site URL</label>
-      <input id="base_site_url" name="base_site_url" placeholder="https://example.ict365.uk" value="<?php echo htmlspecialchars($config['reports']['baseSiteUrl'] ?? 'https://example.ict365.uk'); ?>">
+      <input id="base_site_url" name="base_site_url" placeholder="https://example.ict365.uk" value="<?php echo htmlspecialchars($config['reports']['baseSiteUrl'] ?? secureit_config()['base_url']); ?>">
       <p class="field-note">Used when tenant report URLs need to be derived from the common platform address.</p>
 
       <button type="submit">Save admin settings</button>
@@ -103,19 +120,33 @@ ob_start();
 </section>
 <?php
 $content = ob_get_clean();
-secureit_render_layout(
-    'Admin Actions - SecureIT',
-    'Admin Actions',
-    'Manage shared platform defaults for Key Vault, notifications, and reporting in the ICT365 SecureIT prototype.',
-    $content,
-    [
-        'eyebrow' => 'SecureIT platform administration',
-        'backHref' => 'dashboard.php',
-        'backLabel' => 'Back to admin dashboard',
-        'heroBadges' => [
-            'Shared Key Vault: ' . ($config['azure']['keyVaultName'] ?? 'Not set'),
-            'Base site URL: ' . ($config['reports']['baseSiteUrl'] ?? 'https://example.ict365.uk'),
-        ],
-        'navLinks' => [],
-    ]
-);
+secureit_render_shell('Admin Actions - SecureIT', $content, [
+    'pageTitle' => 'Admin Actions',
+    'pageIntro' => 'Manage shared platform defaults for Key Vault, notifications, and reporting in the ICT365 SecureIT container app.',
+    'eyebrow' => 'SecureIT platform administration',
+    'backHref' => 'dashboard.php',
+    'backLabel' => 'Back to admin dashboard',
+    'heroBadges' => [
+        'Shared Key Vault: ' . ($config['azure']['keyVaultName'] ?? 'Not set'),
+        'Base site URL: ' . ($config['reports']['baseSiteUrl'] ?? secureit_config()['base_url']),
+    ],
+    'navLinks' => [],
+    'headerMenu' => [
+        ['href' => 'admin.php', 'label' => 'Admin actions'],
+        ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
+    ],
+    'footerLinks' => [
+        ['href' => 'login.php', 'label' => 'SecureIT Login'],
+        ['href' => 'portal.php', 'label' => 'Customer portal'],
+    ],
+    'footerSecondaryLinks' => [
+        ['href' => 'dashboard.php', 'label' => 'Admin dashboard'],
+        ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
+        ['href' => 'admin.php', 'label' => 'Admin actions'],
+    ],
+    'footerContact' => [
+        ['href' => 'mailto:Sales@ict365.ky', 'label' => 'Sales@ict365.ky'],
+        ['href' => 'tel:+13457450365', 'label' => '+1 (345) 745-0365'],
+        ['href' => 'https://ict365.ky', 'label' => 'https://ict365.ky'],
+    ],
+]);

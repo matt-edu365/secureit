@@ -10,7 +10,38 @@ if (!$tenant) {
     exit;
 }
 
+$config = secureit_load_tenants();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_recipients'])) {
+    $emailsRaw = trim($_POST['email_to'] ?? '');
+    $parts = preg_split('/[\r\n,;]+/', $emailsRaw) ?: [];
+    $emails = [];
+    foreach ($parts as $part) {
+        $email = trim($part);
+        if ($email === '') {
+            continue;
+        }
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $emails[] = strtolower($email);
+        }
+    }
+    $emails = array_values(array_unique($emails));
+    if (count($emails) > 5) {
+        $emails = array_slice($emails, 0, 5);
+    }
+
+    foreach ($config['tenants'] as &$item) {
+        if (($item['id'] ?? '') === $tenantKey) {
+            $item['emailTo'] = implode(', ', $emails);
+            $tenant = $item;
+            break;
+        }
+    }
+    unset($item);
+    secureit_save_tenants($config);
+}
+
 $summary = secureit_tenant_summary($tenantKey);
+$counts = secureit_summary_counts($summary);
 $historyRoot = secureit_reports_root() . '/' . $tenantKey . '/history';
 $history = [];
 if (is_dir($historyRoot)) {
@@ -28,69 +59,195 @@ if (is_dir($historyRoot)) {
         return strcmp($b['summary']['generatedAt'] ?? '', $a['summary']['generatedAt'] ?? '');
     });
 }
+
+ob_start();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?php echo htmlspecialchars($tenant['name']); ?> - <?php echo htmlspecialchars($app['app_name']); ?></title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .muted { color: #6b7280; }
-    .button, .textlink { color: #0b5fff; text-decoration: none; }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <p><a class="textlink" href="index.php">← Back to dashboard</a></p>
-  <div class="card">
-    <h1><?php echo htmlspecialchars($tenant['name']); ?></h1>
-    <p class="muted">Tenant key: <?php echo htmlspecialchars($tenant['id']); ?></p>
-    <p class="muted">Tenant ID: <?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></p>
-    <p class="muted">Client ID: <?php echo htmlspecialchars($tenant['clientId'] ?? 'Unknown'); ?></p>
-    <p class="muted">Report Base URL: <?php echo htmlspecialchars($tenant['reportBaseUrl'] ?? 'Unknown'); ?></p>
+<section class="section split">
+  <article class="card panel">
+    <div class="section-header" style="margin-bottom:18px;">
+      <div>
+        <h2 class="section-title">Tenant details</h2>
+        <div class="muted"></div>
+      </div>
+    </div>
+    <div class="kv">
+      <div class="kv-row"><div class="kv-label">Tenant name</div><div class="kv-value"><?php echo htmlspecialchars($tenant['name']); ?></div></div>
+      <div class="kv-row"><div class="kv-label">Tenant ID</div><div class="kv-value"><?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div></div>
+      <div class="kv-row"><div class="kv-label">Auth mode</div><div class="kv-value"><?php echo htmlspecialchars($tenant['authMode'] ?? 'Unknown'); ?></div></div>
+      <div class="kv-row">
+        <div class="kv-label">Report recipient</div>
+        <div class="kv-value">
+          <form method="post" style="display:grid; gap:10px;">
+            <input id="email_to" name="email_to" type="text" value="<?php echo htmlspecialchars($tenant['emailTo'] ?? ''); ?>" placeholder="security@example.com, it@example.com">
+            <p class="field-note" style="margin:0;">You can enter up to 5 email addresses, separated by commas, semicolons, or new lines.</p>
+            <div><button type="submit" name="save_recipients" value="1">Save recipients</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="card panel">
+    <div class="section-header" style="margin-bottom:18px;">
+      <div>
+        <h2 class="section-title">Latest posture</h2>
+        <div class="muted">A quick operational snapshot from the latest published run.</div>
+      </div>
+    </div>
+
     <?php if ($summary): ?>
-      <p><strong>Latest result:</strong> <?php echo htmlspecialchars((string)($summary['failed'] ?? 0)); ?> failed of <?php echo htmlspecialchars((string)($summary['total'] ?? 0)); ?></p>
-      <p><a class="button" href="<?php echo htmlspecialchars($tenantKey); ?>/latest/index.html">Open latest report</a></p>
+      <div class="stats-row" style="margin-bottom:14px;">
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['total']); ?></strong><span>Total</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['passed']); ?></strong><span>Passed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['skipped']); ?></strong><span>Skipped</span></div>
+      </div>
+      <div class="muted" style="margin-bottom:8px;">Pass rate</div>
+      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>
+      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) $counts['passRate']); ?>% passed, latest generated <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
+      <div class="inline-links"><a class="textlink" href="<?php echo htmlspecialchars($tenantKey); ?>/latest/index.html">Open latest report</a></div>
     <?php else: ?>
-      <p class="muted">No published report yet for this tenant.</p>
+      <div class="empty-state" style="box-shadow:none;">
+        <strong>No published report yet.</strong>
+        <p class="muted">Once SecureIT publishes a latest summary for this tenant, the posture snapshot will appear here.</p>
+      </div>
     <?php endif; ?>
+  </article>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Functional area coverage</h2>
+      <div class="muted"></div>
+    </div>
+  </div>
+  <div class="feature-grid">
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 82%</span></div>
+      <h3>Identity &amp; Access Management</h3>
+      <p>User identities, authentication, access policies, admin roles, guest access, security groups, and sign-in controls.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 86%</span></div>
+      <h3>Email &amp; Calendaring</h3>
+      <p>Mailboxes, shared mailboxes, distribution lists, calendars, mail flow, anti-spam, anti-malware, retention, and email archiving.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 74%</span></div>
+      <h3>Collaboration &amp; Communication</h3>
+      <p>Chat, meetings, calling, webinars, channels, team collaboration, internal communities, and real-time communication.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 88%</span></div>
+      <h3>Files, Intranet &amp; Content Management</h3>
+      <p>Document libraries, intranet sites, file sharing, version control, metadata, document automation, records, and structured business lists.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 71%</span></div>
+      <h3>Endpoint &amp; Device Management</h3>
+      <p>Device enrolment, compliance policies, app deployment, patching, mobile device management, security baselines, and BYOD controls.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-bad">Needs attention</span><span class="badge tone-neutral">Score placeholder: 63%</span></div>
+      <h3>Security Operations &amp; Threat Protection</h3>
+      <p>Threat protection across email, endpoints, identities, cloud apps, phishing, malware, incidents, alerts, investigation, and response.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 84%</span></div>
+      <h3>Compliance, Governance &amp; Data Protection</h3>
+      <p>Sensitivity labels, data loss prevention, retention policies, legal hold, audit logs, compliance reporting, data governance, and risk management.</p>
+    </article>
+    <article class="card feature-card">
+      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 76%</span></div>
+      <h3>Productivity, Automation &amp; AI</h3>
+      <p>Day-to-day productivity, task management, forms, reporting, low-code apps, workflow automation, analytics, and AI-assisted work.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Run history</h2>
+      <div class="muted">Historical published reports for trend review and quick drill-down.</div>
+    </div>
+    <div class="muted"><?php echo htmlspecialchars((string) count($history)); ?> historical run<?php echo count($history) === 1 ? '' : 's'; ?></div>
   </div>
 
-  <div class="card">
-    <h2>Run history</h2>
+  <article class="card panel">
     <?php if (!$history): ?>
-      <p class="muted">No historical reports found.</p>
+      <div class="empty-state" style="box-shadow:none;">
+        <strong>No historical reports found.</strong>
+        <p class="muted">Run history will appear here as SecureIT publishes archived summaries.</p>
+      </div>
     <?php else: ?>
-      <table>
-        <thead>
-          <tr>
-            <th>Generated</th>
-            <th>Total</th>
-            <th>Passed</th>
-            <th>Failed</th>
-            <th>Skipped</th>
-            <th>Report</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($history as $item): ?>
-            <?php $s = $item['summary'] ?? []; ?>
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <td><?php echo htmlspecialchars($s['generatedAt'] ?? 'Unknown'); ?></td>
-              <td><?php echo htmlspecialchars((string)($s['total'] ?? 0)); ?></td>
-              <td><?php echo htmlspecialchars((string)($s['passed'] ?? 0)); ?></td>
-              <td><?php echo htmlspecialchars((string)($s['failed'] ?? 0)); ?></td>
-              <td><?php echo htmlspecialchars((string)($s['skipped'] ?? 0)); ?></td>
-              <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open</a></td>
+              <th>Generated</th>
+              <th>Total</th>
+              <th>Passed</th>
+              <th>Failed</th>
+              <th>Skipped</th>
+              <th>Status</th>
+              <th>Report</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($history as $item): ?>
+              <?php
+                $s = $item['summary'] ?? [];
+                $rowCounts = secureit_summary_counts($s);
+                $rowToneClass = 'tone-' . strtolower($rowCounts['riskTone']);
+              ?>
+              <tr>
+                <td><?php echo htmlspecialchars(secureit_format_datetime($s['generatedAt'] ?? null)); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['total']); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['passed']); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['failed']); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['skipped']); ?></td>
+                <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowCounts['riskLevel']); ?></span></td>
+                <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     <?php endif; ?>
-  </div>
-</body>
-</html>
+  </article>
+</section>
+<?php
+$content = ob_get_clean();
+$heroActions = [];
+if ($summary) {
+    $heroActions[] = ['href' => $tenantKey . '/latest/index.html', 'label' => 'Open latest report'];
+}
+secureit_render_shell(($tenant['name'] ?? $tenantKey) . ' - ' . $app['app_name'], $content, [
+    'pageTitle' => $tenant['name'] ?? $tenantKey,
+    'pageIntro' => 'Customer SecureIT tenant view with posture summary, functional coverage areas, and published report history.',
+    'backHref' => 'portal.php',
+    'backLabel' => 'Back to customer portal',
+    'eyebrow' => '',
+    'heroActions' => $heroActions,
+    'navLinks' => [],
+    'headerMenu' => [
+        ['href' => 'dashboard.php', 'label' => 'ICT365 admin dashboard'],
+        ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
+    ],
+    'footerLinks' => [
+        ['href' => 'login.php', 'label' => 'SecureIT Login'],
+        ['href' => 'portal.php', 'label' => 'Customer portal'],
+    ],
+    'footerSecondaryLinks' => [
+        ['href' => 'dashboard.php', 'label' => 'Employee portal'],
+        ['href' => 'tenant.php?tenant=' . rawurlencode($tenantKey), 'label' => 'Current tenant'],
+        ['href' => 'admin.php', 'label' => 'Admin'],
+    ],
+    'footerContact' => [
+        ['href' => 'mailto:Sales@ict365.ky', 'label' => 'Sales@ict365.ky'],
+        ['href' => 'tel:+13457450365', 'label' => '+1 (345) 745-0365'],
+        ['href' => 'https://ict365.ky', 'label' => 'https://ict365.ky'],
+    ],
+]);

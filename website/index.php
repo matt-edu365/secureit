@@ -1,91 +1,160 @@
 <?php
-$tenantsPath = __DIR__ . '/../config/tenants.json';
+require __DIR__ . '/_theme.php';
+
+$tenantsPath = __DIR__ . '/tenants.json';
 $tenants = [];
 if (file_exists($tenantsPath)) {
     $config = json_decode(file_get_contents($tenantsPath), true);
     $tenants = $config['tenants'] ?? [];
 }
+$tenantCount = count($tenants);
 
-function tenant_summary(string $tenantId): ?array {
-    $path = __DIR__ . '/' . $tenantId . '/latest/summary.json';
-    if (!file_exists($path)) {
-        return null;
-    }
-    $data = json_decode(file_get_contents($path), true);
-    return is_array($data) ? $data : null;
-}
+ob_start();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maester Multi-Tenant Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
-    h1, h2 { margin-bottom: 0.4rem; }
-    .muted { color: #6b7280; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
-    .button { display: inline-block; padding: 0.75rem 1rem; background: #0b5fff; color: white; text-decoration: none; border-radius: 8px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-    .stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
-    .stat { background: #f3f4f6; border-radius: 8px; padding: 0.65rem 0.85rem; min-width: 88px; }
-    .empty { padding: 1rem; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; }
-    .linkrow { margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    a.textlink { color: #0b5fff; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="topbar">
-    <div>
-      <h1>SecureIT Dashboard</h1>
-      <div class="muted">Prototype multi-tenant Microsoft 365 security reporting</div>
-    </div>
-    <div>
-      <a class="button" href="onboard.php">Onboard tenant</a>
+<section class="metrics-strip">
+  <div class="container">
+    <div class="metrics-grid">
+      <div class="metric-stat">
+        <div class="metric-value">34</div>
+        <div class="metric-label">number of total checks</div>
+      </div>
+      <div class="metric-stat">
+        <div class="metric-value">8</div>
+        <div class="metric-label">number of functional areas covered</div>
+      </div>
+      <div class="metric-stat">
+        <div class="metric-value" style="font-size:1.5rem; line-height:1.2;">What If</div>
+        <div class="metric-label">testing, simulate sign-in scenarios to verify which policies apply</div>
+      </div>
+      <div class="metric-stat">
+        <div class="metric-value" style="font-size:1.5rem; line-height:1.2;">Flexible reporting</div>
+        <div class="metric-label">SecureIT can generate formatted results in CSV, Excel, HTML, JSON, and Markdown</div>
+      </div>
     </div>
   </div>
+</section>
 
-  <?php if (!$tenants): ?>
-    <div class="empty">
-      <strong>No tenants configured yet.</strong>
-      <p class="muted">Use the onboarding flow to add your first tenant.</p>
+<section class="section" id="overview">
+  <div class="container">
+    <div class="section-heading">
+      <div class="section-kicker">Continuous Microsoft 365 Security Visibility</div>
+      <h2 class="section-title">Continuous Microsoft 365 security posture monitoring</h2>
+      <p class="section-intro">Your Microsoft 365 environment is central to the way your organisation operates. SecureIT by ICT365 gives you clear, ongoing visibility of your Microsoft 365 security configuration through automated checks, regular reporting, and an easy-to-use customer portal.</p>
     </div>
-  <?php else: ?>
-    <div class="grid">
-      <?php foreach ($tenants as $tenant): ?>
-        <?php
-          $tenantKey = $tenant['id'] ?? 'unknown';
-          $summary = tenant_summary($tenantKey);
-        ?>
-        <div class="card">
-          <h2><?php echo htmlspecialchars($tenant['name'] ?? $tenantKey); ?></h2>
-          <div class="muted">Tenant key: <?php echo htmlspecialchars($tenantKey); ?></div>
-          <div class="muted">Tenant ID: <?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div>
-          <div class="muted">Report Base URL: <?php echo htmlspecialchars($tenant['reportBaseUrl'] ?? 'Unknown'); ?></div>
 
-          <?php if ($summary): ?>
-            <div class="stats">
-              <div class="stat"><strong>Total</strong><br><?php echo htmlspecialchars((string)($summary['total'] ?? 0)); ?></div>
-              <div class="stat"><strong>Passed</strong><br><?php echo htmlspecialchars((string)($summary['passed'] ?? 0)); ?></div>
-              <div class="stat"><strong>Failed</strong><br><?php echo htmlspecialchars((string)($summary['failed'] ?? 0)); ?></div>
-              <div class="stat"><strong>Skipped</strong><br><?php echo htmlspecialchars((string)($summary['skipped'] ?? 0)); ?></div>
-            </div>
-            <div class="linkrow">
-              <a class="textlink" href="tenant.php?tenant=<?php echo rawurlencode($tenantKey); ?>">View tenant</a>
-              <a class="textlink" href="<?php echo htmlspecialchars($tenantKey); ?>/latest/index.html">Latest report</a>
-            </div>
-            <p class="muted">Last generated: <?php echo htmlspecialchars($summary['generatedAt'] ?? 'Unknown'); ?></p>
-          <?php else: ?>
-            <p class="muted">No report published yet for this tenant.</p>
-            <div class="linkrow">
-              <a class="textlink" href="tenant.php?tenant=<?php echo rawurlencode($tenantKey); ?>">View tenant</a>
-            </div>
-          <?php endif; ?>
+    <div class="feature-grid">
+      <article class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Know where you stand</h3>
+        <p>SecureIT continuously reviews key areas of your Microsoft 365 environment against recognised security best practices, helping you understand where your tenant is performing well and where improvements are recommended.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Track security over time</h3>
+        <p>Rather than waiting for an audit, incident, or manual review, SecureIT gives your organisation regular visibility of posture changes so you can identify drift and track progress with confidence.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon">📬</div>
+        <h3>Clear reporting for real-world decisions</h3>
+        <p>Automated email reports and an accessible customer portal help IT stakeholders, managers, and decision-makers stay informed without needing to dig through complex admin portals.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why-ict365">
+  <div class="container">
+    <div class="section-heading">
+      <div class="section-kicker">Why SecureIT?</div>
+      <h2 class="section-title">Turn Microsoft 365 security complexity into clear action</h2>
+      <p class="section-intro">Microsoft 365 contains a wide range of powerful security controls, but keeping track of them can be challenging. SecureIT simplifies that challenge by automatically reviewing your tenant and presenting the results in a clear, structured way.</p>
+    </div>
+
+    <div class="split">
+      <article class="panel">
+        <h3 style="font-size:1.35rem; margin-bottom:14px; color:var(--eden);">Built for organisations using Microsoft 365</h3>
+        <p class="muted" style="margin-bottom:18px;">SecureIT is ideal for organisations that want better visibility of their Microsoft 365 security configuration without adding unnecessary complexity. It supports regular IT reviews, compliance discussions, cyber insurance preparation, governance conversations, and continuous improvement.</p>
+        <div class="empty-state">
+          <strong>Confidence through consistency</strong>
+          <p class="muted" style="margin:8px 0 0;">Manual reviews are useful, but easy to miss. SecureIT helps bring consistency to Microsoft 365 security monitoring by running checks regularly and highlighting potential weaknesses before they become bigger issues.</p>
         </div>
-      <?php endforeach; ?>
+      </article>
+
+      <article class="panel">
+        <h3 style="font-size:1.35rem; margin-bottom:14px; color:var(--eden);">What SecureIT helps you do</h3>
+        <div class="feature-grid" style="grid-template-columns:1fr; gap:18px;">
+          <article>
+            <h3 style="margin-bottom:6px; font-size:1.02rem;">Monitor security posture regularly</h3>
+            <p class="muted" style="margin-bottom:0;">Review Microsoft 365 security configuration on a regular basis and gain confidence that your environment is being assessed consistently.</p>
+          </article>
+          <article>
+            <h3 style="margin-bottom:6px; font-size:1.02rem;">Understand findings in plain language</h3>
+            <p class="muted" style="margin-bottom:0;">See your current posture, key findings, and recommended areas for improvement in a way that makes sense to both technical and non-technical stakeholders.</p>
+          </article>
+          <article>
+            <h3 style="margin-bottom:6px; font-size:1.02rem;">Support governance and risk conversations</h3>
+            <p class="muted" style="margin-bottom:0;">Use SecureIT to support compliance reviews, internal governance discussions, cyber insurance preparation, and ongoing security improvement planning.</p>
+          </article>
+        </div>
+      </article>
     </div>
-  <?php endif; ?>
-</body>
-</html>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-heading">
+      <div class="section-kicker">Your security portal</div>
+      <h2 class="section-title">Automated reports, clear insight, practical visibility</h2>
+      <p class="section-intro">Each subscribing customer receives access to their own SecureIT portal, where they can review current posture, track results over time, and trigger manual report runs whenever an up-to-date view is needed.</p>
+    </div>
+    <div class="partner-grid">
+      <article class="partner-card">
+        <h3>Current posture visibility</h3>
+        <p>See where your Microsoft 365 environment is performing well and where security could be strengthened.</p>
+      </article>
+      <article class="partner-card">
+        <h3>Automated reporting</h3>
+        <p>Deliver regular security posture reports directly to your chosen contacts so key stakeholders stay informed.</p>
+      </article>
+      <article class="partner-card">
+        <h3>Manual report runs</h3>
+        <p>Trigger a report whenever needed to support board meetings, reviews, audits, or live security conversations.</p>
+      </article>
+      <article class="partner-card">
+        <h3>Managed by ICT365</h3>
+        <p>SecureIT combines automation, best practice, practical reporting, and expert support from ICT365.</p>
+      </article>
+    </div>
+  </div>
+</section>
+<?php
+$content = ob_get_clean();
+secureit_render_layout(
+    'SecureIT | ICT365',
+    'SecureIT by ICT365: Continuous and clear M365 security monitoring.',
+    "ICT365 are pleased to present 'SecureIT' - your security portal for M365.",
+    $content,
+    [
+        'eyebrow' => '',
+        'heroBadges' => [],
+        'heroActions' => [],
+        'navLinks' => [],
+        'navCta' => ['href' => 'login.php', 'label' => 'SecureIT Login'],
+        'footerLinks' => [
+            ['href' => '#overview', 'label' => 'Overview'],
+            ['href' => '#why-ict365', 'label' => 'Why SecureIT'],
+            ['href' => 'login.php', 'label' => 'SecureIT Login'],
+        ],
+        'footerContact' => [
+            ['href' => 'mailto:Sales@ict365.ky', 'label' => 'Sales@ict365.ky'],
+            ['href' => 'tel:+13457450365', 'label' => '+1 (345) 745-0365'],
+            ['href' => 'https://ict365.ky', 'label' => 'https://ict365.ky'],
+        ],
+        'footerSecondaryLinks' => [
+            ['href' => 'dashboard.php', 'label' => 'Employee portal'],
+            ['href' => 'portal.php', 'label' => 'Customer portal'],
+            ['href' => 'admin.php', 'label' => 'Admin'],
+        ],
+    ]
+);

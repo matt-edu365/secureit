@@ -139,19 +139,102 @@ function secureit_pattern_matches_test_id(string $pattern, string $testId): bool
     return false;
 }
 
-function secureit_extract_test_ids_from_embedded_summary(?array $embedded): array {
+function secureit_extract_tests_from_embedded_summary(?array $embedded): array {
     if (!$embedded) {
         return [];
     }
 
-    $ids = [];
-    foreach (($embedded['TestSettings'] ?? []) as $setting) {
-        $id = trim((string) ($setting['Id'] ?? ''));
-        if ($id !== '') {
-            $ids[] = $id;
+    $tests = [];
+    foreach (($embedded['Tests'] ?? []) as $test) {
+        $id = trim((string) ($test['Id'] ?? ''));
+        if ($id === '') {
+            continue;
         }
+
+        $tests[] = [
+            'id' => $id,
+            'result' => strtolower(trim((string) ($test['Result'] ?? 'unknown'))),
+            'title' => trim((string) ($test['Title'] ?? '')),
+            'severity' => trim((string) ($test['Severity'] ?? '')),
+            'tags' => is_array($test['Tag'] ?? null) ? $test['Tag'] : [],
+        ];
+    }
+
+    return $tests;
+}
+
+function secureit_extract_test_ids_from_embedded_summary(?array $embedded): array {
+    $ids = [];
+    foreach (secureit_extract_tests_from_embedded_summary($embedded) as $test) {
+        $ids[] = $test['id'];
     }
     return array_values(array_unique($ids));
+}
+
+function secureit_is_pass_result(string $result): bool {
+    return in_array($result, ['pass', 'passed'], true);
+}
+
+function secureit_is_fail_result(string $result): bool {
+    return in_array($result, ['fail', 'failed', 'error'], true);
+}
+
+function secureit_is_neutral_result(string $result): bool {
+    return in_array($result, ['skipped', 'notrun', 'not run', 'investigate', 'unknown'], true);
+}
+
+function secureit_evaluate_control_status(array $matchedTests, string $passLogic): string {
+    if (!$matchedTests) {
+        return 'unmapped';
+    }
+
+    $passCount = 0;
+    $failCount = 0;
+    $neutralCount = 0;
+
+    foreach ($matchedTests as $test) {
+        $result = $test['result'] ?? 'unknown';
+        if (secureit_is_pass_result($result)) {
+            $passCount++;
+        } elseif (secureit_is_fail_result($result)) {
+            $failCount++;
+        } else {
+            $neutralCount++;
+        }
+    }
+
+    switch ($passLogic) {
+        case 'any-pass-no-fail-review':
+            if ($failCount > 0) {
+                return $passCount > 0 ? 'partial' : 'fail';
+            }
+            return $passCount > 0 ? 'pass' : 'partial';
+
+        case 'majority-pass':
+            if ($passCount === 0 && $failCount === 0) {
+                return 'partial';
+            }
+            if ($failCount === 0 && $passCount > 0) {
+                return 'pass';
+            }
+            if ($passCount > 0) {
+                return 'partial';
+            }
+            return 'fail';
+
+        case 'direct':
+        default:
+            if ($passCount > 0 && $failCount === 0) {
+                return 'pass';
+            }
+            if ($passCount > 0) {
+                return 'partial';
+            }
+            if ($failCount > 0) {
+                return 'fail';
+            }
+            return 'partial';
+    }
 }
 
 function secureit_resolve_canonical_area_scores(string $tenantKey): array {
@@ -161,16 +244,23 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
 
     $functionalAreas = $mapping['functionalAreas'] ?? [];
     $controls = $mapping['controls'] ?? [];
-    $availableIds = secureit_extract_test_ids_from_embedded_summary($embedded);
-    $availableLookup = array_fill_keys(array_map('secureit_normalise_mapping_id', $availableIds), true);
+    $tests = secureit_extract_tests_from_embedded_summary($embedded);
+    $availableIds = array_values(array_unique(array_map(static fn(array $test): string => $test['id'], $tests)));
+
+    $testsById = [];
+    foreach ($tests as $test) {
+        $testsById[secureit_normalise_mapping_id($test['id'])][] = $test;
+    }
 
     $groupResults = [];
-    foreach (($embedded['Groups'] ?? []) as $group) {
+    foreach (($embedded['Blocks'] ?? []) as $group) {
         $name = (string) ($group['Name'] ?? '');
         $groupResults[$name] = [
             'result' => (string) ($group['Result'] ?? ''),
             'failed' => (int) ($group['FailedCount'] ?? 0),
             'passed' => (int) ($group['PassedCount'] ?? 0),
+            'error' => (int) ($group['ErrorCount'] ?? 0),
+            'investigate' => (int) ($group['InvestigateCount'] ?? 0),
             'skipped' => (int) ($group['SkippedCount'] ?? 0),
             'notRun' => (int) ($group['NotRunCount'] ?? 0),
             'total' => (int) ($group['TotalCount'] ?? 0),
@@ -200,28 +290,29 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             continue;
         }
 
-        $matchedIds = [];
+        $matchedTests = [];
         foreach (($control['frameworkMappings'] ?? []) as $pattern) {
             foreach ($availableIds as $availableId) {
-                if (secureit_pattern_matches_test_id((string) $pattern, $availableId)) {
-                    $matchedIds[] = $availableId;
+                if (!secureit_pattern_matches_test_id((string) $pattern, $availableId)) {
+                    continue;
+                }
+                $lookupId = secureit_normalise_mapping_id($availableId);
+                foreach (($testsById[$lookupId] ?? []) as $test) {
+                    $matchedTests[] = $test;
                 }
             }
         }
+
+        $matchedIds = [];
+        foreach ($matchedTests as $test) {
+            $matchedIds[] = $test['id'];
+        }
         $matchedIds = array_values(array_unique($matchedIds));
 
-        $status = 'unknown';
-        if (!$matchedIds) {
-            $status = 'unmapped';
-        } else {
-            $frameworkCount = count($control['frameworkMappings'] ?? []);
-            $matchedCount = count($matchedIds);
-            if ($frameworkCount > 0 && $matchedCount >= $frameworkCount) {
-                $status = 'pass';
-            } elseif ($matchedCount > 0) {
-                $status = 'partial';
-            }
-        }
+        $status = secureit_evaluate_control_status(
+            $matchedTests,
+            (string) (($control['scoring']['passLogic'] ?? 'direct'))
+        );
 
         $areas[$area]['controlsTotal']++;
         if ($status === 'pass') {
@@ -241,6 +332,7 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             'status' => $status,
             'frameworkMappings' => $control['frameworkMappings'] ?? [],
             'matchedIds' => $matchedIds,
+            'matchedTests' => $matchedTests,
             'weight' => (int) (($control['scoring']['weight'] ?? 1)),
         ];
     }
@@ -253,8 +345,19 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             continue;
         }
 
-        $earned = ($area['controlsPassing'] * 1.0) + ($area['controlsPartial'] * 0.5);
-        $score = (int) round(($earned / max(1, $area['controlsTotal'])) * 100);
+        $weightedEarned = 0.0;
+        $weightedTotal = 0.0;
+        foreach ($area['controls'] as $control) {
+            $weight = max(1, (int) ($control['weight'] ?? 1));
+            $weightedTotal += $weight;
+            if (($control['status'] ?? '') === 'pass') {
+                $weightedEarned += $weight;
+            } elseif (($control['status'] ?? '') === 'partial') {
+                $weightedEarned += ($weight * 0.5);
+            }
+        }
+
+        $score = $weightedTotal > 0 ? (int) round(($weightedEarned / $weightedTotal) * 100) : null;
         $area['score'] = $score;
 
         if ($score >= 85) {

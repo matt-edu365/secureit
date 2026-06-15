@@ -150,6 +150,7 @@ Tracked example files should be used as templates.
 
 Available tracked templates:
 - `config/tenants.example.json`
+- `config/canonical-controls.example.json`
 - `data/tenants.example.json`
 - `deploy/config.tenants.example.json`
 - `deploy/maester/tenants.example.json`
@@ -162,6 +163,25 @@ Expected local/runtime files include:
 
 Those runtime files are ignored so real tenant metadata, report locations, and environment-specific settings do not get committed by accident.
 
+## Canonical control mapping and functional-area scoring
+
+SecureIT should not treat every Maester framework check as a separate customer-facing control.
+
+The intended model is:
+- keep raw Maester outputs intact for traceability
+- map duplicate or near-duplicate framework checks into one canonical SecureIT control
+- map each canonical control into one of the 8 SecureIT functional areas
+- score customer-facing posture from canonical controls, not raw duplicated framework checks
+
+Tracked example mapping file:
+- `config/canonical-controls.example.json`
+
+This file is intended to:
+- collapse duplicate checks like `CISA.MS.AAD.6.1` and `CIS.M365.1.3.1` into one control
+- provide friendly control titles and descriptions
+- assign a SecureIT functional area
+- define basic scoring weight and pass logic
+
 ## Next sensible steps
 
 - Add canonical `*.example.json` files for each tenant registry location
@@ -169,3 +189,4 @@ Those runtime files are ignored so real tenant metadata, report locations, and e
 - Wire GitHub Actions to publish generated reports into the deploy structure
 - Replace prototype wording in the PHP UI once the real flow is settled
 - Tighten onboarding so it writes only to the intended runtime location
+- Extend canonical control mappings so all desired Class A test families map cleanly into customer-facing scoring

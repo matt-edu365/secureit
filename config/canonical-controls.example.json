@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "description": "Canonical SecureIT control mapping for Maester-derived checks. Use this to collapse duplicate framework checks into one customer-facing control and to map controls into SecureIT functional areas.",
+  "functionalAreas": [
+    "Identity & Access Management",
+    "Email & Calendaring",
+    "Collaboration & Communication",
+    "Files, Intranet & Content Management",
+    "Endpoint & Device Management",
+    "Security Operations & Threat Protection",
+    "Compliance, Governance & Data Protection",
+    "Productivity, Automation & AI"
+  ],
+  "controls": [
+    {
+      "id": "IDENTITY_PASSWORD_EXPIRY_DISABLED",
+      "title": "User passwords do not expire",
+      "functionalArea": "Identity & Access Management",
+      "description": "Tenant password expiry policy is configured so user passwords do not expire.",
+      "frameworkMappings": [
+        "CISA.MS.AAD.6.1",
+        "CIS.M365.1.3.1"
+      ],
+      "duplicatePolicy": "collapse",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "any-pass-no-fail-review",
+        "notes": "Treat overlapping policy-framework checks as a single SecureIT control to avoid double counting."
+      }
+    },
+    {
+      "id": "IDENTITY_GLOBAL_ADMIN_COUNT",
+      "title": "Global administrator count is controlled",
+      "functionalArea": "Identity & Access Management",
+      "description": "The number of Global Administrators stays within recommended bounds.",
+      "frameworkMappings": [
+        "CIS.M365.1.1.3",
+        "CISA.MS.AAD.7.1",
+        "CISA.MS.AAD.7.2"
+      ],
+      "duplicatePolicy": "collapse",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass",
+        "notes": "Different frameworks express count and ratio variants of the same privileged access hygiene theme."
+      }
+    },
+    {
+      "id": "IDENTITY_BLOCK_LEGACY_AUTH",
+      "title": "Legacy authentication is blocked",
+      "functionalArea": "Identity & Access Management",
+      "description": "Legacy authentication protocols are blocked or restricted in line with modern identity security guidance.",
+      "frameworkMappings": [
+        "CISA.MS.AAD.1.1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "IDENTITY_HIGH_RISK_USER_PROTECTION",
+      "title": "High-risk users and sign-ins are protected",
+      "functionalArea": "Identity & Access Management",
+      "description": "High-risk users and sign-ins are blocked or challenged appropriately.",
+      "frameworkMappings": [
+        "CISA.MS.AAD.2.1",
+        "CISA.MS.AAD.2.2",
+        "CISA.MS.AAD.2.3"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "IDENTITY_PHISH_RESISTANT_MFA",
+      "title": "Phish-resistant MFA is enforced for key users",
+      "functionalArea": "Identity & Access Management",
+      "description": "Phish-resistant MFA is available and enforced appropriately, especially for privileged users.",
+      "frameworkMappings": [
+        "CISA.MS.AAD.3.1",
+        "CISA.MS.AAD.3.2",
+        "CISA.MS.AAD.3.3",
+        "CISA.MS.AAD.3.4",
+        "CISA.MS.AAD.3.5",
+        "CISA.MS.AAD.3.6",
+        "MT.1067"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "IDENTITY_CONDITIONAL_ACCESS_BASELINE",
+      "title": "Conditional Access baseline is in place",
+      "functionalArea": "Identity & Access Management",
+      "description": "Key Conditional Access controls are configured for device compliance, modern authentication, and privileged protections.",
+      "frameworkMappings": [
+        "MT.1001",
+        "MT.1003",
+        "MT.1004",
+        "MT.1005",
+        "MT.1006",
+        "MT.1007",
+        "MT.1008",
+        "MT.1009"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "IDENTITY_APP_CONSENT_RESTRICTIONS",
+      "title": "Application consent and registration are controlled",
+      "functionalArea": "Identity & Access Management",
+      "description": "App registrations, consent workflows, and risky application permissions are restricted appropriately.",
+      "frameworkMappings": [
+        "MT.1002",
+        "MT.1050",
+        "MT.1051",
+        "MT.1057",
+        "MT.1058",
+        "MT.1063",
+        "CIS.M365.5.1.5.1",
+        "CIS.M365.5.1.5.2",
+        "CIS.M365.8.4.1",
+        "CISA.MS.AAD.5.1",
+        "CISA.MS.AAD.5.2",
+        "CISA.MS.AAD.5.3",
+        "CISA.MS.AAD.5.4"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "IDENTITY_PRIVILEGED_ACCESS_GOVERNANCE",
+      "title": "Privileged access is tightly governed",
+      "functionalArea": "Identity & Access Management",
+      "description": "Privileged roles are limited, monitored, approval-based, and time-bound where appropriate.",
+      "frameworkMappings": [
+        "MT.1025",
+        "MT.1026",
+        "MT.1027",
+        "MT.1028",
+        "MT.1029",
+        "MT.1030",
+        "MT.1031",
+        "MT.1032",
+        "CISA.MS.AAD.7.3",
+        "CISA.MS.AAD.7.4",
+        "CISA.MS.AAD.7.5",
+        "CISA.MS.AAD.7.6",
+        "CISA.MS.AAD.7.7",
+        "CISA.MS.AAD.7.8",
+        "CISA.MS.AAD.7.9"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "IDENTITY_GUEST_AND_CROSS_TENANT_CONTROLS",
+      "title": "Guest and cross-tenant access is restricted",
+      "functionalArea": "Identity & Access Management",
+      "description": "Guest access, invitations, and cross-tenant defaults are configured safely.",
+      "frameworkMappings": [
+        "CIS.M365.5.1.6.2",
+        "CISA.MS.AAD.8.1",
+        "CISA.MS.AAD.8.2",
+        "CISA.MS.AAD.8.3"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 2,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "FILES_SHAREPOINT_SHARING_CONTROLS",
+      "title": "SharePoint and file sharing controls are restricted",
+      "functionalArea": "Files, Intranet & Content Management",
+      "description": "SharePoint sharing defaults, guest settings, and risky download behaviours are constrained appropriately.",
+      "frameworkMappings": [
+        "CIS.M365.5.1.3.1",
+        "CIS.M365.7.2.2",
+        "CIS.M365.7.2.5",
+        "CIS.M365.7.2.7",
+        "CIS.M365.7.2.9",
+        "CIS.M365.7.2.11",
+        "CIS.M365.7.3.1",
+        "CISA.MS.SHAREPOINT.1.1",
+        "CISA.MS.SHAREPOINT.1.3"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "ENDPOINT_INTUNE_BASELINE",
+      "title": "Endpoint management baseline is in place",
+      "functionalArea": "Endpoint & Device Management",
+      "description": "Intune and managed device settings show an acceptable security baseline.",
+      "frameworkMappings": [
+        "CIS.M365.4.1",
+        "CISA.MS.AAD.3.7",
+        "CISA.MS.AAD.3.8",
+        "MT.1053",
+        "MT.1054",
+        "MT.1092",
+        "MT.1093",
+        "MT.1094",
+        "MT.1095",
+        "MT.1096",
+        "MT.1097",
+        "MT.1098",
+        "MT.1099",
+        "MT.1100",
+        "MT.1101",
+        "MT.1102",
+        "MT.1103"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "SECOPS_DEFENDER_POSTURE",
+      "title": "Defender and exposure posture is healthy",
+      "functionalArea": "Security Operations & Threat Protection",
+      "description": "Exposure management and Microsoft Defender related controls meet SecureIT expectations.",
+      "frameworkMappings": [
+        "MT.1059.*",
+        "MT.1085",
+        "MT.1086",
+        "MT.1087",
+        "MT.1088",
+        "MT.1089",
+        "MT.1077",
+        "MT.1078",
+        "MT.1079",
+        "MT.1080",
+        "MT.1081",
+        "MT.1111",
+        "MT.1112",
+        "MT.1148",
+        "MT.1149",
+        "MT.1150",
+        "MT.1151",
+        "MT.1152",
+        "MT.1153",
+        "MT.1154",
+        "MT.1155"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 3,
+        "passLogic": "majority-pass"
+      }
+    },
+    {
+      "id": "COMPLIANCE_CORE_TENANT_GOVERNANCE",
+      "title": "Core tenant governance settings are compliant",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "description": "Core governance and tenant-level data protection settings align with SecureIT expectations.",
+      "frameworkMappings": [
+        "CIS.M365.1.2.1",
+        "CIS.M365.1.3.5",
+        "CIS.M365.1.3.6",
+        "CIS.M365.1.3.7"
+      ],
+      "duplicatePolicy": "group-related",
+      "scoring": {
+        "weight": 2,
+        "passLogic": "majority-pass"
+      }
+    }
+  ],
+  "unmappedPolicy": {
+    "defaultDuplicatePolicy": "single",
+    "defaultScoringWeight": 1,
+    "notes": "Unmapped test IDs should remain visible in raw artifacts and be added to this file over time before they influence customer-facing weighted scores."
+  }
+}

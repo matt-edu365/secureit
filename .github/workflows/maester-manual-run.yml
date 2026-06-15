@@ -50,6 +50,7 @@ on:
         type: choice
         options:
           - client-secret-baseline
+          - client-secret-full
           - graph-baseline
           - light
           - exchange-online

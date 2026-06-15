@@ -16,10 +16,28 @@ It is intended to provide:
 This repository is the early project scaffold.
 
 Manual Maester runs currently support these test profiles:
+- `client-secret-baseline` , the current conservative client-secret profile, kept intentionally small and stable for predictable onboarding runs
+- `client-secret-full` , an expanded client-secret profile built from the Class A inventory, intended to include as many likely Graph app-only runnable tests as possible without intentionally pulling in Exchange Online, Teams, Azure, Azure DevOps, or Dataverse dependent families
 - `graph-baseline` , the recommended standard onboarding baseline, focused on reliable Graph-first Entra, identity, compliance, configuration, SharePoint, and Intune-adjacent checks without requiring Exchange Online, Teams, Azure, or Azure DevOps connections
 - `light` , a smaller Graph-first baseline for faster validation runs
 - `exchange-online` , an advanced Exchange Online focused profile for EXO and Defender for Office style checks, which requires additional Exchange app auth and RBAC setup
 - `full` , the full installed Maester test inventory
+
+## Client-secret full policy
+
+`client-secret-full` is the broadest SecureIT profile intended to run under the current client-secret Graph app-only path.
+
+It is allowlist-driven from the June 2026 Class A inventory and aims to pull in as many likely Graph-runnable test files as practical while deliberately excluding known non-Graph families such as:
+- Exchange Online and ORCA
+- Teams-connected checks
+- Azure-connected checks
+- Azure DevOps checks
+- Dataverse or AI-agent connected checks
+
+Important caveat:
+- this profile is based on a file-level compatibility inventory, not a guarantee that every individual assertion inside every selected file will pass or avoid skips
+- some selected tests may still skip because of tenant licensing, preview API behaviour, missing workloads, or deeper helper dependencies not obvious from static inspection
+- this profile is therefore intentionally broader but potentially noisier than `client-secret-baseline`
 
 ## Graph baseline policy
 

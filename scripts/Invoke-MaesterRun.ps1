@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','graph-baseline','client-secret-baseline','exchange-online')]
+    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online')]
     [string]$TestProfile = 'light'
 )
 
@@ -235,41 +235,134 @@ function Get-MaesterSelectedTestsPath {
         )
     }
 
-    if ($Profile -eq 'client-secret-baseline') {
-        $allowList = @(
-            'Test-AppManagementPolicies.Tests.ps1',
-            'Test-AuthenticationMethodBaseline.Tests.ps1',
-            'Test-Groups.Tests.ps1',
-            'Test-MtEntraDeviceRegistrationPolicy.Tests.ps1',
-            'Test-MtSecurityGroupCreationRestricted.Tests.ps1',
-            'Test-MtTenantCreationRestricted.Tests.ps1',
-            'Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1',
-            'Test-MtCisCreateTenantDisallowed.Tests.ps1',
-            'Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1',
-            'Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1',
-            'Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1',
-            'Test-MtCisaAppAdminConsent.Tests.ps1',
-            'Test-MtCisaAppGroupOwnerConsent.Tests.ps1',
-            'Test-MtCisaAppRegistration.Tests.ps1',
-            'Test-MtCisaAppUserConsent.Tests.ps1',
-            'Test-MtCisaAuthenticatorContext.Tests.ps1',
-            'Test-MtCisaBlockHighRiskSignIns.Tests.ps1',
-            'Test-MtCisaBlockHighRiskUsers.Tests.ps1',
-            'Test-MtCisaBlockLegacyAuth.Tests.ps1',
-            'Test-MtCisaCloudGlobalAdmin.Tests.ps1',
-            'Test-MtCisaCrossTenantInboundDefault.Tests.ps1',
-            'Test-MtCisaGlobalAdminCount.Tests.ps1',
-            'Test-MtCisaGlobalAdminRatio.Tests.ps1',
-            'Test-MtCisaGuestInvitation.Tests.ps1',
-            'Test-MtCisaGuestUserAccess.Tests.ps1',
-            'Test-MtCisaMethodsMigration.Tests.ps1',
-            'Test-MtCisaMfa.Tests.ps1',
-            'Test-MtCisaNotifyHighRiskUsers.Tests.ps1',
-            'Test-MtCisaPasswordExpiration.Tests.ps1',
-            'Test-MtCisaPhishResistant.Tests.ps1',
-            'Test-MtCisaPrivilegedPhishResistant.Tests.ps1',
-            'Test-MtCisaWeakFactor.Tests.ps1'
-        )
+    if ($Profile -in @('client-secret-baseline','client-secret-full')) {
+        $allowLists = @{
+            'client-secret-baseline' = @(
+                'Test-AppManagementPolicies.Tests.ps1',
+                'Test-AuthenticationMethodBaseline.Tests.ps1',
+                'Test-Groups.Tests.ps1',
+                'Test-MtEntraDeviceRegistrationPolicy.Tests.ps1',
+                'Test-MtSecurityGroupCreationRestricted.Tests.ps1',
+                'Test-MtTenantCreationRestricted.Tests.ps1',
+                'Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1',
+                'Test-MtCisCreateTenantDisallowed.Tests.ps1',
+                'Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1',
+                'Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1',
+                'Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1',
+                'Test-MtCisaAppAdminConsent.Tests.ps1',
+                'Test-MtCisaAppGroupOwnerConsent.Tests.ps1',
+                'Test-MtCisaAppRegistration.Tests.ps1',
+                'Test-MtCisaAppUserConsent.Tests.ps1',
+                'Test-MtCisaAuthenticatorContext.Tests.ps1',
+                'Test-MtCisaBlockHighRiskSignIns.Tests.ps1',
+                'Test-MtCisaBlockHighRiskUsers.Tests.ps1',
+                'Test-MtCisaBlockLegacyAuth.Tests.ps1',
+                'Test-MtCisaCloudGlobalAdmin.Tests.ps1',
+                'Test-MtCisaCrossTenantInboundDefault.Tests.ps1',
+                'Test-MtCisaGlobalAdminCount.Tests.ps1',
+                'Test-MtCisaGlobalAdminRatio.Tests.ps1',
+                'Test-MtCisaGuestInvitation.Tests.ps1',
+                'Test-MtCisaGuestUserAccess.Tests.ps1',
+                'Test-MtCisaMethodsMigration.Tests.ps1',
+                'Test-MtCisaMfa.Tests.ps1',
+                'Test-MtCisaNotifyHighRiskUsers.Tests.ps1',
+                'Test-MtCisaPasswordExpiration.Tests.ps1',
+                'Test-MtCisaPhishResistant.Tests.ps1',
+                'Test-MtCisaPrivilegedPhishResistant.Tests.ps1',
+                'Test-MtCisaWeakFactor.Tests.ps1'
+            )
+            'client-secret-full' = @(
+                'Test-EIDSCA.Generated.Tests.ps1',
+                'Test-MtMdeAntivirusPolicy.Tests.ps1',
+                'Test-MtMdiHealthIssues.Tests.ps1',
+                'Test-AppManagementPolicies.Tests.ps1',
+                'Test-AppRegistrations.Tests.ps1',
+                'Test-AuthenticationMethodBaseline.Tests.ps1',
+                'Test-ConditionalAccessBaseline.Tests.ps1',
+                'Test-ConditionalAccessWhatIf.Tests.ps1',
+                'Test-EntraRecommendations.Tests.ps1',
+                'Test-Groups.Tests.ps1',
+                'Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1',
+                'Test-MtEntitlementManagementDeletedGroups.Tests.ps1',
+                'Test-MtEntitlementManagementInactivePolicies.Tests.ps1',
+                'Test-MtEntitlementManagementOrphanedResources.Tests.ps1',
+                'Test-MtEntitlementManagementValidApprovers.Tests.ps1',
+                'Test-MtEntitlementManagementValidResourceRoles.Tests.ps1',
+                'Test-MtEntraDeviceRegistrationPolicy.Tests.ps1',
+                'Test-MtEntraIDConnect.Tests.ps1',
+                'Test-MtHighRiskAppPermissions.Tests.ps1',
+                'Test-MtOnPremisesSynchronization.Tests.ps1',
+                'Test-MtSecurityGroupCreationRestricted.Tests.ps1',
+                'Test-MtTenantCreationRestricted.Tests.ps1',
+                'Test-PrivilegedAssignments.Tests.ps1',
+                'Test-MtIntuneConnectorHealth.Tests.ps1',
+                'Test-MtIntunePlatform.Tests.ps1',
+                'Test-XspmCriticalAssetManagement.Tests.ps1',
+                'Test-XspmDevices.Tests.ps1',
+                'Test-XspmPrivilegedIdentities.Tests.ps1',
+                'Test-MtCis365PublicGroup.Tests.ps1',
+                'Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1',
+                'Test-MtCisCloudAdmin.Tests.ps1',
+                'Test-MtCisCreateTenantDisallowed.Tests.ps1',
+                'Test-MtCisCustomerLockBox.Tests.ps1',
+                'Test-MtCisDevicesWithoutCompliancePolicyMarked.Tests.ps1',
+                'Test-MtCisEnsureGuestAccessRestricted.Tests.ps1',
+                'Test-MtCisEnsureGuestUserDynamicGroup.Tests.ps1',
+                'Test-MtCisEnsureUserConsentToAppsDisallowed.Tests.ps1',
+                'Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1',
+                'Test-MtCisGlobalAdminCount.Tests.ps1',
+                'Test-MtCisPasswordExpiry.Tests.ps1',
+                'Test-MtCisSpoB2BIntegration.Tests.ps1',
+                'Test-MtCisSpoDefaultSharingLink.Tests.ps1',
+                'Test-MtCisSpoDefaultSharingLinkPermission.Tests.ps1',
+                'Test-MtCisSpoGuestAccessExpiry.Tests.ps1',
+                'Test-MtCisSpoGuestCannotShareUnownedItem.Tests.ps1',
+                'Test-MtCisSpoPreventDownloadMaliciousFile.Tests.ps1',
+                'Test-MtCisThirdPartyAndCustomApps.Tests.ps1',
+                'Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1',
+                'Test-MtCisThirdPartyStorageServicesRestricted.Tests.ps1',
+                'Test-MtCisUserOwnedAppsRestricted.Tests.ps1',
+                'Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1',
+                'Test-MtCisaActivationNotificationGlobalAdmin.Tests.ps1',
+                'Test-MtCisaActivationNotificationOther.Tests.ps1',
+                'Test-MtCisaAppAdminConsent.Tests.ps1',
+                'Test-MtCisaAppGroupOwnerConsent.Tests.ps1',
+                'Test-MtCisaAppRegistration.Tests.ps1',
+                'Test-MtCisaAppUserConsent.Tests.ps1',
+                'Test-MtCisaAssignmentNotification.Tests.ps1',
+                'Test-MtCisaAuthenticatorContext.Tests.ps1',
+                'Test-MtCisaBlockHighRiskSignIns.Tests.ps1',
+                'Test-MtCisaBlockHighRiskUsers.Tests.ps1',
+                'Test-MtCisaBlockLegacyAuth.Tests.ps1',
+                'Test-MtCisaCloudGlobalAdmin.Tests.ps1',
+                'Test-MtCisaCrossTenantInboundDefault.Tests.ps1',
+                'Test-MtCisaDiagnosticSettings.Tests.ps1',
+                'Test-MtCisaGlobalAdminCount.Tests.ps1',
+                'Test-MtCisaGlobalAdminRatio.Tests.ps1',
+                'Test-MtCisaGuestInvitation.Tests.ps1',
+                'Test-MtCisaGuestUserAccess.Tests.ps1',
+                'Test-MtCisaManagedDevice.Tests.ps1',
+                'Test-MtCisaManagedDeviceRegistration.Tests.ps1',
+                'Test-MtCisaMethodsMigration.Tests.ps1',
+                'Test-MtCisaMfa.Tests.ps1',
+                'Test-MtCisaNotifyHighRiskUsers.Tests.ps1',
+                'Test-MtCisaPasswordExpiration.Tests.ps1',
+                'Test-MtCisaPermanentRoleAssignment.Tests.ps1',
+                'Test-MtCisaPhishResistant.Tests.ps1',
+                'Test-MtCisaPrivilegedPhishResistant.Tests.ps1',
+                'Test-MtCisaRequireActivationApproval.Tests.ps1',
+                'Test-MtCisaUnmanagedRoleAssignments.Tests.ps1',
+                'Test-MtCisaWeakFactor.Tests.ps1',
+                'Test-MtCisaSpoSharing.Tests.ps1',
+                'Test-MtCisaSpoSharingAllowedDomain.Tests.ps1'
+            )
+        }
+
+        $allowList = $allowLists[$Profile]
+        $missingMessages = @{
+            'client-secret-baseline' = 'Baseline allowlist file not found in installed Maester tests'
+            'client-secret-full' = 'Client-secret full allowlist file not found in installed Maester tests'
+        }
 
         $matchedFiles = foreach ($name in $allowList) {
             $match = $candidateFiles | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
@@ -277,7 +370,7 @@ function Get-MaesterSelectedTestsPath {
                 $match
             }
             else {
-                Write-Warning "Baseline allowlist file not found in installed Maester tests: $name"
+                Write-Warning "$($missingMessages[$Profile]): $name"
             }
         }
     }
@@ -516,7 +609,7 @@ $invokeParams = @{
     Path = $selectedTestsPath
     PassThru = $true
 }
-if ($TestProfile -in @('light','graph-baseline','client-secret-baseline')) {
+if ($TestProfile -in @('light','graph-baseline','client-secret-baseline','client-secret-full')) {
     $invokeParams['ExcludeTag'] = @('Preview')
 }
 try {

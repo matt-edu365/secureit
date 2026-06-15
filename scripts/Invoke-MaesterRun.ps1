@@ -622,9 +622,22 @@ catch {
 
 
 $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$embeddedSummaryPath = Join-Path $historyDir 'embedded-summary.json'
 if ($htmlCandidate) {
     Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
     Set-SecureItReportBranding -HtmlPath $htmlReportPath
+
+    try {
+        $htmlContent = Get-Content -Raw -LiteralPath $htmlCandidate.FullName -ErrorAction Stop
+        $wsMatch = [regex]::Match($htmlContent, 'var\s+ws\s*=\s*(\{.*?\})\s*;', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        if ($wsMatch.Success) {
+            $embeddedSummary = $wsMatch.Groups[1].Value | ConvertFrom-Json -ErrorAction Stop
+            $embeddedSummary | ConvertTo-Json -Depth 50 | Set-Content -Path $embeddedSummaryPath -Encoding UTF8
+        }
+    }
+    catch {
+        Write-Warning ("Failed to persist embedded HTML summary JSON: " + $_.Exception.Message)
+    }
 }
 
 $testResults = @()
@@ -702,9 +715,13 @@ if (-not $testResults) {
         passed = $summaryMap['passed']
         failed = $summaryMap['failed']
         skipped = $summaryMap['skipped']
+        error = $summaryMap['error']
+        investigate = $summaryMap['investigate']
+        notRun = $summaryMap['not run']
         changed = 0
         critical = 0
         reportUrl = $reportUrl
+        embeddedSummaryPath = 'embedded-summary.json'
         notes = @('Fallback summary extracted from generated HTML report because structured Maester results were unavailable.')
     }
 

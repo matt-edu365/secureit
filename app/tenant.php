@@ -136,13 +136,14 @@ ob_start();
         <article class="card feature-card">
           <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge <?php echo htmlspecialchars($toneClass); ?>"><?php echo htmlspecialchars($area['status'] ?? 'No data'); ?></span><span class="badge tone-neutral"><?php echo ($area['score'] !== null) ? 'Score: ' . htmlspecialchars((string) $area['score']) . '%' : 'Score unavailable'; ?></span></div>
           <h3><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
-          <p class="muted" style="margin-bottom:10px;">Controls passed: <?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?>, partial: <?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?>, unmapped: <?php echo htmlspecialchars((string) ($area['controlsUnmapped'] ?? 0)); ?>, total mapped: <?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?>.</p>
+          <p class="muted" style="margin-bottom:10px;">Passing controls: <?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?>, partially met: <?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?>, not yet covered by current mapping: <?php echo htmlspecialchars((string) ($area['controlsUnmapped'] ?? 0)); ?>, total controls assessed: <?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?>.</p>
           <?php if (!empty($area['controls'])): ?>
+            <div class="muted" style="font-size:0.92rem; margin-bottom:8px;">Sample control evidence from the latest assessment:</div>
             <div class="kv" style="gap:8px;">
               <?php foreach (array_slice($area['controls'], 0, 3) as $control): ?>
                 <div class="kv-row" style="grid-template-columns: 1fr; padding-bottom:8px;">
                   <div class="kv-value"><strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Control'); ?></strong></div>
-                  <div class="muted" style="font-size:0.92rem;"><?php echo htmlspecialchars(ucfirst($control['status'] ?? 'unknown')); ?>, evidence: <?php echo htmlspecialchars(implode(', ', $control['matchedIds'] ?? [])); ?></div>
+                  <div class="muted" style="font-size:0.92rem;"><?php echo htmlspecialchars(ucfirst($control['status'] ?? 'unknown')); ?>, matched checks: <?php echo htmlspecialchars(implode(', ', $control['matchedIds'] ?? [])); ?></div>
                 </div>
               <?php endforeach; ?>
             </div>

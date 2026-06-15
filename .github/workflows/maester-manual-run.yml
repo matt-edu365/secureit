@@ -242,12 +242,28 @@ jobs:
           ftp.quit()
           PY
 
+      - name: Prepare app import bundle
+        if: always()
+        shell: bash
+        env:
+          TENANT_KEY: ${{ env.TENANT_KEY }}
+        run: |
+          set -euo pipefail
+          if [ ! -d "output/${TENANT_KEY}" ]; then
+            echo "No tenant output directory found for ${TENANT_KEY}, skipping app import bundle preparation."
+            exit 0
+          fi
+          mkdir -p "app-import/${TENANT_KEY}"
+          rsync -a --delete "output/${TENANT_KEY}/" "app-import/${TENANT_KEY}/"
+
       - name: Upload workflow artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maester-report-${{ github.event.inputs.tenant_key }}-${{ github.run_number }}
-          path: output/${{ github.event.inputs.tenant_key }}/
+          path: |
+            output/${{ github.event.inputs.tenant_key }}/
+            app-import/${{ github.event.inputs.tenant_key }}/
 
       - name: Workflow summary
         if: always()

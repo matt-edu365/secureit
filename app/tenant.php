@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_recipients'])) {
 
 $summary = secureit_tenant_summary($tenantKey);
 $counts = secureit_summary_counts($summary);
+$areaData = secureit_resolve_canonical_area_scores($tenantKey);
+$functionalAreas = $areaData['areas'] ?? [];
 $historyRoot = secureit_reports_root() . '/' . $tenantKey . '/history';
 $history = [];
 if (is_dir($historyRoot)) {
@@ -123,46 +125,31 @@ ob_start();
     </div>
   </div>
   <div class="feature-grid">
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 82%</span></div>
-      <h3>Identity &amp; Access Management</h3>
-      <p>User identities, authentication, access policies, admin roles, guest access, security groups, and sign-in controls.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 86%</span></div>
-      <h3>Email &amp; Calendaring</h3>
-      <p>Mailboxes, shared mailboxes, distribution lists, calendars, mail flow, anti-spam, anti-malware, retention, and email archiving.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 74%</span></div>
-      <h3>Collaboration &amp; Communication</h3>
-      <p>Chat, meetings, calling, webinars, channels, team collaboration, internal communities, and real-time communication.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 88%</span></div>
-      <h3>Files, Intranet &amp; Content Management</h3>
-      <p>Document libraries, intranet sites, file sharing, version control, metadata, document automation, records, and structured business lists.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 71%</span></div>
-      <h3>Endpoint &amp; Device Management</h3>
-      <p>Device enrolment, compliance policies, app deployment, patching, mobile device management, security baselines, and BYOD controls.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-bad">Needs attention</span><span class="badge tone-neutral">Score placeholder: 63%</span></div>
-      <h3>Security Operations &amp; Threat Protection</h3>
-      <p>Threat protection across email, endpoints, identities, cloud apps, phishing, malware, incidents, alerts, investigation, and response.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-good">Healthy</span><span class="badge tone-neutral">Score placeholder: 84%</span></div>
-      <h3>Compliance, Governance &amp; Data Protection</h3>
-      <p>Sensitivity labels, data loss prevention, retention policies, legal hold, audit logs, compliance reporting, data governance, and risk management.</p>
-    </article>
-    <article class="card feature-card">
-      <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge tone-warn">Watch</span><span class="badge tone-neutral">Score placeholder: 76%</span></div>
-      <h3>Productivity, Automation &amp; AI</h3>
-      <p>Day-to-day productivity, task management, forms, reporting, low-code apps, workflow automation, analytics, and AI-assisted work.</p>
-    </article>
+    <?php if (!$functionalAreas): ?>
+      <article class="card feature-card">
+        <h3>No functional area data yet</h3>
+        <p>Run a tenant assessment with embedded summary persistence to populate canonical SecureIT controls and area scoring.</p>
+      </article>
+    <?php else: ?>
+      <?php foreach ($functionalAreas as $area): ?>
+        <?php $toneClass = 'tone-' . ($area['tone'] ?? 'neutral'); ?>
+        <article class="card feature-card">
+          <div class="inline-links" style="justify-content:space-between; margin-bottom:8px;"><span class="badge <?php echo htmlspecialchars($toneClass); ?>"><?php echo htmlspecialchars($area['status'] ?? 'No data'); ?></span><span class="badge tone-neutral"><?php echo ($area['score'] !== null) ? 'Score: ' . htmlspecialchars((string) $area['score']) . '%' : 'Score unavailable'; ?></span></div>
+          <h3><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
+          <p class="muted" style="margin-bottom:10px;">Controls passed: <?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?>, partial: <?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?>, unmapped: <?php echo htmlspecialchars((string) ($area['controlsUnmapped'] ?? 0)); ?>, total mapped: <?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?>.</p>
+          <?php if (!empty($area['controls'])): ?>
+            <div class="kv" style="gap:8px;">
+              <?php foreach (array_slice($area['controls'], 0, 3) as $control): ?>
+                <div class="kv-row" style="grid-template-columns: 1fr; padding-bottom:8px;">
+                  <div class="kv-value"><strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Control'); ?></strong></div>
+                  <div class="muted" style="font-size:0.92rem;"><?php echo htmlspecialchars(ucfirst($control['status'] ?? 'unknown')); ?>, evidence: <?php echo htmlspecialchars(implode(', ', $control['matchedIds'] ?? [])); ?></div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </article>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 </section>
 

@@ -73,6 +73,212 @@ function secureit_find_tenant(string $tenantKey): ?array {
     return null;
 }
 
+function secureit_load_canonical_controls(): array {
+    $config = secureit_config();
+    $paths = [
+        $config['canonical_controls_file'] ?? '',
+        $config['canonical_controls_example_file'] ?? '',
+    ];
+
+    foreach ($paths as $path) {
+        if (!$path || !file_exists($path)) {
+            continue;
+        }
+        $data = json_decode(file_get_contents($path), true);
+        if (is_array($data)) {
+            return $data;
+        }
+    }
+
+    return [
+        'functionalAreas' => [
+            'Identity & Access Management',
+            'Email & Calendaring',
+            'Collaboration & Communication',
+            'Files, Intranet & Content Management',
+            'Endpoint & Device Management',
+            'Security Operations & Threat Protection',
+            'Compliance, Governance & Data Protection',
+            'Productivity, Automation & AI',
+        ],
+        'controls' => [],
+        'unmappedPolicy' => [
+            'defaultDuplicatePolicy' => 'single',
+            'defaultScoringWeight' => 1,
+        ],
+    ];
+}
+
+function secureit_tenant_embedded_summary(string $tenantKey): ?array {
+    $path = secureit_reports_root() . '/' . $tenantKey . '/latest/embedded-summary.json';
+    if (!file_exists($path)) {
+        return null;
+    }
+    $data = json_decode(file_get_contents($path), true);
+    return is_array($data) ? $data : null;
+}
+
+function secureit_normalise_mapping_id(string $value): string {
+    return strtoupper(trim($value));
+}
+
+function secureit_pattern_matches_test_id(string $pattern, string $testId): bool {
+    $pattern = secureit_normalise_mapping_id($pattern);
+    $testId = secureit_normalise_mapping_id($testId);
+
+    if ($pattern === $testId) {
+        return true;
+    }
+
+    if (str_contains($pattern, '*')) {
+        $quoted = preg_quote($pattern, '/');
+        $regex = '/^' . str_replace('\\*', '.*', $quoted) . '$/i';
+        return (bool) preg_match($regex, $testId);
+    }
+
+    return false;
+}
+
+function secureit_extract_test_ids_from_embedded_summary(?array $embedded): array {
+    if (!$embedded) {
+        return [];
+    }
+
+    $ids = [];
+    foreach (($embedded['TestSettings'] ?? []) as $setting) {
+        $id = trim((string) ($setting['Id'] ?? ''));
+        if ($id !== '') {
+            $ids[] = $id;
+        }
+    }
+    return array_values(array_unique($ids));
+}
+
+function secureit_resolve_canonical_area_scores(string $tenantKey): array {
+    $mapping = secureit_load_canonical_controls();
+    $embedded = secureit_tenant_embedded_summary($tenantKey);
+    $summary = secureit_tenant_summary($tenantKey);
+
+    $functionalAreas = $mapping['functionalAreas'] ?? [];
+    $controls = $mapping['controls'] ?? [];
+    $availableIds = secureit_extract_test_ids_from_embedded_summary($embedded);
+    $availableLookup = array_fill_keys(array_map('secureit_normalise_mapping_id', $availableIds), true);
+
+    $groupResults = [];
+    foreach (($embedded['Groups'] ?? []) as $group) {
+        $name = (string) ($group['Name'] ?? '');
+        $groupResults[$name] = [
+            'result' => (string) ($group['Result'] ?? ''),
+            'failed' => (int) ($group['FailedCount'] ?? 0),
+            'passed' => (int) ($group['PassedCount'] ?? 0),
+            'skipped' => (int) ($group['SkippedCount'] ?? 0),
+            'notRun' => (int) ($group['NotRunCount'] ?? 0),
+            'total' => (int) ($group['TotalCount'] ?? 0),
+            'tag' => $group['Tag'] ?? [],
+        ];
+    }
+
+    $areas = [];
+    foreach ($functionalAreas as $area) {
+        $areas[$area] = [
+            'name' => $area,
+            'status' => 'No data',
+            'tone' => 'neutral',
+            'score' => null,
+            'controlsTotal' => 0,
+            'controlsPassing' => 0,
+            'controlsFailing' => 0,
+            'controlsPartial' => 0,
+            'controlsUnmapped' => 0,
+            'controls' => [],
+        ];
+    }
+
+    foreach ($controls as $control) {
+        $area = $control['functionalArea'] ?? '';
+        if (!isset($areas[$area])) {
+            continue;
+        }
+
+        $matchedIds = [];
+        foreach (($control['frameworkMappings'] ?? []) as $pattern) {
+            foreach ($availableIds as $availableId) {
+                if (secureit_pattern_matches_test_id((string) $pattern, $availableId)) {
+                    $matchedIds[] = $availableId;
+                }
+            }
+        }
+        $matchedIds = array_values(array_unique($matchedIds));
+
+        $status = 'unknown';
+        if (!$matchedIds) {
+            $status = 'unmapped';
+        } else {
+            $frameworkCount = count($control['frameworkMappings'] ?? []);
+            $matchedCount = count($matchedIds);
+            if ($frameworkCount > 0 && $matchedCount >= $frameworkCount) {
+                $status = 'pass';
+            } elseif ($matchedCount > 0) {
+                $status = 'partial';
+            }
+        }
+
+        $areas[$area]['controlsTotal']++;
+        if ($status === 'pass') {
+            $areas[$area]['controlsPassing']++;
+        } elseif ($status === 'partial') {
+            $areas[$area]['controlsPartial']++;
+        } elseif ($status === 'unmapped') {
+            $areas[$area]['controlsUnmapped']++;
+        } else {
+            $areas[$area]['controlsFailing']++;
+        }
+
+        $areas[$area]['controls'][] = [
+            'id' => $control['id'] ?? '',
+            'title' => $control['title'] ?? '',
+            'description' => $control['description'] ?? '',
+            'status' => $status,
+            'frameworkMappings' => $control['frameworkMappings'] ?? [],
+            'matchedIds' => $matchedIds,
+            'weight' => (int) (($control['scoring']['weight'] ?? 1)),
+        ];
+    }
+
+    foreach ($areas as $areaName => &$area) {
+        if ($area['controlsTotal'] === 0) {
+            $area['status'] = 'No data';
+            $area['tone'] = 'neutral';
+            $area['score'] = null;
+            continue;
+        }
+
+        $earned = ($area['controlsPassing'] * 1.0) + ($area['controlsPartial'] * 0.5);
+        $score = (int) round(($earned / max(1, $area['controlsTotal'])) * 100);
+        $area['score'] = $score;
+
+        if ($score >= 85) {
+            $area['status'] = 'Healthy';
+            $area['tone'] = 'good';
+        } elseif ($score >= 65) {
+            $area['status'] = 'Watch';
+            $area['tone'] = 'warn';
+        } else {
+            $area['status'] = 'Needs attention';
+            $area['tone'] = 'bad';
+        }
+    }
+    unset($area);
+
+    return [
+        'summary' => $summary,
+        'embedded' => $embedded,
+        'groups' => $groupResults,
+        'areas' => array_values($areas),
+        'availableTestIds' => $availableIds,
+    ];
+}
+
 function secureit_secret_name(string $tenantKey, string $suffix): string {
     return 'secureit-' . trim(strtolower($tenantKey)) . '-' . $suffix;
 }

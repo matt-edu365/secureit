@@ -1,4 +1,4 @@
-name: Publish SecureIt Container
+name: Publish SecureIT Container
 
 on:
   workflow_dispatch:

@@ -1,8 +1,8 @@
-# SecureIt Proxmox Deployment Plan
+# SecureIT Proxmox Deployment Plan
 
 ## Goal
 
-Publish SecureIt as a Docker image to GitHub Container Registry, then pull and run it on a Proxmox Docker environment.
+Publish SecureIT as a Docker image to GitHub Container Registry, then pull and run it on a Proxmox Docker environment.
 
 ## Image
 
@@ -46,7 +46,7 @@ docker compose up -d
 
 ## Environment variables for production
 
-- `SECUREIT_APP_NAME=SecureIt`
+- `SECUREIT_APP_NAME=SecureIT`
 - `SECUREIT_BASE_URL=https://secureit.ict365.ky`
 - `SECUREIT_TENANTS_FILE=/var/www/data/tenants.json`
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
@@ -57,4 +57,4 @@ docker compose up -d
 
 ## Notes
 
-Use `example.ict365.uk` as the dev hostname for now, but keep the app branding as SecureIt so the later cut-over is trivial.
+Use `example.ict365.uk` as the dev hostname for now, but keep the app branding as SecureIT so the later cut-over is trivial.

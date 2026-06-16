@@ -1,8 +1,8 @@
-# SecureIt Container Test Plan
+# SecureIT Container Test Plan
 
 ## Goal
 
-Verify that the refactored SecureIt app runs cleanly in a container before publishing the first image to GitHub Container Registry.
+Verify that the refactored SecureIT app runs cleanly in a container before publishing the first image to GitHub Container Registry.
 
 ## Pre-flight
 
@@ -22,7 +22,7 @@ Run:
 
 ```bash
 docker run --rm -p 8088:80 \
-  -e SECUREIT_APP_NAME="SecureIt" \
+  -e SECUREIT_APP_NAME="SecureIT" \
   -e SECUREIT_BASE_URL="https://example.ict365.uk" \
   -e SECUREIT_TENANTS_FILE="/var/www/data/tenants.json" \
   -e SECUREIT_REPORTS_ROOT="/var/www/data/reports" \
@@ -38,7 +38,7 @@ Test:
 
 ## Expected result
 
-- Dashboard loads with SecureIt branding
+- Dashboard loads with SecureIT branding
 - Existing sample tenants appear
 - Sample summaries render correctly
 - Onboarding can write to mounted `data/tenants.json`

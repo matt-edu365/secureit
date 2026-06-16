@@ -1,4 +1,4 @@
-# SecureIt Web App Plan
+# SecureIT Web App Plan
 
 ## Purpose
 
@@ -9,7 +9,7 @@ Provide a protected browser-based view of tenant security posture, onboarding, a
 Two web surfaces exist right now:
 
 1. `app/`
-   - the container-ready SecureIt application
+   - the container-ready SecureIT application
    - intended for Docker, GHCR, and Proxmox deployment
    - reads tenants and reports from writable runtime storage
 
@@ -19,7 +19,7 @@ Two web surfaces exist right now:
 
 ## Planned production path
 
-- App name: `SecureIt`
+- App name: `SecureIT`
 - Production hostname: `secureit.ict365.ky`
 - Delivery model: Docker image from GitHub Container Registry, pulled by Proxmox
 
@@ -61,6 +61,6 @@ Example structure:
 The app should not execute Maester locally.
 
 Preferred pattern:
-- SecureIt app triggers GitHub workflow dispatch through an authenticated backend flow
+- SecureIT app triggers GitHub workflow dispatch through an authenticated backend flow
 - GitHub Actions performs the actual Maester run
 - Results are then published back into the app's report storage

@@ -1,7 +1,7 @@
 # Repository Structure
 
 ```text
-SecureIt/
+SecureIT/
   .github/
     workflows/
       docker-publish.yml
@@ -54,7 +54,7 @@ SecureIt/
 ## Purpose of each folder
 
 - `.github/workflows`: CI for container publishing and Maester assessment runs
-- `app`: the current SecureIt container-ready application
+- `app`: the current SecureIT container-ready application
 - `config`: tenant registry examples and runner-side config
 - `custom-tests`: future custom Maester or Pester tests
 - `data`: runtime tenant metadata and report storage for the app
@@ -67,4 +67,4 @@ SecureIt/
 
 ## Current direction
 
-The `app/` folder is the future. The `website/` and `deploy/` folders are transitional and should be retired once the Docker-based SecureIt deployment replaces the shared-host prototype.
+The `app/` folder is the future. The `website/` and `deploy/` folders are transitional and should be retired once the Docker-based SecureIT deployment replaces the shared-host prototype.

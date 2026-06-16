@@ -7,7 +7,7 @@ RUN a2enmod rewrite headers \
 COPY app/ /var/www/html/
 COPY docker/apache-site.conf /etc/apache2/sites-available/000-default.conf
 
-ENV SECUREIT_APP_NAME="SecureIt" \
+ENV SECUREIT_APP_NAME="SecureIT" \
     SECUREIT_BASE_URL="https://example.ict365.uk" \
     SECUREIT_TENANTS_FILE="/var/www/data/tenants.json" \
     SECUREIT_REPORTS_ROOT="/var/www/data/reports"

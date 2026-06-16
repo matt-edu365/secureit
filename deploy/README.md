@@ -7,7 +7,7 @@ This folder contains the temporary shared-host deployment bundle for the live pr
 This is not the long-term deployment model.
 
 The planned production model is:
-- SecureIt app in `app/`
+- SecureIT app in `app/`
 - Docker image built from `Dockerfile`
 - Image published to GitHub Container Registry
 - Pulled and run on Proxmox
@@ -18,4 +18,4 @@ It allows the prototype to stay live on shared hosting during the refactor.
 
 ## Intended future state
 
-Once SecureIt is running from Docker on Proxmox, this folder should be retired.
+Once SecureIT is running from Docker on Proxmox, this folder should be retired.

@@ -1,8 +1,8 @@
-# SecureIt Azure Key Vault Integration Plan
+# SecureIT Azure Key Vault Integration Plan
 
 ## Goal
 
-Allow the SecureIt app onboarding flow to store tenant certificate secrets in Azure Key Vault, while tenant metadata stores only secret references.
+Allow the SecureIT app onboarding flow to store tenant certificate secrets in Azure Key Vault, while tenant metadata stores only secret references.
 
 ## App-side Azure settings
 
@@ -34,7 +34,7 @@ When a tenant is onboarded:
 
 ## Recommended Azure identity split
 
-### SecureIt app identity
+### SecureIT app identity
 - Used by the running app
 - Needs Key Vault secret write access (`set`, and optionally `get`)
 

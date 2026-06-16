@@ -7,7 +7,7 @@ services:
     ports:
       - "8088:80"
     environment:
-      SECUREIT_APP_NAME: "SecureIt"
+      SECUREIT_APP_NAME: "SecureIT"
       SECUREIT_BASE_URL: "https://example.ict365.uk"
       SECUREIT_TENANTS_FILE: "/var/www/data/tenants.json"
       SECUREIT_REPORTS_ROOT: "/var/www/data/reports"

@@ -1,4 +1,4 @@
-# Maester Build Plan
+# SecureIT Build Plan
 
 ## Objective
 
@@ -94,7 +94,7 @@ output/
 ## Suggested website structure
 
 ```text
-/maester/
+/secureit/
   index.php
   tenant-a/
     latest/

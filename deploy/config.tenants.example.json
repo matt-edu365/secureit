@@ -7,7 +7,7 @@
       "clientId": "11111111-1111-1111-1111-111111111111",
       "authMode": "client-secret",
       "clientSecretName": "AZURE-CLIENT-SECRET-EXAMPLE-TENANT",
-      "reportBaseUrl": "https://example.ict365.uk/maester/example-tenant",
+      "reportBaseUrl": "https://example.ict365.uk/secureit/example-tenant",
       "emailTo": "security@example.com"
     }
   ]

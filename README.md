@@ -1,6 +1,6 @@
-# SecureIt
+# SecureIT
 
-SecureIt is a multi-tenant Microsoft 365 security monitoring portal built around Maester.
+SecureIT is a multi-tenant Microsoft 365 security monitoring portal built around Maester.
 
 It is intended to provide:
 - Scheduled Maester security assessments via GitHub Actions
@@ -91,7 +91,7 @@ These tests are intentionally not part of the onboarding baseline because they r
   - `EIDSCA.CP01`
     - Excluded because the underlying group-owner consent setting has been removed and replaced with team-owner consent behavior.
 
-This exclusion list is based on validation against the current ICT365 tenant and should be revised only when SecureIt adds the corresponding connection model or Maester fixes the deprecated checks.
+This exclusion list is based on validation against the current ICT365 tenant and should be revised only when SecureIT adds the corresponding connection model or Maester fixes the deprecated checks.
 
 At this stage:
 - there are no live tenants configured
@@ -116,7 +116,7 @@ If one environment intentionally differs for a short period, document it clearly
 
 ## Planned architecture
 
-- App name: SecureIt
+- App name: SecureIT
 - Dev URL: `https://example.ict365.uk`
 - Planned production URL: `https://secureit.ict365.ky`
 - Execution: GitHub Actions

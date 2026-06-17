@@ -4,7 +4,7 @@
 
 - `https://github.com/matt-edu365/secureit`
 
-This folder contains the temporary shared-host deployment material used to keep the SecureIT prototype live on `example.ict365.uk`.
+This folder contains temporary shared-host deployment material retained from the earlier prototype deployment model.
 
 ## What it is
 

@@ -1,7 +1,7 @@
 <?php
 return [
     'app_name' => getenv('SECUREIT_APP_NAME') ?: 'SecureIT',
-    'base_url' => rtrim(getenv('SECUREIT_BASE_URL') ?: 'https://example.ict365.uk', '/'),
+    'base_url' => rtrim(getenv('SECUREIT_BASE_URL') ?: 'https://secureit.ict365.ky', '/'),
     'tenants_file' => getenv('SECUREIT_TENANTS_FILE') ?: __DIR__ . '/../data/tenants.json',
     'reports_root' => getenv('SECUREIT_REPORTS_ROOT') ?: __DIR__ . '/../data/reports',
     'canonical_controls_file' => getenv('SECUREIT_CANONICAL_CONTROLS_FILE') ?: __DIR__ . '/../data/canonical-controls.json',

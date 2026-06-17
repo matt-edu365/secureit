@@ -4,7 +4,7 @@
 
 - `https://github.com/matt-edu365/secureit`
 
-This folder contains the original PHP prototype source used for the shared-host deployment on `example.ict365.uk`.
+This folder contains the original PHP prototype source from the earlier shared-host deployment model.
 
 ## Important
 

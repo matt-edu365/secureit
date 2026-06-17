@@ -41,7 +41,7 @@ Run:
 ```bash
 docker run --rm -p 8088:80 \
   -e SECUREIT_APP_NAME="SecureIT" \
-  -e SECUREIT_BASE_URL="https://example.ict365.uk" \
+  -e SECUREIT_BASE_URL="https://secureit.ict365.ky" \
   -e SECUREIT_TENANTS_FILE="/var/www/data/tenants.json" \
   -e SECUREIT_REPORTS_ROOT="/var/www/data/reports" \
   -v $(pwd)/data:/var/www/data \

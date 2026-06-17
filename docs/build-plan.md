@@ -21,7 +21,7 @@ Already present:
 - manual GitHub Actions Maester workflow with test-profile selection
 - legacy weekly/manual workflow retained for compatibility
 - container-ready SecureIT app in `app/`
-- shared-host prototype path in `website/` and `deploy/maester/`
+- legacy shared-host material still present in `website/` and `deploy/maester/` for reference
 - app-import report bundle flow
 - Azure OIDC diagnostics
 - Azure Key Vault smoke-test workflow
@@ -62,10 +62,10 @@ Build decisions should preserve traceability to raw Maester outputs while making
 5. Separate legacy prototype publishing concerns from app-first runtime import concerns where practical
 
 ### Phase 5: Deployment transition
-1. Keep the shared-host prototype functional only as long as needed
-2. Continue building toward Docker image publishing via GHCR
-3. Use the Proxmox deployment model as the target runtime
-4. Move customer-facing usage toward `app/` rather than the legacy prototype bundle
+1. Continue building toward Docker image publishing via GHCR
+2. Use the Proxmox deployment model as the target runtime
+3. Move customer-facing usage toward `app/`
+4. Treat legacy shared-host material as reference only unless explicitly reactivated
 
 ## Current workflow picture
 
@@ -77,7 +77,7 @@ It already supports:
 - certificate or client-secret auth
 - Azure Key Vault secret retrieval for client-secret mode
 - test-profile selection
-- FTPS publication to the prototype environment
+- app-import bundle preparation for Docker-based runtime ingestion
 - preparation of app-import bundles
 - artifact upload
 

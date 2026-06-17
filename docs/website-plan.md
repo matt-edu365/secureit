@@ -33,9 +33,9 @@ This should be treated as the primary future-facing app.
 The legacy shared-host prototype.
 
 Characteristics:
-- tied to the `example.ict365.uk` prototype environment
-- still useful while the prototype remains live
+- retained as legacy shared-host reference material
 - carries some older Maester-oriented naming and deployment assumptions
+- not part of the intended active deployment path
 
 This should be treated as transitional.
 
@@ -53,7 +53,6 @@ Implications for the web layer:
 
 - App name: `SecureIT`
 - Repository: `https://github.com/matt-edu365/secureit`
-- Prototype host: `https://example.ict365.uk`
 - Planned product host: `https://secureit.ict365.ky`
 - Delivery model: Docker image from GHCR, deployed to Proxmox or equivalent Docker runtime
 
@@ -132,4 +131,4 @@ When adding features, bias work toward:
 - the workflow-to-app import contract
 - SecureIT-native UI language
 
-Only extend `website/` or `deploy/maester/` when needed to preserve the live prototype during the transition.
+Only extend `website/` or `deploy/maester/` if you intentionally need legacy-reference parity during migration work.

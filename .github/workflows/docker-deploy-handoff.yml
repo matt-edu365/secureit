@@ -1,0 +1,25 @@
+name: SecureIT Docker Deploy Handoff
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_note:
+        description: Optional note for this deployment handoff run
+        required: false
+        default: deploy-to-live-docker
+
+jobs:
+  handoff-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment workflow summary
+        run: |
+          {
+            echo "# SecureIT Docker deployment handoff"
+            echo "- Intended flow: build locally -> push to GitHub -> GitHub build/push image -> deploy to Docker host -> test -> refine"
+            echo "- Public hostname target: https://secureit.ict365.ky"
+            echo "- GHCR image: ghcr.io/${{ github.repository_owner }}/secureit"
+            echo "- This workflow is a handoff placeholder and summary only."
+            echo "- Replace or extend this with host-specific deployment automation once the live Docker host mechanism is confirmed."
+            echo "- Note: ${{ github.event.inputs.deploy_note }}"
+          } >> "$GITHUB_STEP_SUMMARY"

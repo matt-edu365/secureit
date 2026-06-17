@@ -33,10 +33,6 @@ jobs:
     env:
       MAESTER_AUTH_MODE: ${{ github.event.inputs.auth_mode || vars.MAESTER_AUTH_MODE || 'certificate' }}
       CONFIG_PATH: config/tenants.json
-      WEBSITE_HOST: ${{ secrets.WEBSITE_HOST }}
-      WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
-      WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
-      WEBSITE_REMOTE_PATH: ${{ vars.WEBSITE_REMOTE_PATH || '/maester/' }}
       SMTP_HOST: ${{ secrets.SMTP_HOST }}
       SMTP_PORT: ${{ secrets.SMTP_PORT }}
       SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
@@ -116,17 +112,13 @@ jobs:
           name: maester-weekly-${{ matrix.tenant_key }}-${{ github.run_number }}
           path: output/${{ matrix.tenant_key }}/
 
-      - name: Publish reports to website
-        if: ${{ env.WEBSITE_HOST != '' && env.WEBSITE_USERNAME != '' && env.WEBSITE_PASSWORD != '' }}
+      - name: Note legacy workflow output usage
+        if: always()
         shell: pwsh
         run: |
-          ./scripts/Publish-WebsiteReport.ps1 `
-            -SourcePath "output/${{ matrix.tenant_key }}" `
-            -WebsiteHost "$env:WEBSITE_HOST" `
-            -Username "$env:WEBSITE_USERNAME" `
-            -Password "$env:WEBSITE_PASSWORD" `
-            -RemotePath "$env:WEBSITE_REMOTE_PATH/${{ matrix.tenant_key }}"
-
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Legacy workflow note"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- This workflow no longer publishes to any prototype/shared-host environment."
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Use generated artifacts or app-import bundles with the Docker-based SecureIT deployment path at https://secureit.ict365.ky."
       - name: Send weekly summary email
         if: ${{ env.SMTP_HOST != '' && env.EMAIL_FROM != '' && env.EMAIL_TO != '' }}
         shell: pwsh

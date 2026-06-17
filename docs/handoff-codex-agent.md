@@ -27,7 +27,7 @@ The repo currently contains three overlapping layers:
 2. **Legacy prototype layer**
    - `website/`
    - `deploy/maester/`
-   - shared-host oriented, still useful while `example.ict365.uk` remains live
+   - shared-host oriented legacy material retained mainly for reference
 
 3. **Future product layer**
    - `app/`
@@ -58,7 +58,6 @@ Then inspect:
 - Some old filenames and folder names still contain `maester`; treat those as legacy compatibility unless intentionally refactoring them
 
 ### Deployment
-- Current prototype host: `https://example.ict365.uk`
 - Planned product host: `https://secureit.ict365.ky`
 - Container registry target: `ghcr.io/matt-edu365/secureit`
 
@@ -118,7 +117,7 @@ These are the main areas of architectural tension right now:
 ### Areas to treat carefully
 - `deploy/maester/`
 - `website/`
-- anything tied to the current prototype environment on `example.ict365.uk`
+- anything tied to old shared-host deployment assumptions
 - workflow names or paths that may still be depended on externally
 
 ## If continuing the product cleanup

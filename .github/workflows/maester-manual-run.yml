@@ -38,7 +38,7 @@ on:
       report_base_url:
         description: Base URL for published reports
         required: false
-        default: https://example.ict365.uk/ict365
+        default: https://secureit.ict365.ky/ict365
       email_to:
         description: Report recipient email
         required: false
@@ -184,63 +184,6 @@ jobs:
         run: |
           ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -TenantDomain "$env:AZURE_TENANT_DOMAIN_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -CertificateBase64 "$env:CERTIFICATE_BASE64" -CertificatePassword "$env:CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "${{ github.event.inputs.test_profile }}"
 
-      - name: Publish report to prototype FTPS
-        if: always()
-        shell: bash
-        env:
-          FTPS_HOST: ${{ secrets.WEBSITE_HOST }}
-          FTPS_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
-          FTPS_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
-          TENANT_KEY: ${{ env.TENANT_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "${FTPS_HOST:-}" ] || [ -z "${FTPS_USERNAME:-}" ] || [ -z "${FTPS_PASSWORD:-}" ]; then
-            echo "FTPS secrets not configured, skipping publish."
-            exit 0
-          fi
-          if [ ! -d "output/${TENANT_KEY}/latest" ]; then
-            echo "No latest output directory found for tenant ${TENANT_KEY}, skipping publish."
-            exit 0
-          fi
-          python3 - <<'PY'
-          import os
-          from ftplib import FTP_TLS
-          from pathlib import Path
-
-          host = os.environ['FTPS_HOST']
-          user = os.environ['FTPS_USERNAME']
-          password = os.environ['FTPS_PASSWORD']
-          tenant_key = os.environ['TENANT_KEY']
-          local_root = Path(f'output/{tenant_key}/latest')
-          remote_root = f'/example.ict365.uk/{tenant_key}/latest'
-
-          ftp = FTP_TLS()
-          ftp.connect(host, 21, timeout=30)
-          ftp.login(user, password)
-          ftp.prot_p()
-          ftp.set_pasv(True)
-
-          def ensure_dir(path):
-              parts = [p for p in path.split('/') if p]
-              current = ''
-              for part in parts:
-                  current += '/' + part
-                  try:
-                      ftp.mkd(current)
-                  except Exception:
-                      pass
-
-          ensure_dir(remote_root)
-          for file in local_root.rglob('*'):
-              if file.is_file():
-                  rel = file.relative_to(local_root).as_posix()
-                  remote_path = f'{remote_root}/{rel}'
-                  remote_dir = remote_path.rsplit('/', 1)[0]
-                  ensure_dir(remote_dir)
-                  with open(file, 'rb') as fh:
-                      ftp.storbinary(f'STOR {remote_path}', fh)
-          ftp.quit()
-          PY
 
       - name: Prepare app import bundle
         if: always()
@@ -264,6 +207,19 @@ jobs:
           path: |
             output/${{ github.event.inputs.tenant_key }}/
             app-import/${{ github.event.inputs.tenant_key }}/
+
+      - name: Workflow summary deployment note
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo ""
+            echo "## Deployment path"
+            echo "- Intended flow: build locally -> push to GitHub -> GitHub build/push image -> deploy to Docker host -> test -> refine"
+            echo "- Target public hostname: https://secureit.ict365.ky"
+            echo "- This workflow prepares assessment output and app-import artifacts only."
+            echo "- Deployment should be handled by the Docker delivery workflow and target host automation."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Workflow summary
         if: always()

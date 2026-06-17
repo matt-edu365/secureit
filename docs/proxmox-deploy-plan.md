@@ -10,21 +10,14 @@ Publish the SecureIT app as a Docker image to GitHub Container Registry, then pu
 
 ## Current deployment picture
 
-There are two deployment tracks in the repo right now:
-
-### Transitional track
-- shared-host prototype on `https://example.ict365.uk`
-- legacy deploy bundle in `deploy/maester/`
-- legacy prototype source in `website/`
-
-### Target track
+The target deployment track is now the only intended path for active delivery:
 - SecureIT app in `app/`
 - image built from `Dockerfile`
 - image published to GHCR
 - runtime backed by mounted external data
-- planned product hostname `https://secureit.ict365.ky`
+- public hostname `https://secureit.ict365.ky`
 
-The Proxmox plan applies to the target track.
+Legacy shared-host prototype material may still exist in the repo for reference, but it is no longer part of the intended deployment equation.
 
 ## Image
 
@@ -102,8 +95,17 @@ Before treating the Proxmox deployment as authoritative:
 4. confirm reverse-proxy and auth behaviour in front of the app
 5. confirm runtime writes only affect the mounted data path, not the image filesystem
 
+## Delivery workflow
+
+The intended operational loop is now:
+1. build and refine locally
+2. push to GitHub
+3. GitHub builds and pushes the Docker image
+4. deploy the image to the Docker host
+5. test on `https://secureit.ict365.ky`
+6. refine and repeat
+
 ## Notes
 
-- Use `example.ict365.uk` only as the prototype/dev host reference while the transition continues
 - Keep SecureIT as the visible product identity
-- Treat `deploy/maester/` as transitional until the app-first runtime fully replaces it
+- Treat any remaining shared-host or `deploy/maester/` material as legacy reference only unless explicitly reactivated

@@ -12,7 +12,7 @@ This repository is no longer just an initial scaffold.
 It currently contains:
 - GitHub Actions workflows for manual and legacy Maester runs
 - a container-ready SecureIT PHP app in `app/`
-- a legacy shared-host prototype and deployment bundle in `website/` and `deploy/maester/`
+- legacy shared-host code and deployment material retained only as reference in `website/` and `deploy/maester/`
 - PowerShell tooling for tenant resolution, Maester execution, summary generation, report publishing, and app-bundle import
 - SecureIT-specific canonical control mapping examples and functional-area scoring scaffolding
 - Azure OIDC and Azure Key Vault diagnostic workflows
@@ -39,7 +39,7 @@ That means:
 - report generation still comes from Maester
 - older workflow names, deploy paths, and some historical docs still refer to Maester
 - the UI, dashboard, portal wording, and customer-facing language are being standardised around SecureIT
-- some legacy paths still use `maester` in filenames or directories for compatibility with the shared-host prototype
+- some legacy paths still use `maester` in filenames or directories for compatibility with older deployment history
 
 Current practical rule:
 - use **SecureIT** in documentation, UI copy, customer-facing language, and architecture descriptions
@@ -82,15 +82,15 @@ Purpose:
 Legacy shared-host prototype source.
 
 Purpose:
-- keeps the original shared-host prototype editable while the newer app evolves
-- still useful for reference and compatibility while `example.ict365.uk` remains in play
+- retains the original shared-host implementation for reference during migration
+- no longer part of the intended active deployment path
 
 ### 3. `deploy/maester/`
 Legacy deployable shared-host bundle.
 
 Purpose:
-- current deploy-target bundle for the prototype environment on `example.ict365.uk`
-- transitional only, not the final product deployment model
+- former shared-host deploy bundle retained for reference
+- transitional only, not part of the active product deployment model
 
 ## GitHub Actions workflows
 
@@ -98,7 +98,7 @@ Current workflows present in the repo:
 - `docker-publish.yml`
   - manually builds and publishes the SecureIT container image to GHCR
 - `maester-manual-run.yml`
-  - the main modern manual-run workflow, supports certificate and client-secret auth, test profile selection, FTPS publish, and app-import bundle creation
+  - the main modern manual-run workflow, supports certificate and client-secret auth, test profile selection, and app-import bundle creation
 - `maester-weekly.yml`
   - legacy weekly/manual workflow path still retained in the repo
 - `azure-oidc-diagnostic.yml`
@@ -161,9 +161,8 @@ Tracked example mapping:
 
 ## Deployment direction
 
-### Current prototype
-- shared-host prototype at `https://example.ict365.uk`
-- deploy bundle under `deploy/maester/`
+### Legacy reference material
+- legacy deploy bundle under `deploy/maester/`
 - legacy website source under `website/`
 
 ### Planned product path
@@ -196,7 +195,7 @@ What still needs deliberate cleanup:
 Keep these aligned whenever practical:
 1. local working copy
 2. GitHub repo
-3. prototype or target runtime environment
+3. target runtime environment
 
 If they differ intentionally, document the drift clearly in a commit, note, or handoff.
 

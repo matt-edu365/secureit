@@ -1,121 +1,131 @@
 # SecureIT Build Plan
 
+## GitHub repository
+
+- `https://github.com/matt-edu365/secureit`
+
 ## Objective
 
-Build a multi-tenant Microsoft 365 security monitoring solution using Maester, with scheduled and manual runs, weekly email reporting, and a protected website dashboard for viewing results.
+Continue evolving SecureIT from a Maester-based reporting prototype into a branded multi-tenant Microsoft 365 security portal with:
+- repeatable tenant assessments
+- SecureIT-branded customer-facing posture views
+- canonical control mapping and functional-area scoring
+- app-oriented report import and presentation
+- container-based deployment as the long-term target
 
-## Recommended architecture
+## Current reality
 
-- GitHub Actions runs Maester weekly and on demand
-- Tenant metadata is stored in a tenant registry file
-- Each tenant uses its own app-only access configuration
-- Reports are generated as HTML, JSON, and a lightweight summary JSON per tenant
-- Reports are uploaded to a protected folder on the target website under tenant-specific paths
-- A small dashboard page on the website shows latest status and report history per tenant
-- Weekly email sends a concise summary with a link to the latest tenant report
+This project is beyond the original scaffold stage.
 
-## Phases
+Already present:
+- manual GitHub Actions Maester workflow with test-profile selection
+- legacy weekly/manual workflow retained for compatibility
+- container-ready SecureIT app in `app/`
+- shared-host prototype path in `website/` and `deploy/maester/`
+- app-import report bundle flow
+- Azure OIDC diagnostics
+- Azure Key Vault smoke-test workflow
+- SecureIT branding adaptation underway across app and docs
 
-### Phase 1: Local proof and tenant auth
-1. Create Entra app registration for Maester automation
-2. Prefer GitHub OIDC federation, use certificate auth if OIDC flow is awkward
-3. Grant least-privilege Graph application permissions required by Maester
-4. Admin-consent the permissions
-5. On a trusted admin machine, install PowerShell 7 and Maester
-6. Run a local proof test to validate auth and report generation
+## Core architectural principle
 
-### Phase 2: GitHub repository and workflow
-1. Create private GitHub repo for this project
-2. Push this scaffold into the repo
-3. Create `config/tenants.json` from the example file
-4. Configure GitHub Actions secrets or environment values for each tenant:
-   - tenant ID
-   - client ID
-   - certificate material if used
-   - website deploy credentials
-   - SMTP credentials if needed
-5. Implement the GitHub Actions workflow with:
-   - schedule trigger
-   - workflow_dispatch trigger
-   - matrix or targeted tenant selection
-   - PowerShell setup
-   - Maester install/import
-   - tenant authentication
-   - test run
-   - report generation
-   - artifact upload
+- **Maester is the assessment engine**
+- **SecureIT is the product surface**
 
-### Phase 3: Report publishing
-1. Standardise output structure:
-   - output/<tenant-key>/latest/
-   - output/<tenant-key>/history/YYYY-MM-DD/
-2. Publish latest and history folders to the target website under tenant-specific paths
-3. Use SFTP or FTPS upload first unless a custom API endpoint is preferred
-4. Protect the report area with login/basic auth/IP restriction
+Build decisions should preserve traceability to raw Maester outputs while making the customer-facing experience clearly SecureIT.
 
-### Phase 4: Dashboard and reporting
-1. Create website dashboard page
-2. Read summary JSON from tenant latest folders
-3. Show:
-   - tenant name
-   - tenant key
-   - last run time
-   - pass/fail/skipped counts
-   - link to latest report
-   - report history
-4. Add weekly summary email
-5. Add previous-run comparison to highlight new failures and resolved issues
+## Build priorities from here
 
-### Phase 5: Manual run UX
-1. Start with GitHub's built-in Run workflow button and choose a tenant key
-2. Later add website-side Run now button per tenant
-3. Website trigger should call GitHub workflow_dispatch API, not execute Maester locally
+### Phase 1: Documentation and architecture alignment
+1. Keep docs aligned with the real repo state
+2. Explicitly document the Maester -> SecureIT branding transition
+3. Reduce confusion between legacy prototype, current app, and future deployment target
+4. Maintain a clear handoff path for follow-on agents
 
-## Recommended output structure
+### Phase 2: App-first runtime consolidation
+1. Treat `app/` as the main product surface
+2. Keep `data/` as the writable runtime store for tenants and reports
+3. Continue using `app-import/<tenant-key>/...` as the bridge from workflow output to app runtime
+4. Tighten the contract between workflow artifacts and app report ingestion
 
-```text
-output/
-  tenant-a/
-    latest/
-      index.html
-      results.json
-      summary.json
-    history/
-      YYYY-MM-DD/
-        timestamp/
-          index.html
-          results.json
-          summary.json
-  tenant-b/
-    latest/
-    history/
-```
+### Phase 3: Canonical customer-facing scoring
+1. Expand `config/canonical-controls.example.json`
+2. Finalise the SecureIT functional area model
+3. Map raw Maester findings into canonical SecureIT controls
+4. Drive dashboard and tenant posture views from canonicalised data instead of duplicated raw framework checks
 
-## Suggested website structure
+### Phase 4: Workflow rationalisation
+1. Decide which workflow becomes the single authoritative run path
+2. Prefer `maester-manual-run.yml` as the modern baseline unless a deliberate replacement is introduced
+3. Review whether `maester-weekly.yml` should be retired, renamed, or rebuilt
+4. Standardise artifact naming and report publication assumptions
+5. Separate legacy prototype publishing concerns from app-first runtime import concerns where practical
 
-```text
-/secureit/
-  index.php
-  tenant-a/
-    latest/
-      index.html
-      summary.json
-    history/
-      YYYY-MM-DD/
-        timestamp/
-          index.html
-  tenant-b/
-```
+### Phase 5: Deployment transition
+1. Keep the shared-host prototype functional only as long as needed
+2. Continue building toward Docker image publishing via GHCR
+3. Use the Proxmox deployment model as the target runtime
+4. Move customer-facing usage toward `app/` rather than the legacy prototype bundle
 
-## Initial deliverables
+## Current workflow picture
 
-- Private GitHub repo
-- Working local proof run
-- Working scheduled and manual GitHub Actions workflow
-- Latest and historical reports published to website
-- Protected dashboard page
-- Weekly summary email
+### `maester-manual-run.yml`
+This is the most current workflow path.
 
-## Notes
+It already supports:
+- tenant-specific manual runs
+- certificate or client-secret auth
+- Azure Key Vault secret retrieval for client-secret mode
+- test-profile selection
+- FTPS publication to the prototype environment
+- preparation of app-import bundles
+- artifact upload
 
-Treat Maester reports as sensitive. Do not expose them publicly. Keep execution in GitHub Actions and use the website as the presentation and control layer.
+### `maester-weekly.yml`
+This is retained but explicitly legacy.
+
+Use with caution until its role is clarified.
+
+### `docker-publish.yml`
+Manually publishes the SecureIT container image to:
+- `ghcr.io/matt-edu365/secureit`
+
+### Azure diagnostics
+Useful support workflows:
+- `azure-oidc-diagnostic.yml`
+- `azure-keyvault-smoke-test.yml`
+
+## Runtime design target
+
+Long-term target:
+- SecureIT app in `app/`
+- Docker image from `Dockerfile`
+- GHCR publication
+- runtime data volume mounted at `/var/www/data`
+- tenant reports stored in `/var/www/data/reports`
+- tenant metadata stored in `/var/www/data/tenants.json`
+
+## Branding rule for future work
+
+When building or documenting new work:
+- say **SecureIT** when describing the product, UI, portal, dashboard, onboarding, and customer experience
+- say **Maester** when describing the underlying test engine, dependency, or raw report source
+- avoid introducing fresh customer-facing references that make Maester sound like the product name
+
+## Practical next steps
+
+1. Review `maester-manual-run.yml` and decide whether it should be renamed or kept as-is for technical clarity
+2. Confirm the intended single source of truth for tenant metadata across `config/`, `data/`, and `deploy/`
+3. Expand canonical control mappings so the app can present real SecureIT scoring
+4. Define the minimum viable production auth model for the app surface
+5. Decide the retirement threshold for `website/` and `deploy/maester/`
+6. Test the current app path end-to-end with imported report bundles
+
+## Success condition
+
+The repo should converge on a state where:
+- Maester runs are reliable and traceable
+- SecureIT branding is consistent and intentional
+- the app can ingest and present reports cleanly
+- deployment is container-first
+- legacy prototype paths are clearly transitional rather than ambiguous

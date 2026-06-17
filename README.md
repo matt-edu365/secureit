@@ -1,133 +1,52 @@
 # SecureIT
 
-SecureIT is a multi-tenant Microsoft 365 security monitoring portal built around Maester.
+SecureIT is ICT365's multi-tenant Microsoft 365 security reporting and posture portal, adapted from a Maester-driven reporting workflow into a customer-facing SecureIT product.
 
-It is intended to provide:
-- Scheduled Maester security assessments via GitHub Actions
-- Manual on-demand runs via GitHub Actions, with a web trigger planned later
-- Multi-tenant execution driven by tenant registry configuration
-- Static HTML and JSON report output per tenant
-- Publication of reports to a protected web portal
-- Weekly summary notifications per tenant
-- A container-friendly web UI for dashboarding and tenant onboarding
+GitHub repository:
+- `https://github.com/matt-edu365/secureit`
 
-## Current status
+## What this repo is now
 
-This repository is the early project scaffold.
+This repository is no longer just an initial scaffold.
 
-Manual Maester runs currently support these test profiles:
-- `client-secret-baseline` , the current conservative client-secret profile, kept intentionally small and stable for predictable onboarding runs
-- `client-secret-full` , an expanded client-secret profile built from the Class A inventory, intended to include as many likely Graph app-only runnable tests as possible without intentionally pulling in Exchange Online, Teams, Azure, Azure DevOps, or Dataverse dependent families
-- `graph-baseline` , the recommended standard onboarding baseline, focused on reliable Graph-first Entra, identity, compliance, configuration, SharePoint, and Intune-adjacent checks without requiring Exchange Online, Teams, Azure, or Azure DevOps connections
-- `light` , a smaller Graph-first baseline for faster validation runs
-- `exchange-online` , an advanced Exchange Online focused profile for EXO and Defender for Office style checks, which requires additional Exchange app auth and RBAC setup
-- `full` , the full installed Maester test inventory
+It currently contains:
+- GitHub Actions workflows for manual and legacy Maester runs
+- a container-ready SecureIT PHP app in `app/`
+- a legacy shared-host prototype and deployment bundle in `website/` and `deploy/maester/`
+- PowerShell tooling for tenant resolution, Maester execution, summary generation, report publishing, and app-bundle import
+- SecureIT-specific canonical control mapping examples and functional-area scoring scaffolding
+- Azure OIDC and Azure Key Vault diagnostic workflows
 
-## Client-secret full policy
+## Product direction
 
-`client-secret-full` is the broadest SecureIT profile intended to run under the current client-secret Graph app-only path.
+SecureIT started as a Maester automation and report-publication prototype.
 
-It is allowlist-driven from the June 2026 Class A inventory and aims to pull in as many likely Graph-runnable test files as practical while deliberately excluding known non-Graph families such as:
-- Exchange Online and ORCA
-- Teams-connected checks
-- Azure-connected checks
-- Azure DevOps checks
-- Dataverse or AI-agent connected checks
+The current direction is:
+- keep Maester as the underlying assessment engine
+- adapt the presentation, structure, workflow, and customer experience into SecureIT
+- move from raw Maester-oriented report handling toward SecureIT-branded tenant dashboards, onboarding, and customer-facing control areas
+- keep traceability back to Maester output while avoiding exposing Maester internals directly as the product surface
 
-Important caveat:
-- this profile is based on a file-level compatibility inventory, not a guarantee that every individual assertion inside every selected file will pass or avoid skips
-- some selected tests may still skip because of tenant licensing, preview API behaviour, missing workloads, or deeper helper dependencies not obvious from static inspection
-- this profile is therefore intentionally broader but potentially noisier than `client-secret-baseline`
+In short:
+- **Maester remains the engine**
+- **SecureIT is the product and customer-facing layer**
 
-## Graph baseline policy
+## Branding adaptation: Maester -> SecureIT
 
-`graph-baseline` is intended to be the sane default onboarding profile for new tenants.
+The repo is in an active branding transition.
 
-It keeps tests that are meaningful under app-only Microsoft Graph authentication, including conditionally useful tests that may skip because a tenant does not use a specific feature yet, for example:
-- FIDO2 method checks when FIDO2 is not enabled
-- Temporary Access Pass or SMS sign-in checks when those methods are not enabled
-- Hybrid sync checks when on-premises sync is not configured
-- Intune connector and Apple enrollment checks when those components are not present in the tenant
+That means:
+- report generation still comes from Maester
+- older workflow names, deploy paths, and some historical docs still refer to Maester
+- the UI, dashboard, portal wording, and customer-facing language are being standardised around SecureIT
+- some legacy paths still use `maester` in filenames or directories for compatibility with the shared-host prototype
 
-It excludes tests that were shown in tenant validation to be unreliable or structurally outside the Graph-first onboarding model.
+Current practical rule:
+- use **SecureIT** in documentation, UI copy, customer-facing language, and architecture descriptions
+- treat **Maester** as the underlying technical dependency or report engine where relevant
+- do not rename legacy compatibility paths unless the deployment impact is understood first
 
-### Excluded from graph-baseline
-
-These tests are intentionally not part of the onboarding baseline because they require extra connections, produce known selector noise, or depend on deprecated settings.
-
-- **Azure DevOps family**
-  - Excluded because they require a separate Azure DevOps connection and otherwise produce guaranteed skips such as `Not connected to Azure DevOps`.
-- **Teams meeting policy checks**
-  - `MT.1037`
-  - `MT.1042`
-  - `MT.1046`
-  - `MT.1047`
-  - `MT.1048`
-  - Excluded because they require a Teams connection and are not part of Graph-only onboarding.
-- **Azure-connected checks**
-  - `CISA.MS.AAD.4.1`
-  - `MT.1100`
-  - Excluded because they require an Azure connection beyond the current Graph-first auth path.
-- **AI agent security family**
-  - `MT.1111`
-  - `MT.1114`
-  - `MT.1115`
-  - `MT.1116`
-  - `MT.1117`
-  - `MT.1118`
-  - `MT.1119`
-  - `MT.1120`
-  - `MT.1121`
-  - `MT.1122`
-  - Excluded because they were not reliable in tenant validation and are outside the current standard onboarding target.
-- **Exchange Online dependent CIS checks**
-  - `CIS.M365.2.1.2`
-  - `CIS.M365.3.1.1`
-  - `Test-MtCisAttachmentFilterComprehensive.Tests.ps1` helper gate
-  - Excluded because they require an Exchange Online connection and otherwise produce guaranteed `Not connected to Exchange Online` skips under Graph-only onboarding.
-- **Deprecated or unstable setting checks**
-  - `CISA.MS.AAD.5.4`
-    - Excluded because the referenced setting is no longer available for some tenants and produced a skip due to API or platform drift.
-  - `EIDSCA.CP01`
-    - Excluded because the underlying group-owner consent setting has been removed and replaced with team-owner consent behavior.
-
-This exclusion list is based on validation against the current ICT365 tenant and should be revised only when SecureIT adds the corresponding connection model or Maester fixes the deprecated checks.
-
-At this stage:
-- there are no live tenants configured
-- no production secrets or certificates are stored here
-- sample tenant and report artifacts have been removed from version control
-- local/runtime tenant files should be created from examples and kept out of Git
-
-## Working alignment rule
-
-For this project, keep the three environments aligned as work progresses:
-- local working copy
-- GitHub repository
-- prototype environment at `example.ict365.uk`
-
-Default workflow:
-1. make changes locally
-2. commit and push to GitHub
-3. sync the prototype environment to match
-4. verify there is no unexpected drift
-
-If one environment intentionally differs for a short period, document it clearly in the commit, notes, or handoff.
-
-## Planned architecture
-
-- App name: SecureIT
-- Dev URL: `https://example.ict365.uk`
-- Planned production URL: `https://secureit.ict365.ky`
-- Execution: GitHub Actions
-- Secrets: Azure Key Vault (planned)
-- Tenant authentication: Entra app registration with certificate auth first
-- Report output: HTML + JSON + summary JSON
-- App delivery: Docker image published to GitHub Container Registry and pulled by Proxmox
-- UI: Containerised dashboard and onboarding portal
-- Notifications: Weekly summary email
-
-## Repository layout
+## Current repository layout
 
 ```text
 .github/
@@ -137,82 +56,157 @@ config/
 custom-tests/
 data/
 deploy/
+  maester/
 docker/
 docs/
 output/
 scripts/
 website/
+Dockerfile
+docker-compose.yml
+README.md
 ```
 
-## Configuration approach
+## Main application surfaces
 
-Tracked example files should be used as templates.
+### 1. `app/`
+The current SecureIT application.
 
-Available tracked templates:
+Purpose:
+- container-ready PHP app
+- intended target for Docker, GHCR, and Proxmox deployment
+- reads tenant metadata and report bundles from writable runtime storage
+- includes dashboard, login, portal, tenant, admin, onboarding, and Key Vault-related surfaces
+
+### 2. `website/`
+Legacy shared-host prototype source.
+
+Purpose:
+- keeps the original shared-host prototype editable while the newer app evolves
+- still useful for reference and compatibility while `example.ict365.uk` remains in play
+
+### 3. `deploy/maester/`
+Legacy deployable shared-host bundle.
+
+Purpose:
+- current deploy-target bundle for the prototype environment on `example.ict365.uk`
+- transitional only, not the final product deployment model
+
+## GitHub Actions workflows
+
+Current workflows present in the repo:
+- `docker-publish.yml`
+  - manually builds and publishes the SecureIT container image to GHCR
+- `maester-manual-run.yml`
+  - the main modern manual-run workflow, supports certificate and client-secret auth, test profile selection, FTPS publish, and app-import bundle creation
+- `maester-weekly.yml`
+  - legacy weekly/manual workflow path still retained in the repo
+- `azure-oidc-diagnostic.yml`
+  - validates Azure OIDC login assumptions
+- `azure-keyvault-smoke-test.yml`
+  - tests Azure Key Vault secret retrieval via OIDC login
+
+## Runtime and configuration model
+
+Tracked example files are intended as templates.
+
+Important tracked examples:
 - `config/tenants.example.json`
 - `config/canonical-controls.example.json`
 - `data/tenants.example.json`
 - `deploy/config.tenants.example.json`
 - `deploy/maester/tenants.example.json`
+- `deploy/maester/admin-config.example.json`
+- `config/admin-config.example.json`
 
-Expected local/runtime files include:
+Typical runtime files:
 - `config/tenants.json`
 - `data/tenants.json`
 - `deploy/config.tenants.json`
 - `deploy/maester/tenants.json`
+- `deploy/maester/admin-config.json`
 
-Those runtime files are ignored so real tenant metadata, report locations, and environment-specific settings do not get committed by accident.
+These runtime files are environment-specific and should be treated carefully.
 
-## Canonical control mapping and functional-area scoring
+## App report import flow
 
-SecureIT should not treat every Maester framework check as a separate customer-facing control.
+The repo now supports a cleaner app-facing report import path.
 
-The intended model is:
-- keep raw Maester outputs intact for traceability
-- map duplicate or near-duplicate framework checks into one canonical SecureIT control
-- map each canonical control into one of the 8 SecureIT functional areas
-- score customer-facing posture from canonical controls, not raw duplicated framework checks
+Generated output can be prepared into:
+- `app-import/<tenant-key>/...`
 
-Tracked example mapping file:
-- `config/canonical-controls.example.json`
-
-This file is intended to:
-- collapse duplicate checks like `CISA.MS.AAD.6.1` and `CIS.M365.1.3.1` into one control
-- provide friendly control titles and descriptions
-- assign a SecureIT functional area
-- define basic scoring weight and pass logic
-
-## App report import path
-
-SecureIT now has a simple import path for report bundles generated by GitHub Actions.
-
-Workflow runs upload two related artifact trees:
-- `output/<tenant-key>/...` , the raw generated tenant report bundle
-- `app-import/<tenant-key>/...` , the same bundle prepared in the shape expected by the app runtime under `data/reports/<tenant-key>/...`
-
-To import a generated tenant bundle into the app runtime locally or on a target host:
+Then imported into app runtime storage with:
 
 ```powershell
 pwsh ./scripts/Import-AppReportBundle.ps1 -TenantKey ict365 -SourcePath ./app-import/ict365
 ```
 
-By default this copies into:
-- `data/reports/<tenant-key>/latest/...`
-- `data/reports/<tenant-key>/history/...`
+Default destination:
+- `data/reports/<tenant-key>/...`
 
-You can override the destination root if the app runtime stores reports elsewhere:
+This is an important bridge between Maester-run output and the SecureIT app runtime.
 
-```powershell
-pwsh ./scripts/Import-AppReportBundle.ps1 -TenantKey ict365 -SourcePath ./app-import/ict365 -DestinationRoot /var/www/secureit/data/reports
-```
+## SecureIT functional areas and canonical controls
 
-Use `-Clean` if you intentionally want to replace the tenant report tree before import.
+SecureIT is moving away from treating every raw Maester framework item as an independent customer-facing control.
 
-## Next sensible steps
+Intended model:
+- keep raw Maester output for traceability
+- collapse duplicate framework checks into canonical SecureIT controls
+- map those controls into SecureIT functional areas
+- derive customer-facing posture from canonical SecureIT controls instead of duplicated raw test IDs
 
-- Add canonical `*.example.json` files for each tenant registry location
-- Decide which single source of truth should own tenant definitions
-- Replace prototype wording in the PHP UI once the real flow is settled
-- Tighten onboarding so it writes only to the intended runtime location
-- Extend canonical control mappings so all desired Class A test families map cleanly into customer-facing scoring
-- Add a target-environment deployment step that consumes `app-import/<tenant-key>/...` directly on the live app host
+Tracked example mapping:
+- `config/canonical-controls.example.json`
+
+## Deployment direction
+
+### Current prototype
+- shared-host prototype at `https://example.ict365.uk`
+- deploy bundle under `deploy/maester/`
+- legacy website source under `website/`
+
+### Planned product path
+- SecureIT app in `app/`
+- Docker image built from `Dockerfile`
+- image published to GitHub Container Registry
+- target image name: `ghcr.io/matt-edu365/secureit`
+- intended runtime on Proxmox or equivalent Docker host
+- planned product hostname: `https://secureit.ict365.ky`
+
+## Current status summary
+
+What is already true:
+- the GitHub repo exists and is active
+- SecureIT branding is already being applied across docs and app surfaces
+- the app surface is more advanced than the legacy prototype
+- manual Maester execution workflow exists and supports app-import bundle preparation
+- Azure OIDC and Key Vault diagnostic workflows exist
+- there is still technical and directory debt from the original Maester prototype
+
+What still needs deliberate cleanup:
+- reduce documentation drift
+- decide when to retire `website/` and `deploy/maester/`
+- align workflow naming and legacy labels with current SecureIT reality
+- continue moving customer-facing language from Maester terminology to SecureIT terminology
+- complete the handoff from prototype publication to app-first deployment
+
+## Recommended working rule
+
+Keep these aligned whenever practical:
+1. local working copy
+2. GitHub repo
+3. prototype or target runtime environment
+
+If they differ intentionally, document the drift clearly in a commit, note, or handoff.
+
+## Handoff
+
+For the next Codex-based agent, start with:
+- `README.md`
+- `docs/repo-structure.md`
+- `docs/build-plan.md`
+- `docs/website-plan.md`
+- `docs/handoff-codex-agent.md`
+
+That handoff doc is intended to be the continuation reference for the next agent.

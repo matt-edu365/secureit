@@ -4,11 +4,16 @@ require __DIR__ . '/lib.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['ms_login'])) {
         $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
-        if ($m365Email !== '' && str_ends_with($m365Email, '@ict365.ky')) {
-            header('Location: dashboard.php', true, 302);
-            exit;
+        $route = secureit_resolve_login_route($m365Email);
+        if (($route['source'] ?? '') === 'seed' || ($route['source'] ?? '') === 'domain') {
+            $identity = $route['identity'] ?? [];
+            $role = ($identity['role'] ?? null) === 'admin' || ($route['route'] ?? '') === 'dashboard.php' ? 'admin' : 'customer';
+            $tenantKey = $identity['tenantKey'] ?? null;
+            secureit_set_auth_context($role, $m365Email, is_string($tenantKey) ? $tenantKey : null, ['identitySource' => $route['source'] ?? 'default']);
+        } else {
+            secureit_clear_auth_context();
         }
-        header('Location: portal.php', true, 302);
+        header('Location: ' . $route['route'], true, 302);
         exit;
     }
 
@@ -19,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $enquiryReceived = isset($_GET['enquiry']) && $_GET['enquiry'] === 'received';
+$unknownIdentity = isset($_GET['unknown']) && $_GET['unknown'] === '1';
+$deniedAccess = isset($_GET['denied']) && $_GET['denied'] === '1';
 
 ob_start();
 ?>
@@ -33,14 +40,28 @@ ob_start();
 
         <div class="empty-state" style="margin-bottom:22px;">
           <strong>Existing customers</strong>
-          <p class="muted" style="margin:8px 0 0;">Use your business or school Microsoft account to sign in and access your SecureIT portal.</p>
+          <p class="muted" style="margin:8px 0 0;">Use your business or school Microsoft account to sign in and access your SecureIT tenant.</p>
         </div>
+
+        <?php if ($unknownIdentity): ?>
+          <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
+            <strong>No matching local identity</strong>
+            <p class="muted" style="margin:8px 0 0;">Use `fab@local`, `con@local`, or an `@ict365.ky` administrator account.</p>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($deniedAccess): ?>
+          <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
+            <strong>Access restricted</strong>
+            <p class="muted" style="margin:8px 0 0;">That page is available only to ICT365 administrator accounts.</p>
+          </div>
+        <?php endif; ?>
 
         <form method="post" style="display:grid; gap:16px;">
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
-            <input id="m365-email" name="m365_email" type="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">Prototype routing is now enabled: any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard. Other addresses currently route to the customer portal.</p>
+            <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
+            <p class="field-note">Prototype routing is now enabled: a local seed file can map specific identities to a customer tenant page or to the admin dashboard. If no seed is found, any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard and other addresses return here.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -53,7 +74,7 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;">Prototype behaviour only: this now checks the entered email address and routes <strong>@ict365.ky</strong> users to the admin dashboard, while other addresses go to the customer side.</p>
+          <p class="field-note" style="margin-top:0;">Prototype behaviour only: local seeded identities can override the route to a tenant page, otherwise <strong>@ict365.ky</strong> users go to the admin dashboard and other addresses come back to this page.</p>
         </form>
       </article>
 
@@ -131,15 +152,16 @@ secureit_render_shell('SecureIT Login', $content, [
     'eyebrow' => '',
     'hideHeroChrome' => true,
     'heroIntroMaxWidth' => '840px',
+    'heroBackground' => secureit_default_hero_background(),
     'navLinks' => [],
     'navCta' => ['href' => 'login.php', 'label' => 'SecureIT Login'],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],
-        ['href' => 'portal.php', 'label' => 'Customer portal'],
+        ['href' => 'login.php', 'label' => 'Customer login'],
     ],
     'footerSecondaryLinks' => [
         ['href' => 'dashboard.php', 'label' => 'Employee portal'],
-        ['href' => 'portal.php', 'label' => 'Customer portal'],
+        ['href' => 'login.php', 'label' => 'Customer login'],
         ['href' => 'admin.php', 'label' => 'Admin'],
     ],
     'footerContact' => [

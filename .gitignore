@@ -22,6 +22,7 @@ config/tenants.json
 data/tenants.json
 deploy/config.tenants.json
 deploy/maester/tenants.json
+.local/
 
 # Published or generated sample site/report content
 deploy/maester/*/latest/

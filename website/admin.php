@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/_theme.php';
+secureit_require_admin_access();
 
 $configPath = __DIR__ . '/admin-config.json';
 $examplePath = __DIR__ . '/admin-config.example.json';

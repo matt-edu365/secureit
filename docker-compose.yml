@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   secureit:
     image: ghcr.io/matt-edu365/secureit:latest
@@ -11,5 +10,7 @@ services:
       SECUREIT_BASE_URL: "https://secureit.ict365.ky"
       SECUREIT_TENANTS_FILE: "/var/www/data/tenants.json"
       SECUREIT_REPORTS_ROOT: "/var/www/data/reports"
+      SECUREIT_IDENTITY_SEEDS_FILE: "/var/www/local/identity-seeds.json"
     volumes:
       - ./data:/var/www/data
+      - ./.local:/var/www/local

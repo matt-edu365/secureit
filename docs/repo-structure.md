@@ -24,7 +24,6 @@ SecureIT/
     lib.php
     login.php
     onboard.php
-    portal.php
     tenant.php
   config/
     admin-config.example.json
@@ -81,7 +80,6 @@ SecureIT/
     index.php
     login.php
     onboard.php
-    portal.php
     README.md
     tenant.php
   Dockerfile

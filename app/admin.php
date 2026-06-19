@@ -1,5 +1,10 @@
 <?php
 require __DIR__ . '/lib.php';
+$authRole = secureit_current_user_role();
+if ($authRole !== 'admin') {
+    header('Location: login.php?denied=1', true, 302);
+    exit;
+}
 
 $configPath = __DIR__ . '/../data/admin-config.json';
 $messages = [];
@@ -122,14 +127,10 @@ ob_start();
 $content = ob_get_clean();
 secureit_render_shell('Admin Actions - SecureIT', $content, [
     'pageTitle' => 'Admin Actions',
-    'pageIntro' => 'Manage shared platform defaults for Key Vault, notifications, and reporting in the ICT365 SecureIT container app.',
-    'eyebrow' => 'SecureIT platform administration',
-    'backHref' => 'dashboard.php',
-    'backLabel' => 'Back to admin dashboard',
-    'heroBadges' => [
-        'Shared Key Vault: ' . ($config['azure']['keyVaultName'] ?? 'Not set'),
-        'Base site URL: ' . ($config['reports']['baseSiteUrl'] ?? secureit_config()['base_url']),
-    ],
+    'pageIntro' => 'Manage shared platform defaults for Key Vault, notifications, and reporting.',
+    'eyebrow' => '',
+    'heroBackground' => secureit_default_hero_background(),
+    'heroTextAlign' => 'center',
     'navLinks' => [],
     'headerMenu' => [
         ['href' => 'admin.php', 'label' => 'Admin actions'],
@@ -137,7 +138,7 @@ secureit_render_shell('Admin Actions - SecureIT', $content, [
     ],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],
-        ['href' => 'portal.php', 'label' => 'Customer portal'],
+        ['href' => 'login.php', 'label' => 'Customer login'],
     ],
     'footerSecondaryLinks' => [
         ['href' => 'dashboard.php', 'label' => 'Admin dashboard'],

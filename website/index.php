@@ -152,9 +152,7 @@ secureit_render_layout(
             ['href' => 'https://ict365.ky', 'label' => 'https://ict365.ky'],
         ],
         'footerSecondaryLinks' => [
-            ['href' => 'dashboard.php', 'label' => 'Employee portal'],
-            ['href' => 'portal.php', 'label' => 'Customer portal'],
-            ['href' => 'admin.php', 'label' => 'Admin'],
+            ['href' => 'login.php', 'label' => 'Customer login'],
         ],
     ]
 );

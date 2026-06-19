@@ -73,6 +73,143 @@ function secureit_find_tenant(string $tenantKey): ?array {
     return null;
 }
 
+function secureit_start_session(): void {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+}
+
+function secureit_current_auth_context(): ?array {
+    secureit_start_session();
+    $auth = $_SESSION['secureit_auth'] ?? null;
+    return is_array($auth) ? $auth : null;
+}
+
+function secureit_set_auth_context(string $role, ?string $email = null, ?string $tenantKey = null, array $extra = []): void {
+    secureit_start_session();
+    session_regenerate_id(true);
+    $_SESSION['secureit_auth'] = array_merge([
+        'role' => $role,
+        'email' => $email,
+        'tenantKey' => $tenantKey,
+    ], $extra);
+}
+
+function secureit_clear_auth_context(): void {
+    secureit_start_session();
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+    session_destroy();
+}
+
+function secureit_current_user_role(): ?string {
+    $auth = secureit_current_auth_context();
+    return isset($auth['role']) ? (string) $auth['role'] : null;
+}
+
+function secureit_user_is_admin(): bool {
+    return secureit_current_user_role() === 'admin';
+}
+
+function secureit_require_admin_access(string $redirect = 'login.php?denied=1'): void {
+    if (!secureit_user_is_admin()) {
+        header('Location: ' . $redirect, true, 302);
+        exit;
+    }
+}
+
+function secureit_load_identity_seeds(): array {
+    $config = secureit_config();
+    $path = trim((string) ($config['identity_seeds_file'] ?? ''));
+    if ($path === '' || !file_exists($path)) {
+        return [];
+    }
+
+    $data = json_decode(file_get_contents($path), true);
+    if (!is_array($data)) {
+        return [];
+    }
+
+    $entries = $data['identities'] ?? $data['users'] ?? $data;
+    if (!is_array($entries)) {
+        return [];
+    }
+
+    $seeds = [];
+    foreach ($entries as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+
+        $email = strtolower(trim((string) ($entry['email'] ?? $entry['upn'] ?? $entry['username'] ?? '')));
+        if ($email === '') {
+            continue;
+        }
+
+        $role = strtolower(trim((string) ($entry['role'] ?? $entry['access'] ?? 'customer')));
+        if (in_array($role, ['admin', 'administrator', 'staff', 'ict365'], true)) {
+            $role = 'admin';
+        } else {
+            $role = 'customer';
+        }
+
+        $seeds[$email] = [
+            'email' => $email,
+            'role' => $role,
+            'name' => trim((string) ($entry['name'] ?? $entry['label'] ?? '')),
+            'tenantKey' => trim((string) ($entry['tenantKey'] ?? $entry['tenant'] ?? '')),
+        ];
+    }
+
+    return $seeds;
+}
+
+function secureit_resolve_login_route(string $email): array {
+    $email = strtolower(trim($email));
+    $seed = $email !== '' ? (secureit_load_identity_seeds()[$email] ?? null) : null;
+    if (is_array($seed)) {
+        $tenantKey = trim((string) ($seed['tenantKey'] ?? ''));
+        if (($seed['role'] ?? 'customer') === 'admin') {
+            return [
+                'route' => 'dashboard.php',
+                'identity' => $seed,
+                'source' => 'seed',
+            ];
+        }
+
+        if ($tenantKey !== '') {
+            return [
+                'route' => 'tenant.php?tenant=' . rawurlencode($tenantKey),
+                'identity' => $seed,
+                'source' => 'seed',
+            ];
+        }
+
+        return [
+            'route' => 'login.php?unknown=1',
+            'identity' => $seed,
+            'source' => 'seed',
+        ];
+    }
+
+    if ($email !== '' && str_ends_with($email, '@ict365.ky')) {
+        return [
+            'route' => 'dashboard.php',
+            'identity' => null,
+            'source' => 'domain',
+        ];
+    }
+
+    return [
+        'route' => 'login.php?unknown=1',
+        'identity' => null,
+        'source' => 'default',
+    ];
+}
+
 function secureit_load_canonical_controls(): array {
     $config = secureit_config();
     $paths = [
@@ -275,12 +412,17 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             'status' => 'No data',
             'tone' => 'neutral',
             'score' => null,
+            'testsTotal' => 0,
+            'testsPassed' => 0,
+            'testsFailed' => 0,
+            'testsSkipped' => 0,
             'controlsTotal' => 0,
             'controlsPassing' => 0,
             'controlsFailing' => 0,
             'controlsPartial' => 0,
             'controlsUnmapped' => 0,
             'controls' => [],
+            '_tests' => [],
         ];
     }
 
@@ -335,9 +477,35 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             'matchedTests' => $matchedTests,
             'weight' => (int) (($control['scoring']['weight'] ?? 1)),
         ];
+
+        foreach ($matchedTests as $test) {
+            $testId = secureit_normalise_mapping_id((string) ($test['id'] ?? ''));
+            if ($testId === '') {
+                continue;
+            }
+            $areas[$area]['_tests'][$testId] = $test;
+        }
     }
 
     foreach ($areas as $areaName => &$area) {
+        $uniqueTests = array_values($area['_tests'] ?? []);
+        unset($area['_tests']);
+
+        $area['testsTotal'] = count($uniqueTests);
+        $area['testsPassed'] = 0;
+        $area['testsFailed'] = 0;
+        $area['testsSkipped'] = 0;
+        foreach ($uniqueTests as $test) {
+            $result = strtolower((string) ($test['result'] ?? 'unknown'));
+            if (secureit_is_pass_result($result)) {
+                $area['testsPassed']++;
+            } elseif (secureit_is_fail_result($result)) {
+                $area['testsFailed']++;
+            } elseif (secureit_is_neutral_result($result)) {
+                $area['testsSkipped']++;
+            }
+        }
+
         if ($area['controlsTotal'] === 0) {
             $area['status'] = 'No data';
             $area['tone'] = 'neutral';
@@ -425,6 +593,65 @@ function secureit_summary_counts(?array $summary): array {
     ];
 }
 
+function secureit_tenant_analysis_text(?array $summary, array $areaData): string {
+    if (!$summary) {
+        return 'No report summary is available yet for this tenant.';
+    }
+
+    $counts = secureit_summary_counts($summary);
+    $runDate = secureit_format_date_only($summary['generatedAt'] ?? null);
+    $areas = $areaData['areas'] ?? [];
+
+    $worstArea = null;
+    $bestArea = null;
+    foreach ($areas as $area) {
+        $score = $area['score'];
+        if ($score === null) {
+            continue;
+        }
+        if ($worstArea === null || $score < ($worstArea['score'] ?? 101)) {
+            $worstArea = $area;
+        }
+        if ($bestArea === null || $score > ($bestArea['score'] ?? -1)) {
+            $bestArea = $area;
+        }
+    }
+
+    if ($counts['failed'] === 0) {
+        $posture = 'is healthy';
+    } elseif ($counts['failed'] <= 3) {
+        $posture = 'is on the watch list';
+    } else {
+        $posture = 'is in need of attention';
+    }
+
+    $worstAreaName = 'n/a';
+    $worstAreaScore = 'n/a';
+    if ($worstArea && isset($worstArea['name'])) {
+        $worstScore = $worstArea['score'];
+        $worstAreaName = $worstArea['name'];
+        $worstAreaScore = $worstScore !== null ? (string) $worstScore : 'n/a';
+    }
+
+    $bestAreaName = 'n/a';
+    $bestAreaScore = 'n/a';
+    if ($bestArea && isset($bestArea['name'])) {
+        $bestScore = $bestArea['score'];
+        $bestAreaName = $bestArea['name'];
+        $bestAreaScore = $bestScore !== null ? (string) $bestScore : 'n/a';
+    }
+
+    return sprintf(
+        'The latest run on %s indicates the overall posture %s. The lowest-scoring area is currently %s at %s%%. The strongest area is %s at %s%%.',
+        $runDate,
+        $posture,
+        $worstAreaName,
+        $worstAreaScore,
+        $bestAreaName,
+        $bestAreaScore
+    );
+}
+
 function secureit_format_datetime(?string $value): string {
     if (!$value) {
         return 'Unknown';
@@ -436,6 +663,53 @@ function secureit_format_datetime(?string $value): string {
     } catch (Throwable $e) {
         return $value;
     }
+}
+
+function secureit_format_date_only(?string $value): string {
+    if (!$value) {
+        return 'Unknown';
+    }
+
+    try {
+        $dt = new DateTimeImmutable($value);
+        return $dt->format('j M Y');
+    } catch (Throwable $e) {
+        return $value;
+    }
+}
+
+function secureit_default_hero_background(): string {
+    $heroSvg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a3d32" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#339997" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="600" fill="url(#g1)"/>
+  <path d="M150 470C310 360 420 330 580 350C700 365 766 420 850 445C980 483 1090 450 1210 375C1330 300 1430 275 1540 295V600H150V470Z" fill="#0a3d32" fill-opacity="0.14"/>
+  <path d="M190 410L350 260L495 325L640 210L800 265L940 155L1110 245L1250 185L1430 285" stroke="url(#g2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M255 175C255 160 267 148 282 148H388C403 148 415 160 415 175V281C415 296 403 308 388 308H282C267 308 255 296 255 281V175Z" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+  <path d="M318 188L326 206L345 209L331 222L335 241L318 231L301 241L305 222L291 209L310 206L318 188Z" fill="#ffffff" fill-opacity="0.75"/>
+  <path d="M845 135C845 120 857 108 872 108H1022C1037 108 1049 120 1049 135V270C1049 285 1037 297 1022 297H872C857 297 845 285 845 270V135Z" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+  <path d="M931 152C931 137 944 124 959 124C974 124 987 137 987 152V194C987 209 974 222 959 222C944 222 931 209 931 194V152Z" fill="#ffffff" fill-opacity="0.35"/>
+  <path d="M959 171C969 171 977 179 977 189C977 198 969 206 959 206C949 206 941 198 941 189C941 179 949 171 959 171Z" fill="#0a3d32" fill-opacity="0.45"/>
+  <path d="M1120 312C1120 297 1132 285 1147 285H1308C1323 285 1335 297 1335 312V448C1335 463 1323 475 1308 475H1147C1132 475 1120 463 1120 448V312Z" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+  <path d="M1212 349L1227 382H1198L1212 349Z" fill="#ffffff" fill-opacity="0.55"/>
+  <circle cx="1228" cy="342" r="10" fill="#ffffff" fill-opacity="0.22"/>
+  <circle cx="1281" cy="404" r="9" fill="#ffffff" fill-opacity="0.18"/>
+  <circle cx="719" cy="378" r="12" fill="#ffffff" fill-opacity="0.16"/>
+  <circle cx="640" cy="262" r="8" fill="#ffffff" fill-opacity="0.2"/>
+  <circle cx="1040" cy="228" r="10" fill="#ffffff" fill-opacity="0.16"/>
+</svg>
+SVG;
+
+    return "linear-gradient(135deg, rgba(10,61,50,0.98) 0%, rgba(0,99,95,0.94) 48%, rgba(51,153,151,0.88) 100%), url('data:image/svg+xml;charset=UTF-8," . rawurlencode($heroSvg) . "') center/cover no-repeat";
 }
 
 function secureit_dashboard_stats(array $tenants): array {
@@ -493,6 +767,12 @@ function secureit_render_shell(string $title, string $content, array $options = 
     $heroIntroMaxWidth = $options['heroIntroMaxWidth'] ?? '760px';
     $hideHeroChrome = (bool) ($options['hideHeroChrome'] ?? false);
     $headerMenu = $options['headerMenu'] ?? [];
+    $heroBackground = $options['heroBackground'] ?? null;
+    $heroTextAlign = $options['heroTextAlign'] ?? 'left';
+    $authContext = secureit_current_auth_context();
+    if ($authContext !== null) {
+        $headerMenu[] = ['href' => 'logout.php', 'label' => 'Logout'];
+    }
     ?>
 <!doctype html>
 <html lang="en">
@@ -608,6 +888,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
     .menu-trigger {
       min-width: 46px;
       width: 46px;
+      height: 46px;
       padding: 0;
       border-radius: 12px;
       background: #ffffff;
@@ -632,8 +913,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       display: none;
       z-index: 60;
     }
-    .menu-dropdown:hover .menu-panel,
-    .menu-dropdown:focus-within .menu-panel {
+    .menu-dropdown.is-open .menu-panel {
       display: block;
     }
     .menu-item {
@@ -1126,14 +1406,14 @@ function secureit_render_shell(string $title, string $content, array $options = 
           <?php endif; ?>
           <?php if ($headerMenu): ?>
             <div class="menu-dropdown">
-              <button class="menu-trigger" type="button" aria-label="Open menu">
+              <button class="menu-trigger" type="button" aria-label="Open menu" aria-expanded="false" data-menu-trigger>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   <path d="M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   <path d="M4 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </button>
-              <div class="menu-panel">
+              <div class="menu-panel" data-menu-panel>
                 <?php foreach ($headerMenu as $item): ?>
                   <a class="menu-item" href="<?php echo htmlspecialchars($item['href']); ?>"><?php echo htmlspecialchars($item['label']); ?></a>
                 <?php endforeach; ?>
@@ -1147,9 +1427,9 @@ function secureit_render_shell(string $title, string $content, array $options = 
 
   <main class="app-shell">
     <?php if ($pageTitle !== null || $pageIntro !== null): ?>
-      <section class="hero card">
+      <section class="hero card"<?php if ($heroBackground): ?> style="background: <?php echo htmlspecialchars($heroBackground); ?>;"<?php endif; ?>>
         <div class="hero-row">
-          <div>
+          <div style="<?php echo $heroTextAlign === 'center' ? 'width:100%; text-align:center;' : ''; ?>">
             <?php if (!$hideHeroChrome && $eyebrow !== ''): ?>
               <div class="eyebrow"><?php echo htmlspecialchars($eyebrow); ?></div>
             <?php endif; ?>
@@ -1157,21 +1437,18 @@ function secureit_render_shell(string $title, string $content, array $options = 
               <h1><?php echo htmlspecialchars($pageTitle); ?></h1>
             <?php endif; ?>
             <?php if ($pageIntro !== null && $pageIntro !== ''): ?>
-              <p style="max-width: <?php echo htmlspecialchars($heroIntroMaxWidth); ?>;"><?php echo htmlspecialchars($pageIntro); ?></p>
+              <p style="max-width: <?php echo htmlspecialchars($heroIntroMaxWidth); ?>;<?php echo $heroTextAlign === 'center' ? ' margin-left:auto; margin-right:auto;' : ''; ?>"><?php echo htmlspecialchars($pageIntro); ?></p>
             <?php endif; ?>
             <?php if (!$hideHeroChrome && $heroBadges): ?>
-              <div class="hero-pill-row">
+              <div class="hero-pill-row"<?php echo $heroTextAlign === 'center' ? ' style="justify-content:center;"' : ''; ?>>
                 <?php foreach ($heroBadges as $badge): ?>
                   <div class="hero-pill"><?php echo htmlspecialchars($badge); ?></div>
                 <?php endforeach; ?>
               </div>
             <?php endif; ?>
           </div>
-          <?php if ((!$hideHeroChrome && $heroActions) || $backHref): ?>
+          <?php if (!$hideHeroChrome && $heroActions): ?>
             <div class="hero-actions">
-              <?php if ($backHref): ?>
-                <a class="button-secondary" href="<?php echo htmlspecialchars($backHref); ?>"><?php echo htmlspecialchars($backLabel); ?></a>
-              <?php endif; ?>
               <?php if (!$hideHeroChrome): ?>
                 <?php foreach ($heroActions as $action): ?>
                   <a class="<?php echo htmlspecialchars($action['class'] ?? 'button'); ?>" href="<?php echo htmlspecialchars($action['href']); ?>"><?php echo htmlspecialchars($action['label']); ?></a>
@@ -1224,6 +1501,55 @@ function secureit_render_shell(string $title, string $content, array $options = 
       </div>
     </div>
   </footer>
+  <script>
+    (() => {
+      const dropdowns = Array.from(document.querySelectorAll('.menu-dropdown'));
+      if (!dropdowns.length) return;
+
+      const closeAll = () => {
+        dropdowns.forEach((dropdown) => {
+          dropdown.classList.remove('is-open');
+          const trigger = dropdown.querySelector('[data-menu-trigger]');
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        });
+      };
+
+      dropdowns.forEach((dropdown) => {
+        const trigger = dropdown.querySelector('[data-menu-trigger]');
+        const panel = dropdown.querySelector('[data-menu-panel]');
+        if (!trigger || !panel) return;
+
+        trigger.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const willOpen = !dropdown.classList.contains('is-open');
+          closeAll();
+          if (willOpen) {
+            dropdown.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+          }
+        });
+
+        panel.addEventListener('click', (event) => {
+          if (event.target.closest('a')) {
+            closeAll();
+          }
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.menu-dropdown')) {
+          closeAll();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeAll();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
 <?php

@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/_theme.php';
+secureit_require_admin_access();
 
 $tenantsPath = __DIR__ . '/tenants.json';
 $examplePath = __DIR__ . '/tenants.example.json';
@@ -163,15 +164,8 @@ ob_start();
     <?php endif; ?>
   </article>
 
-  <aside class="card panel">
-    <div class="section-header" style="margin-bottom:18px;">
-      <div>
-        <h2 class="section-title">Onboarding Instructions</h2>
-        <div class="muted">Follow this sequence to create the Entra app, grant the correct permissions, capture tenant details, and save the SecureIT tenant record cleanly.</div>
-      </div>
-    </div>
-    <div class="info-grid" style="grid-template-columns:1fr; gap:22px;">
-      <div class="empty-state" style="margin-bottom:24px;">
+  <aside style="display:grid; gap:22px; align-content:start;">
+      <div class="empty-state" style="width:100%; max-width:100%; box-sizing:border-box; overflow-wrap:anywhere;">
         <h3 class="section-title" style="font-size:1.35rem; margin-bottom:12px;">Required items</h3>
         <ul style="margin:12px 0 0 18px; padding:0; line-height:1.7; color:var(--eden);">
           <li>Customer organisation name and preferred tenant key</li>
@@ -184,24 +178,23 @@ ob_start();
         </ul>
       </div>
 
-      <div class="panel" style="padding:22px; background:var(--surface-soft); border-radius:20px; border:1px solid var(--line); box-shadow:none;">
+      <div class="panel" style="padding:22px; background:var(--surface-soft); border-radius:20px; border:1px solid var(--line); box-shadow:none; overflow:hidden; min-width:0;">
         <h3 class="section-title" style="font-size:1.35rem; margin-bottom:14px;">Onboarding flow</h3>
-        <div style="display:grid; gap:12px;">
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>1. Confirm tenant details</strong><br><span class="muted">Collect the customer name, tenant key, tenant ID, report recipient, and the client secret details that will be used for SecureIT access.</span></div>
+        <div style="display:grid; gap:12px; min-width:0;">
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>1. Confirm tenant details</strong><br><span class="muted">Collect the customer name, tenant key, tenant ID, report recipient, and the client secret details that will be used for SecureIT access.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>2. Create the Entra ID App Registration</strong><br><span class="muted">In Microsoft Entra admin center, create a new app registration for the customer tenant and record the Application (client) ID and Directory (tenant) ID.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>2. Create the Entra ID App Registration</strong><br><span class="muted">In Microsoft Entra admin center, create a new app registration for the customer tenant and record the Application (client) ID and Directory (tenant) ID.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>3. Add API permissions and grant admin consent</strong><br><span class="muted">Assign the required Microsoft Graph application permissions, then grant tenant-wide admin consent so SecureIT can run non-interactive reporting.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>3. Add API permissions and grant admin consent</strong><br><span class="muted">Assign the required Microsoft Graph application permissions, then grant tenant-wide admin consent so SecureIT can run non-interactive reporting.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>4. Create and store the client secret</strong><br><span class="muted">Generate the client secret, store it in Azure Key Vault using the agreed secret name, and confirm that the secret value and expiry are recorded securely.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>4. Create and store the client secret</strong><br><span class="muted">Generate the client secret, store it in Azure Key Vault using the agreed secret name, and confirm that the secret value and expiry are recorded securely.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>5. Save the tenant in SecureIT</strong><br><span class="muted">Complete the tenant form on the left, confirm the generated report URL, and save the record to create the local tenant structure and reporting folders.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>5. Save the tenant in SecureIT</strong><br><span class="muted">Complete the tenant form on the left, confirm the generated report URL, and save the record to create the local tenant structure and reporting folders.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line);"><strong>6. Validate reporting</strong><br><span class="muted">Run the first reporting cycle, confirm access, verify the report recipient, and check that the latest report path is resolving correctly.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>6. Validate reporting</strong><br><span class="muted">Run the first reporting cycle, confirm access, verify the report recipient, and check that the latest report path is resolving correctly.</span></div>
         </div>
       </div>
 
-      <div style="height:24px;"></div>
       <div>
         <h3 class="section-title" style="font-size:1.35rem; margin-bottom:12px;">Required Entra ID / Microsoft Graph permissions</h3>
         <div class="table-wrap">
@@ -254,12 +247,6 @@ ob_start();
         </div>
         <p class="field-note">Exact permissions may evolve with the reporting scope, but these are the core read permissions typically required for SecureIT style tenant assessment and policy analysis.</p>
       </div>
-
-      <div>
-        <h3 class="section-title" style="font-size:1.35rem; margin-bottom:12px;">Reference Tenant Config</h3>
-        <pre><?php echo htmlspecialchars(json_encode($example, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
-      </div>
-    </div>
   </aside>
 </section>
 <script>

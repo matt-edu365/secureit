@@ -59,7 +59,6 @@ If testing canonical control runtime support too, consider supplying:
 Verify:
 - `http://localhost:8088/`
 - `http://localhost:8088/login.php`
-- `http://localhost:8088/portal.php`
 - `http://localhost:8088/onboard.php`
 - `http://localhost:8088/tenant.php?tenant=<tenant-key>`
 - `http://localhost:8088/admin.php`
@@ -70,7 +69,7 @@ Use a real tenant key that exists in the mounted runtime data.
 
 Expected minimum success state:
 - SecureIT branding renders correctly
-- dashboard and portal pages load without fatal errors
+- dashboard and login pages load without fatal errors
 - existing tenant metadata is readable from mounted `data/tenants.json`
 - imported tenant summaries render from mounted `data/reports/`
 - tenant detail view loads for a valid tenant

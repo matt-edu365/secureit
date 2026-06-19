@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/_theme.php';
+secureit_require_admin_access();
 
 $tenantsPath = __DIR__ . '/tenants.json';
 $tenants = [];

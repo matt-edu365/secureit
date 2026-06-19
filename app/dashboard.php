@@ -1,5 +1,10 @@
 <?php
 require __DIR__ . '/lib.php';
+$authRole = secureit_current_user_role();
+if ($authRole !== 'admin') {
+    header('Location: login.php?denied=1', true, 302);
+    exit;
+}
 $config = secureit_load_tenants();
 $tenants = $config['tenants'] ?? [];
 $app = secureit_config();
@@ -7,15 +12,6 @@ $dashboard = secureit_dashboard_stats($tenants);
 
 ob_start();
 ?>
-<section class="section">
-  <div class="metrics-grid">
-    <article class="card metric-card"><div class="muted">Tenants</div><div class="metric-value"><?php echo htmlspecialchars((string) $dashboard['tenantCount']); ?></div><div class="metric-note">Total tenants configured in this SecureIT instance.</div></article>
-    <article class="card metric-card"><div class="muted">Reporting</div><div class="metric-value"><?php echo htmlspecialchars((string) $dashboard['reportingCount']); ?></div><div class="metric-note">Tenants with a latest summary available.</div></article>
-    <article class="card metric-card"><div class="muted">Healthy</div><div class="metric-value"><?php echo htmlspecialchars((string) $dashboard['healthyCount']); ?></div><div class="metric-note">Tenants with no failed checks in the latest published run.</div></article>
-    <article class="card metric-card"><div class="muted">Needs attention</div><div class="metric-value"><?php echo htmlspecialchars((string) $dashboard['attentionCount']); ?></div><div class="metric-note">Tenants whose latest posture needs review.</div></article>
-  </div>
-</section>
-
 <section class="section">
   <div class="section-header">
     <div>
@@ -51,33 +47,25 @@ ob_start();
               $tenant['reportBaseUrl'] ?? '',
           ]);
         ?>
-        <article class="card tenant-card" data-tenant-card data-tenant-search="<?php echo htmlspecialchars($searchValue); ?>">
-          <div class="tenant-head">
+        <article class="card panel" data-tenant-card data-tenant-search="<?php echo htmlspecialchars($searchValue); ?>" style="height:100%; display:flex; flex-direction:column;">
+          <div class="section-header" style="margin-bottom:18px;">
             <div>
-              <h3 class="tenant-name"><?php echo htmlspecialchars($tenant['name'] ?? $tenantKey); ?></h3>
-              <div class="tenant-meta">
-                <div>Tenant key: <?php echo htmlspecialchars($tenantKey); ?></div>
-                <div>Tenant ID: <?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div>
-                <div>Client ID: <?php echo htmlspecialchars($tenant['clientId'] ?? 'Unknown'); ?></div>
-                <div>Report URL: <?php echo htmlspecialchars($tenant['reportBaseUrl'] ?? secureit_build_report_base_url($tenantKey)); ?></div>
-              </div>
+              <h3 class="section-title" style="font-size:1.35rem;"><?php echo htmlspecialchars($tenant['name'] ?? $tenantKey); ?></h3>
             </div>
             <div class="badge <?php echo htmlspecialchars($toneClass); ?>"><?php echo htmlspecialchars($counts['riskLevel']); ?></div>
           </div>
 
           <?php if ($summary): ?>
-            <div>
-              <div class="muted" style="margin-bottom:8px;">Pass rate</div>
-              <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>
-              <div class="muted" style="margin-top:8px;"><?php echo htmlspecialchars((string) $counts['passRate']); ?>% of checks passed in the latest published run.</div>
-            </div>
-            <div class="stats-row">
+            <div class="stats-row" style="margin-bottom:14px;">
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['total']); ?></strong><span>Total checks</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['passed']); ?></strong><span>Passed</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['skipped']); ?></strong><span>Skipped</span></div>
             </div>
-            <div class="inline-links">
+            <div class="muted" style="margin-bottom:8px;">Pass rate</div>
+            <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>
+            <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) $counts['passRate']); ?>% of checks passed in the last run.</div>
+            <div class="inline-links" style="margin-top:auto;">
               <a class="textlink" href="tenant.php?tenant=<?php echo rawurlencode($tenantKey); ?>">Open tenant page</a>
               <a class="textlink" href="<?php echo htmlspecialchars($tenantKey); ?>/latest/index.html">Open latest report</a>
             </div>
@@ -87,23 +75,17 @@ ob_start();
               <strong>No published report yet.</strong>
               <p class="muted">This tenant is configured, but a latest summary has not been published yet.</p>
             </div>
-            <div class="inline-links">
+            <div class="inline-links" style="margin-top:auto;">
               <a class="textlink" href="tenant.php?tenant=<?php echo rawurlencode($tenantKey); ?>">Open tenant page</a>
             </div>
           <?php endif; ?>
         </article>
       <?php endforeach; ?>
 
-      <article class="card tenant-card" data-tenant-card data-tenant-search="placeholder tenant finance school coming soon">
-        <div class="tenant-head">
+      <article class="card panel" data-tenant-card data-tenant-search="placeholder tenant finance school coming soon" style="height:100%; display:flex; flex-direction:column;">
+        <div class="section-header" style="margin-bottom:18px;">
           <div>
-            <h3 class="tenant-name">Placeholder tenant 02</h3>
-            <div class="tenant-meta">
-              <div>Tenant key: coming-soon-02</div>
-              <div>Tenant ID: Pending onboarding</div>
-              <div>Client ID: Pending onboarding</div>
-              <div>Report URL: Reserved for future tenant</div>
-            </div>
+            <h3 class="section-title" style="font-size:1.35rem;">Placeholder tenant 02</h3>
           </div>
           <div class="badge tone-neutral">Pending</div>
         </div>
@@ -111,19 +93,13 @@ ob_start();
           <strong>Awaiting tenant onboarding.</strong>
           <p class="muted">This placeholder card reserves space for another customer environment once onboarding details are available.</p>
         </div>
-        <div class="inline-links"><a class="textlink" href="onboard.php">Start onboarding</a></div>
+        <div class="inline-links" style="margin-top:auto;"><a class="textlink" href="onboard.php">Start onboarding</a></div>
       </article>
 
-      <article class="card tenant-card" data-tenant-card data-tenant-search="placeholder tenant legal hospitality coming soon">
-        <div class="tenant-head">
+      <article class="card panel" data-tenant-card data-tenant-search="placeholder tenant legal hospitality coming soon" style="height:100%; display:flex; flex-direction:column;">
+        <div class="section-header" style="margin-bottom:18px;">
           <div>
-            <h3 class="tenant-name">Placeholder tenant 03</h3>
-            <div class="tenant-meta">
-              <div>Tenant key: coming-soon-03</div>
-              <div>Tenant ID: Pending onboarding</div>
-              <div>Client ID: Pending onboarding</div>
-              <div>Report URL: Reserved for future tenant</div>
-            </div>
+            <h3 class="section-title" style="font-size:1.35rem;">Placeholder tenant 03</h3>
           </div>
           <div class="badge tone-neutral">Pending</div>
         </div>
@@ -131,7 +107,7 @@ ob_start();
           <strong>Awaiting tenant onboarding.</strong>
           <p class="muted">Use this slot as a visual placeholder for another managed customer as the SecureIT portfolio grows.</p>
         </div>
-        <div class="inline-links"><a class="textlink" href="onboard.php">Start onboarding</a></div>
+        <div class="inline-links" style="margin-top:auto;"><a class="textlink" href="onboard.php">Start onboarding</a></div>
       </article>
     </div>
   <?php endif; ?>
@@ -140,8 +116,10 @@ ob_start();
 $content = ob_get_clean();
 secureit_render_shell('SecureIT Admin Dashboard', $content, [
     'pageTitle' => 'SecureIT Administrator Portal',
-    'pageIntro' => 'Multi-Tenant Operational view for ICT365 administrators',
+    'pageIntro' => null,
     'eyebrow' => '',
+    'heroBackground' => secureit_default_hero_background(),
+    'heroTextAlign' => 'center',
     'navLinks' => [],
     'headerMenu' => [
         ['href' => 'admin.php', 'label' => 'Admin actions'],
@@ -149,7 +127,7 @@ secureit_render_shell('SecureIT Admin Dashboard', $content, [
     ],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],
-        ['href' => 'portal.php', 'label' => 'Customer portal'],
+        ['href' => 'login.php', 'label' => 'Customer login'],
     ],
     'footerSecondaryLinks' => [
         ['href' => 'dashboard.php', 'label' => 'Admin dashboard'],

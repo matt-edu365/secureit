@@ -121,11 +121,13 @@ secureit_render_shell(
     'SecureIT | ICT365',
     $content,
     [
-        'pageTitle' => 'SecureIT by ICT365: Continuous and clear M365 security monitoring.',
+        'pageTitle' => 'SecureIT - Continuous, clear M365 security monitoring.',
         'pageIntro' => "ICT365 are pleased to present 'SecureIT' - your security portal for M365.",
         'eyebrow' => '',
         'heroBadges' => [],
         'heroActions' => [],
+        'heroBackground' => secureit_default_hero_background(),
+        'heroTextAlign' => 'center',
         'navLinks' => [],
         'navCta' => ['href' => 'login.php', 'label' => 'SecureIT Login'],
         'footerLinks' => [
@@ -140,7 +142,7 @@ secureit_render_shell(
         ],
         'footerSecondaryLinks' => [
             ['href' => 'dashboard.php', 'label' => 'Employee portal'],
-            ['href' => 'portal.php', 'label' => 'Customer portal'],
+            ['href' => 'login.php', 'label' => 'Customer login'],
             ['href' => 'admin.php', 'label' => 'Admin'],
         ],
     ]

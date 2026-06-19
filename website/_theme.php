@@ -82,6 +82,49 @@ function secureit_dashboard_stats(array $tenants, callable $summaryResolver): ar
     return $stats;
 }
 
+function secureit_start_session(): void {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+}
+
+function secureit_current_auth_context(): ?array {
+    secureit_start_session();
+    $auth = $_SESSION['secureit_auth'] ?? null;
+    return is_array($auth) ? $auth : null;
+}
+
+function secureit_set_auth_context(string $role, ?string $email = null, array $extra = []): void {
+    secureit_start_session();
+    session_regenerate_id(true);
+    $_SESSION['secureit_auth'] = array_merge([
+        'role' => $role,
+        'email' => $email,
+    ], $extra);
+}
+
+function secureit_clear_auth_context(): void {
+    secureit_start_session();
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+    session_destroy();
+}
+
+function secureit_user_is_admin(): bool {
+    $auth = secureit_current_auth_context();
+    return ($auth['role'] ?? null) === 'admin';
+}
+
+function secureit_require_admin_access(string $redirect = 'login.php?denied=1'): void {
+    if (!secureit_user_is_admin()) {
+        header('Location: ' . $redirect, true, 302);
+        exit;
+    }
+}
+
 function secureit_render_layout(string $title, string $pageTitle, string $pageIntro, string $content, array $options = []): void {
     $backHref = $options['backHref'] ?? null;
     $backLabel = $options['backLabel'] ?? 'Back';
@@ -96,6 +139,9 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
     $heroIntroMaxWidth = $options['heroIntroMaxWidth'] ?? '760px';
     $hideHeroChrome = (bool) ($options['hideHeroChrome'] ?? false);
     $headerMenu = $options['headerMenu'] ?? [];
+    if (secureit_current_auth_context() !== null) {
+        $headerMenu[] = ['href' => 'logout.php', 'label' => 'Logout'];
+    }
     ?>
 <!doctype html>
 <html lang="en">
@@ -208,6 +254,7 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
     .menu-trigger {
       min-width: 46px;
       width: 46px;
+      height: 46px;
       padding: 0;
       border-radius: 12px;
       background: #ffffff;
@@ -232,8 +279,7 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
       display: none;
       z-index: 60;
     }
-    .menu-dropdown:hover .menu-panel,
-    .menu-dropdown:focus-within .menu-panel {
+    .menu-dropdown.is-open .menu-panel {
       display: block;
     }
     .menu-item {
@@ -812,14 +858,14 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
             <?php endif; ?>
             <?php if ($headerMenu): ?>
               <div class="menu-dropdown">
-                <button type="button" class="menu-trigger" aria-label="Open menu">
+                <button type="button" class="menu-trigger" aria-label="Open menu" aria-expanded="false" data-menu-trigger>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     <path d="M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     <path d="M4 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
-                <div class="menu-panel">
+                <div class="menu-panel" data-menu-panel>
                   <?php foreach ($headerMenu as $item): ?>
                     <a class="menu-item" href="<?php echo htmlspecialchars($item['href']); ?>"><?php echo htmlspecialchars($item['label']); ?></a>
                   <?php endforeach; ?>
@@ -897,7 +943,7 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
+  <div class="footer-bottom">
       <div class="container footer-bottom-row">
         <div>© <?php echo date('Y'); ?> ICT365. All rights reserved.</div>
         <div class="footer-bottom-links">
@@ -908,6 +954,55 @@ function secureit_render_layout(string $title, string $pageTitle, string $pageIn
       </div>
     </div>
   </footer>
+  <script>
+    (() => {
+      const dropdowns = Array.from(document.querySelectorAll('.menu-dropdown'));
+      if (!dropdowns.length) return;
+
+      const closeAll = () => {
+        dropdowns.forEach((dropdown) => {
+          dropdown.classList.remove('is-open');
+          const trigger = dropdown.querySelector('[data-menu-trigger]');
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        });
+      };
+
+      dropdowns.forEach((dropdown) => {
+        const trigger = dropdown.querySelector('[data-menu-trigger]');
+        const panel = dropdown.querySelector('[data-menu-panel]');
+        if (!trigger || !panel) return;
+
+        trigger.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const willOpen = !dropdown.classList.contains('is-open');
+          closeAll();
+          if (willOpen) {
+            dropdown.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+          }
+        });
+
+        panel.addEventListener('click', (event) => {
+          if (event.target.closest('a')) {
+            closeAll();
+          }
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.menu-dropdown')) {
+          closeAll();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeAll();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
 <?php

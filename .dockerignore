@@ -1,0 +1,16 @@
+.git/
+.github/
+.local/
+data/
+deploy/
+deploy-handoff/
+docs/
+output/
+scripts/
+website/
+config/
+custom-tests/
+README.md
+NOTES.local.md
+TODO.local.md
+secureit-deployment-handoff.zip

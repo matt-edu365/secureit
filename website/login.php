@@ -5,10 +5,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['ms_login'])) {
         $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
         if ($m365Email !== '' && str_ends_with($m365Email, '@ict365.ky')) {
+            secureit_set_auth_context('admin', $m365Email);
             header('Location: dashboard.php', true, 302);
             exit;
         }
-        header('Location: portal.php', true, 302);
+        secureit_set_auth_context('customer', $m365Email);
+        header('Location: index.php', true, 302);
         exit;
     }
 
@@ -19,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $enquiryReceived = isset($_GET['enquiry']) && $_GET['enquiry'] === 'received';
+$deniedAccess = isset($_GET['denied']) && $_GET['denied'] === '1';
 
 ob_start();
 ?>
@@ -36,11 +39,18 @@ ob_start();
           <p class="muted" style="margin:8px 0 0;">Use your business or school Microsoft account to sign in and access your SecureIT portal.</p>
         </div>
 
+        <?php if ($deniedAccess): ?>
+          <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
+            <strong>Access restricted</strong>
+            <p class="muted" style="margin:8px 0 0;">That page is available only to ICT365 administrator accounts.</p>
+          </div>
+        <?php endif; ?>
+
         <form method="post" style="display:grid; gap:16px;">
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
-            <input id="m365-email" name="m365_email" type="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">Prototype routing is now enabled: any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard. Other addresses currently route to the customer portal.</p>
+            <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
+            <p class="field-note">Prototype routing is now enabled: any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard. Other addresses return to the customer landing page.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -53,7 +63,7 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;">Prototype behaviour only: this now checks the entered email address and routes <strong>@ict365.ky</strong> users to the admin dashboard, while other addresses go to the customer side.</p>
+          <p class="field-note" style="margin-top:0;">Prototype behaviour only: this now checks the entered email address and routes <strong>@ict365.ky</strong> users to the admin dashboard, while other addresses return to the customer landing page.</p>
         </form>
       </article>
 
@@ -152,9 +162,7 @@ secureit_render_layout(
             ['href' => 'https://ict365.ky', 'label' => 'https://ict365.ky'],
         ],
         'footerSecondaryLinks' => [
-            ['href' => 'dashboard.php', 'label' => 'Employee portal'],
-            ['href' => 'portal.php', 'label' => 'Customer portal'],
-            ['href' => 'admin.php', 'label' => 'Admin'],
+            ['href' => 'index.php', 'label' => 'Customer landing'],
         ],
     ]
 );

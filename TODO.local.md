@@ -1,39 +1,21 @@
 # SecureIT local TODOs
 
-These notes are intentionally outside the published shared-host prototype surface.
+These notes are intentionally outside the published Docker runtime surface.
 
 ## Tenant functional-area scoring
 
-Goal: replace placeholder status badges and score placeholders on customer tenant pages with real calculated values.
+Status: largely done.
 
-### Investigate
-- Find the actual Maester run output structure used by SecureIT for published tenant reports.
-- Confirm whether per-test metadata already includes categories, tags, control families, workload/service labels, or any other grouping hints.
-- Check whether the website-published `summary.json` / `results.json` artifacts include enough information to derive per-area scoring.
+Current state:
+- Customer tenant pages now render real functional-area scores instead of placeholders.
+- The scoring logic is shared through `shared/functional-areas.php`.
+- The app tenant page uses canonical control scoring from the imported runtime bundle.
+- The legacy website surface that used placeholder cards has been removed.
 
-### If categorisation already exists
-- Map existing result metadata into these 8 customer-facing functional areas:
-  1. Identity & Access Management
-  2. Email & Calendaring
-  3. Collaboration & Communication
-  4. Files, Intranet & Content Management
-  5. Endpoint & Device Management
-  6. Security Operations & Threat Protection
-  7. Compliance, Governance & Data Protection
-  8. Productivity, Automation & AI
-- Define scoring rules for each area.
-- Define badge thresholds for Healthy / Watch / Needs attention.
-
-### If categorisation does not already exist
-- Create a stable mapping layer from test names / IDs into the 8 functional areas.
-- Store the mapping outside the published site source if it is only for internal build/reporting logic.
-- Keep the customer-facing labels clean and business-readable.
-
-### Output goal
-- Per-area score
-- Per-area status badge
-- Deterministic, repeatable calculation from actual test results
-- Reusable across all onboarded tenants
+Still worth revisiting:
+- confirm whether any additional Maester metadata should refine canonical area mapping
+- keep the scoring contract aligned with future report bundle changes
+- decide whether the workflow output should surface the area scores directly in summary artifacts
 
 ## GitHub workflow trigger from tenant page
 
@@ -47,3 +29,22 @@ Goal: allow customer/internal portal pages to trigger the existing manual Maeste
 
 ### Constraint
 - Do not add a fake button. Only wire it once secure dispatch is available.
+
+### Status
+- Not implemented yet.
+- Still needs a secure server-side GitHub auth path and workflow dispatch handling.
+
+## Entra ID authentication
+
+Goal: replace the current development login router with proper Microsoft Entra ID sign-in for both customer tenants and ICT365 administrators.
+
+### Requirements
+- Entra ID OpenID Connect sign-in for the SecureIT web app
+- tenant-aware routing after sign-in
+- admin-only access for internal pages
+- secure session handling with token validation and logout
+- onboarding guidance for customer tenant setup and consent
+
+### Status
+- Not implemented yet.
+- Needs a concrete identity model, app registration, callback flow, and route-to-tenant mapping.

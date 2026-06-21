@@ -3,14 +3,15 @@ require __DIR__ . '/lib.php';
 
 $tenants = secureit_load_tenants()['tenants'] ?? [];
 $tenantCount = count($tenants);
+$controlCount = count(secureit_load_canonical_controls()['controls'] ?? []);
 
 ob_start();
 ?>
 <section class="metrics-strip">
   <div class="metrics-grid">
     <div class="metric-stat">
-      <div class="metric-value">34</div>
-      <div class="metric-label">number of total checks</div>
+      <div class="metric-value"><?php echo htmlspecialchars((string) $controlCount); ?></div>
+      <div class="metric-label">total checks</div>
     </div>
     <div class="metric-stat">
       <div class="metric-value">8</div>

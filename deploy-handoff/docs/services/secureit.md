@@ -21,11 +21,12 @@
 - Health check expectation: root path responds over HTTP on port `80`
 
 ## Deployment notes
-- SecureIT is the app-first replacement for the older Maester-oriented prototype and should be deployed as a single tracked Portainer stack on the production Docker host.
+- SecureIT is the app-first production runtime and should be deployed as a single tracked Portainer stack on the production Docker host.
 - The host port is `8089` to avoid colliding with the existing `8088` binding used by the Temporal UI in the Postiz stack.
 - Cloudflare Tunnel should publish `secureit.ict365.ky` to `http://192.168.36.40:8089` when the route is added.
 - Runtime data belongs on the Docker host volume, not inside the image.
 - The deployment record still needs explicit approval evidence and a published monitor outcome to be considered fully compliant.
+- If `ghcr.io/matt-edu365/secureit:latest` returns `unauthorized`, temporarily point `SECUREIT_IMAGE` at a host-local image tag and set `SECUREIT_PULL_POLICY=never` until registry access is fixed.
 
 ## Validation
 - `docker compose ... config`: should pass on `docker-host-02`

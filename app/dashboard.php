@@ -39,6 +39,7 @@ ob_start();
           $summary = secureit_tenant_summary($tenantKey);
           $counts = secureit_summary_counts($summary);
           $toneClass = 'tone-' . strtolower($counts['riskTone']);
+          $riskLabel = $counts['riskLevel'] === 'Needs attention' ? 'Review' : $counts['riskLevel'];
           $searchValue = implode(' ', [
               $tenant['name'] ?? '',
               $tenantKey,
@@ -52,7 +53,7 @@ ob_start();
             <div>
               <h3 class="section-title" style="font-size:1.35rem;"><?php echo htmlspecialchars($tenant['name'] ?? $tenantKey); ?></h3>
             </div>
-            <div class="badge <?php echo htmlspecialchars($toneClass); ?>"><?php echo htmlspecialchars($counts['riskLevel']); ?></div>
+            <div class="badge <?php echo htmlspecialchars($toneClass); ?>"><?php echo htmlspecialchars($riskLabel); ?></div>
           </div>
 
           <?php if ($summary): ?>

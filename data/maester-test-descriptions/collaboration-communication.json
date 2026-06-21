@@ -1,0 +1,9 @@
+{
+    "GROUPS": "Checks that group settings and membership are controlled safely.",
+    "MTCISAGUESTINVITATION": "Checks that guest invitations are limited to approved users.",
+    "MTCISAGUESTUSERACCESS": "Checks that guest access is restricted to approved sharing needs.",
+    "MTCISASPOSHARING": "Checks that SharePoint sharing follows the approved rules.",
+    "MTCISASPOSHARINGALLOWEDDOMAIN": "Checks that SharePoint sharing is limited to approved external domains.",
+    "MTCISSPOB2BINTEGRATION": "Checks that SharePoint external collaboration is limited to approved partners.",
+    "MTENTITLEMENTMANAGEMENTDELETEDGROUPS": "Checks that group settings and membership are controlled safely."
+}

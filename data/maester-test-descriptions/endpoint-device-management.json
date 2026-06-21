@@ -1,0 +1,10 @@
+{
+    "MTCISAMANAGEDDEVICE": "Checks that managed devices meet the expected security baseline.",
+    "MTCISAMANAGEDDEVICEREGISTRATION": "Checks that device registration is controlled by policy.",
+    "MTCISDEVICESWITHOUTCOMPLIANCEPOLICYMARKED": "Checks that the policy is in place and applied.",
+    "MTENTRADEVICEREGISTRATIONPOLICY": "Checks that the policy is in place and applied.",
+    "MTINTUNECONNECTORHEALTH": "Checks that the Intune connector is healthy and connected.",
+    "MTINTUNEPLATFORM": "Checks that Intune platform settings follow the expected baseline.",
+    "MTMDEANTIVIRUSPOLICY": "Checks that Microsoft Defender antivirus protection is enabled and managed.",
+    "MTMDIHEALTHISSUES": "Checks for Defender identity issues that need attention."
+}

@@ -9,7 +9,7 @@
       "keyVaultName": "",
       "keyVaultUri": "",
       "clientSecretName": "AZURE-CLIENT-SECRET-EXAMPLE-TENANT",
-      "reportBaseUrl": "https://example.ict365.uk/example-tenant",
+      "reportBaseUrl": "https://secureit.ict365.ky/example-tenant",
       "emailTo": "security@example.com"
     }
   ]

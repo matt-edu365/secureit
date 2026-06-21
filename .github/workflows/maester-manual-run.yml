@@ -1,4 +1,4 @@
-name: Maester Manual Run
+name: SecureIT Manual Run
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ on:
           - full
 
 jobs:
-  run-maester:
+  run-assessment:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -175,7 +175,7 @@ jobs:
             'y' | Install-MaesterTests
           }
 
-      - name: Run Maester assessment
+      - name: Run SecureIT assessment engine
         id: maester
         continue-on-error: true
         shell: pwsh
@@ -203,7 +203,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maester-report-${{ github.event.inputs.tenant_key }}-${{ github.run_number }}
+          name: secureit-report-${{ github.event.inputs.tenant_key }}-${{ github.run_number }}
           path: |
             output/${{ github.event.inputs.tenant_key }}/
             app-import/${{ github.event.inputs.tenant_key }}/
@@ -227,7 +227,7 @@ jobs:
         run: |
           if ($env:MAESTER_SUMMARY_PATH -and (Test-Path $env:MAESTER_SUMMARY_PATH)) {
             $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: $($summary.tenantName)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# SecureIT assessment run: $($summary.tenantName)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Tenant key: $($summary.tenantKey)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Total: $($summary.total)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Passed: $($summary.passed)"
@@ -238,15 +238,15 @@ jobs:
             }
           }
           else {
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: ${{ github.event.inputs.tenant_key }}"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# SecureIT assessment run: ${{ github.event.inputs.tenant_key }}"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- No summary file was generated.'
           }
 
-      - name: Fail workflow if Maester step truly failed without fallback outputs
+      - name: Fail workflow if the assessment step truly failed without fallback outputs
         if: always()
         shell: bash
         run: |
           if [ "${{ steps.maester.outcome }}" != "success" ] && [ ! -f "output/${{ github.event.inputs.tenant_key }}/latest/summary.json" ]; then
-            echo "Maester step failed and no fallback summary was produced." >&2
+            echo "Assessment step failed and no fallback summary was produced." >&2
             exit 1
           fi

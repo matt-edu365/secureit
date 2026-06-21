@@ -17,8 +17,6 @@ The target deployment track is now the only intended path for active delivery:
 - runtime backed by mounted external data
 - public hostname `https://secureit.ict365.ky`
 
-Legacy shared-host prototype material may still exist in the repo for reference, but it is no longer part of the intended deployment equation.
-
 ## Image
 
 Registry image:
@@ -108,4 +106,4 @@ The intended operational loop is now:
 ## Notes
 
 - Keep SecureIT as the visible product identity
-- Treat any remaining shared-host or `deploy/maester/` material as legacy reference only unless explicitly reactivated
+- Treat any remaining Maester references as backend engine terminology only

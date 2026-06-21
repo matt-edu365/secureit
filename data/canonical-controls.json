@@ -14,9 +14,8 @@
   "controls": [
     {
       "id": "EIDSCA.GENERATED",
-      "title": "EIDSCA generated",
+      "title": "Entra security baseline review",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-EIDSCA.Generated.Tests.ps1.",
       "frameworkMappings": [
         "Test-EIDSCA.Generated.Tests.ps1"
       ],
@@ -30,7 +29,6 @@
       "id": "MTMDEANTIVIRUSPOLICY",
       "title": "Defender antivirus policy",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtMdeAntivirusPolicy.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtMdeAntivirusPolicy.Tests.ps1"
       ],
@@ -44,7 +42,6 @@
       "id": "MTMDIHEALTHISSUES",
       "title": "Defender identity health issues",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtMdiHealthIssues.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtMdiHealthIssues.Tests.ps1"
       ],
@@ -58,7 +55,6 @@
       "id": "APPMANAGEMENTPOLICIES",
       "title": "App management policies",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-AppManagementPolicies.Tests.ps1.",
       "frameworkMappings": [
         "Test-AppManagementPolicies.Tests.ps1"
       ],
@@ -72,7 +68,6 @@
       "id": "APPREGISTRATIONS",
       "title": "App registrations",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-AppRegistrations.Tests.ps1.",
       "frameworkMappings": [
         "Test-AppRegistrations.Tests.ps1"
       ],
@@ -86,7 +81,6 @@
       "id": "AUTHENTICATIONMETHODBASELINE",
       "title": "Authentication method baseline",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-AuthenticationMethodBaseline.Tests.ps1.",
       "frameworkMappings": [
         "Test-AuthenticationMethodBaseline.Tests.ps1"
       ],
@@ -98,9 +92,8 @@
     },
     {
       "id": "CONDITIONALACCESSBASELINE",
-      "title": "ConditionalAccessBaseline",
+      "title": "Conditional Access baseline",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-ConditionalAccessBaseline.Tests.ps1.",
       "frameworkMappings": [
         "Test-ConditionalAccessBaseline.Tests.ps1"
       ],
@@ -112,9 +105,8 @@
     },
     {
       "id": "CONDITIONALACCESSWHATIF",
-      "title": "ConditionalAccessWhatIf",
+      "title": "Conditional Access what-if analysis",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-ConditionalAccessWhatIf.Tests.ps1.",
       "frameworkMappings": [
         "Test-ConditionalAccessWhatIf.Tests.ps1"
       ],
@@ -128,7 +120,6 @@
       "id": "ENTRARECOMMENDATIONS",
       "title": "Entra recommendations",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-EntraRecommendations.Tests.ps1.",
       "frameworkMappings": [
         "Test-EntraRecommendations.Tests.ps1"
       ],
@@ -142,7 +133,6 @@
       "id": "GROUPS",
       "title": "Groups",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-Groups.Tests.ps1.",
       "frameworkMappings": [
         "Test-Groups.Tests.ps1"
       ],
@@ -154,9 +144,8 @@
     },
     {
       "id": "MTAPPREGISTRATIONOWNERSWITHOUTMFA",
-      "title": "App registrationOwnersWithoutMFA",
+      "title": "App registration owners without MFA",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1"
       ],
@@ -168,9 +157,8 @@
     },
     {
       "id": "MTENTITLEMENTMANAGEMENTDELETEDGROUPS",
-      "title": "Entitlement managementDeletedGroups",
+      "title": "Entitlement management deleted groups",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtEntitlementManagementDeletedGroups.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntitlementManagementDeletedGroups.Tests.ps1"
       ],
@@ -182,9 +170,8 @@
     },
     {
       "id": "MTENTITLEMENTMANAGEMENTINACTIVEPOLICIES",
-      "title": "Entitlement managementInactivePolicies",
+      "title": "Entitlement management inactive policies",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementInactivePolicies.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntitlementManagementInactivePolicies.Tests.ps1"
       ],
@@ -196,9 +183,8 @@
     },
     {
       "id": "MTENTITLEMENTMANAGEMENTORPHANEDRESOURCES",
-      "title": "Entitlement managementOrphanedResources",
+      "title": "Entitlement management orphaned resources",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementOrphanedResources.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntitlementManagementOrphanedResources.Tests.ps1"
       ],
@@ -210,9 +196,8 @@
     },
     {
       "id": "MTENTITLEMENTMANAGEMENTVALIDAPPROVERS",
-      "title": "Entitlement managementValidApprovers",
+      "title": "Entitlement management valid approvers",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementValidApprovers.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntitlementManagementValidApprovers.Tests.ps1"
       ],
@@ -224,9 +209,8 @@
     },
     {
       "id": "MTENTITLEMENTMANAGEMENTVALIDRESOURCEROLES",
-      "title": "Entitlement managementValidResourceRoles",
+      "title": "Entitlement management valid resource roles",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementValidResourceRoles.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntitlementManagementValidResourceRoles.Tests.ps1"
       ],
@@ -240,7 +224,6 @@
       "id": "MTENTRADEVICEREGISTRATIONPOLICY",
       "title": "Entra device registration policy",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtEntraDeviceRegistrationPolicy.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntraDeviceRegistrationPolicy.Tests.ps1"
       ],
@@ -252,9 +235,8 @@
     },
     {
       "id": "MTENTRAIDCONNECT",
-      "title": "Entra ID connect",
+      "title": "Entra ID Connect",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntraIDConnect.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtEntraIDConnect.Tests.ps1"
       ],
@@ -266,9 +248,8 @@
     },
     {
       "id": "MTHIGHRISKAPPPERMISSIONS",
-      "title": "High risk app permissions",
+      "title": "High-risk app permissions",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtHighRiskAppPermissions.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtHighRiskAppPermissions.Tests.ps1"
       ],
@@ -280,9 +261,8 @@
     },
     {
       "id": "MTONPREMISESSYNCHRONIZATION",
-      "title": "On premises synchronization",
+      "title": "On-premises synchronization",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtOnPremisesSynchronization.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtOnPremisesSynchronization.Tests.ps1"
       ],
@@ -296,7 +276,6 @@
       "id": "MTSECURITYGROUPCREATIONRESTRICTED",
       "title": "Security group creation restricted",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtSecurityGroupCreationRestricted.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtSecurityGroupCreationRestricted.Tests.ps1"
       ],
@@ -310,7 +289,6 @@
       "id": "MTTENANTCREATIONRESTRICTED",
       "title": "Tenant creation restricted",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtTenantCreationRestricted.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtTenantCreationRestricted.Tests.ps1"
       ],
@@ -324,7 +302,6 @@
       "id": "PRIVILEGEDASSIGNMENTS",
       "title": "Privileged assignments",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-PrivilegedAssignments.Tests.ps1.",
       "frameworkMappings": [
         "Test-PrivilegedAssignments.Tests.ps1"
       ],
@@ -338,7 +315,6 @@
       "id": "MTINTUNECONNECTORHEALTH",
       "title": "Intune connector health",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtIntuneConnectorHealth.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtIntuneConnectorHealth.Tests.ps1"
       ],
@@ -350,9 +326,8 @@
     },
     {
       "id": "MTINTUNEPLATFORM",
-      "title": "Intune platform",
+      "title": "Intune platform settings",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtIntunePlatform.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtIntunePlatform.Tests.ps1"
       ],
@@ -364,9 +339,8 @@
     },
     {
       "id": "XSPMCRITICALASSETMANAGEMENT",
-      "title": "XSPM CriticalAssetManagement",
+      "title": "XSPM critical asset management",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmCriticalAssetManagement.Tests.ps1.",
       "frameworkMappings": [
         "Test-XspmCriticalAssetManagement.Tests.ps1"
       ],
@@ -378,9 +352,8 @@
     },
     {
       "id": "XSPMDEVICES",
-      "title": "XSPM Devices",
+      "title": "XSPM devices",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmDevices.Tests.ps1.",
       "frameworkMappings": [
         "Test-XspmDevices.Tests.ps1"
       ],
@@ -392,9 +365,8 @@
     },
     {
       "id": "XSPMPRIVILEGEDIDENTITIES",
-      "title": "XSPM PrivilegedIdentities",
+      "title": "XSPM privileged identities",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmPrivilegedIdentities.Tests.ps1.",
       "frameworkMappings": [
         "Test-XspmPrivilegedIdentities.Tests.ps1"
       ],
@@ -406,9 +378,8 @@
     },
     {
       "id": "MTCIS365PUBLICGROUP",
-      "title": "365PublicGroup",
+      "title": "Microsoft 365 public groups",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCis365PublicGroup.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCis365PublicGroup.Tests.ps1"
       ],
@@ -420,9 +391,8 @@
     },
     {
       "id": "MTCISADMINCONSENTWORKFLOWENABLED",
-      "title": "Admin consent workflow enabled",
+      "title": "Admin consent workflow",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1"
       ],
@@ -434,9 +404,8 @@
     },
     {
       "id": "MTCISCLOUDADMIN",
-      "title": "CloudAdmin",
+      "title": "Cloud admin access",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtCisCloudAdmin.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisCloudAdmin.Tests.ps1"
       ],
@@ -448,9 +417,8 @@
     },
     {
       "id": "MTCISCREATETENANTDISALLOWED",
-      "title": "Create tenant disallowed",
+      "title": "Tenant creation disallowed",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisCreateTenantDisallowed.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisCreateTenantDisallowed.Tests.ps1"
       ],
@@ -462,9 +430,8 @@
     },
     {
       "id": "MTCISCUSTOMERLOCKBOX",
-      "title": "CustomerLockBox",
+      "title": "Customer lockbox",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtCisCustomerLockBox.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisCustomerLockBox.Tests.ps1"
       ],
@@ -478,7 +445,6 @@
       "id": "MTCISDEVICESWITHOUTCOMPLIANCEPOLICYMARKED",
       "title": "Devices without compliance policy",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisDevicesWithoutCompliancePolicyMarked.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisDevicesWithoutCompliancePolicyMarked.Tests.ps1"
       ],
@@ -490,9 +456,8 @@
     },
     {
       "id": "MTCISENSUREGUESTACCESSRESTRICTED",
-      "title": "EnsureGuestAccessRestricted",
+      "title": "Guest access restrictions",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureGuestAccessRestricted.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisEnsureGuestAccessRestricted.Tests.ps1"
       ],
@@ -504,9 +469,8 @@
     },
     {
       "id": "MTCISENSUREGUESTUSERDYNAMICGROUP",
-      "title": "EnsureGuestUserDynamicGroup",
+      "title": "Guest user dynamic groups",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureGuestUserDynamicGroup.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisEnsureGuestUserDynamicGroup.Tests.ps1"
       ],
@@ -518,9 +482,8 @@
     },
     {
       "id": "MTCISENSUREUSERCONSENTTOAPPSDISALLOWED",
-      "title": "EnsureUserConsentToAppsDisallowed",
+      "title": "User app consent disallowed",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureUserConsentToAppsDisallowed.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisEnsureUserConsentToAppsDisallowed.Tests.ps1"
       ],
@@ -532,9 +495,8 @@
     },
     {
       "id": "MTCISFORMSPHISHINGPROTECTIONENABLED",
-      "title": "Forms phishing protection enabled",
+      "title": "Forms phishing protection",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1"
       ],
@@ -546,9 +508,8 @@
     },
     {
       "id": "MTCISGLOBALADMINCOUNT",
-      "title": "Global admin count",
+      "title": "Global administrator count",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisGlobalAdminCount.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisGlobalAdminCount.Tests.ps1"
       ],
@@ -560,9 +521,8 @@
     },
     {
       "id": "MTCISPASSWORDEXPIRY",
-      "title": "PasswordExpiry",
+      "title": "Password expiry",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisPasswordExpiry.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisPasswordExpiry.Tests.ps1"
       ],
@@ -576,7 +536,6 @@
       "id": "MTCISSPOB2BINTEGRATION",
       "title": "SharePoint B2B integration",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisSpoB2BIntegration.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoB2BIntegration.Tests.ps1"
       ],
@@ -590,7 +549,6 @@
       "id": "MTCISSPODEFAULTSHARINGLINK",
       "title": "SharePoint default sharing link",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLink.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoDefaultSharingLink.Tests.ps1"
       ],
@@ -602,9 +560,8 @@
     },
     {
       "id": "MTCISSPODEFAULTSHARINGLINKPERMISSION",
-      "title": "SharePoint default sharing linkPermission",
+      "title": "SharePoint default sharing link permissions",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLinkPermission.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoDefaultSharingLinkPermission.Tests.ps1"
       ],
@@ -618,7 +575,6 @@
       "id": "MTCISSPOGUESTACCESSEXPIRY",
       "title": "SharePoint guest access expiry",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoGuestAccessExpiry.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoGuestAccessExpiry.Tests.ps1"
       ],
@@ -630,9 +586,8 @@
     },
     {
       "id": "MTCISSPOGUESTCANNOTSHAREUNOWNEDITEM",
-      "title": "SharePoint guest cannot share unowned item",
+      "title": "SharePoint guest sharing restrictions",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoGuestCannotShareUnownedItem.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoGuestCannotShareUnownedItem.Tests.ps1"
       ],
@@ -644,9 +599,8 @@
     },
     {
       "id": "MTCISSPOPREVENTDOWNLOADMALICIOUSFILE",
-      "title": "SharePoint prevent malicious file downloads",
+      "title": "SharePoint malicious file download protection",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoPreventDownloadMaliciousFile.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisSpoPreventDownloadMaliciousFile.Tests.ps1"
       ],
@@ -658,9 +612,8 @@
     },
     {
       "id": "MTCISTHIRDPARTYANDCUSTOMAPPS",
-      "title": "ThirdPartyAndCustomApps",
+      "title": "Third-party and custom apps",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisThirdPartyAndCustomApps.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisThirdPartyAndCustomApps.Tests.ps1"
       ],
@@ -672,9 +625,8 @@
     },
     {
       "id": "MTCISTHIRDPARTYAPPLICATIONSDISALLOWED",
-      "title": "Third party applications disallowed",
+      "title": "Third-party applications disallowed",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1"
       ],
@@ -686,9 +638,8 @@
     },
     {
       "id": "MTCISTHIRDPARTYSTORAGESERVICESRESTRICTED",
-      "title": "Third party storage services restricted",
+      "title": "Third-party storage services restricted",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisThirdPartyStorageServicesRestricted.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisThirdPartyStorageServicesRestricted.Tests.ps1"
       ],
@@ -700,9 +651,8 @@
     },
     {
       "id": "MTCISUSEROWNEDAPPSRESTRICTED",
-      "title": "User owned apps restricted",
+      "title": "User-owned apps restricted",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisUserOwnedAppsRestricted.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisUserOwnedAppsRestricted.Tests.ps1"
       ],
@@ -716,7 +666,6 @@
       "id": "MTCISWEAKAUTHENTICATIONMETHODSDISABLED",
       "title": "Weak authentication methods disabled",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1"
       ],
@@ -728,9 +677,8 @@
     },
     {
       "id": "MTCISAACTIVATIONNOTIFICATIONGLOBALADMIN",
-      "title": "ActivationNotificationGlobalAdmin",
+      "title": "Activation notifications for global admins",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaActivationNotificationGlobalAdmin.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaActivationNotificationGlobalAdmin.Tests.ps1"
       ],
@@ -742,9 +690,8 @@
     },
     {
       "id": "MTCISAACTIVATIONNOTIFICATIONOTHER",
-      "title": "ActivationNotificationOther",
+      "title": "Activation notifications for other privileged roles",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaActivationNotificationOther.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaActivationNotificationOther.Tests.ps1"
       ],
@@ -756,9 +703,8 @@
     },
     {
       "id": "MTCISAAPPADMINCONSENT",
-      "title": "App admin consent",
+      "title": "Admin app consent",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppAdminConsent.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAppAdminConsent.Tests.ps1"
       ],
@@ -770,9 +716,8 @@
     },
     {
       "id": "MTCISAAPPGROUPOWNERCONSENT",
-      "title": "App group owner consent",
+      "title": "Group owner app consent",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppGroupOwnerConsent.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAppGroupOwnerConsent.Tests.ps1"
       ],
@@ -786,7 +731,6 @@
       "id": "MTCISAAPPREGISTRATION",
       "title": "App registration",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppRegistration.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAppRegistration.Tests.ps1"
       ],
@@ -798,9 +742,8 @@
     },
     {
       "id": "MTCISAAPPUSERCONSENT",
-      "title": "App user consent",
+      "title": "User app consent",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppUserConsent.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAppUserConsent.Tests.ps1"
       ],
@@ -812,9 +755,8 @@
     },
     {
       "id": "MTCISAASSIGNMENTNOTIFICATION",
-      "title": "AssignmentNotification",
+      "title": "Assignment notifications",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisaAssignmentNotification.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAssignmentNotification.Tests.ps1"
       ],
@@ -828,7 +770,6 @@
       "id": "MTCISAAUTHENTICATORCONTEXT",
       "title": "Authenticator context",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAuthenticatorContext.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaAuthenticatorContext.Tests.ps1"
       ],
@@ -840,9 +781,8 @@
     },
     {
       "id": "MTCISABLOCKHIGHRISKSIGNINS",
-      "title": "Block high risk sign ins",
+      "title": "Block high-risk sign-ins",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskSignIns.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaBlockHighRiskSignIns.Tests.ps1"
       ],
@@ -854,9 +794,8 @@
     },
     {
       "id": "MTCISABLOCKHIGHRISKUSERS",
-      "title": "Block high risk users",
+      "title": "Block high-risk users",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskUsers.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaBlockHighRiskUsers.Tests.ps1"
       ],
@@ -868,9 +807,8 @@
     },
     {
       "id": "MTCISABLOCKLEGACYAUTH",
-      "title": "Block legacy auth",
+      "title": "Block legacy authentication",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockLegacyAuth.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaBlockLegacyAuth.Tests.ps1"
       ],
@@ -882,9 +820,8 @@
     },
     {
       "id": "MTCISACLOUDGLOBALADMIN",
-      "title": "Cloud global admin",
+      "title": "Cloud global administrator access",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaCloudGlobalAdmin.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaCloudGlobalAdmin.Tests.ps1"
       ],
@@ -896,9 +833,8 @@
     },
     {
       "id": "MTCISACROSSTENANTINBOUNDDEFAULT",
-      "title": "Cross tenant inbound default",
+      "title": "Cross-tenant inbound defaults",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaCrossTenantInboundDefault.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaCrossTenantInboundDefault.Tests.ps1"
       ],
@@ -910,9 +846,8 @@
     },
     {
       "id": "MTCISADIAGNOSTICSETTINGS",
-      "title": "DiagnosticSettings",
+      "title": "Diagnostic settings",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisaDiagnosticSettings.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaDiagnosticSettings.Tests.ps1"
       ],
@@ -924,9 +859,8 @@
     },
     {
       "id": "MTCISAGLOBALADMINCOUNT",
-      "title": "Global admin count",
+      "title": "Global administrator count",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminCount.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaGlobalAdminCount.Tests.ps1"
       ],
@@ -938,9 +872,8 @@
     },
     {
       "id": "MTCISAGLOBALADMINRATIO",
-      "title": "Global admin ratio",
+      "title": "Global administrator ratio",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminRatio.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaGlobalAdminRatio.Tests.ps1"
       ],
@@ -952,9 +885,8 @@
     },
     {
       "id": "MTCISAGUESTINVITATION",
-      "title": "Guest invitation",
+      "title": "Guest invitations",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestInvitation.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaGuestInvitation.Tests.ps1"
       ],
@@ -968,7 +900,6 @@
       "id": "MTCISAGUESTUSERACCESS",
       "title": "Guest user access",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestUserAccess.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaGuestUserAccess.Tests.ps1"
       ],
@@ -980,9 +911,8 @@
     },
     {
       "id": "MTCISAMANAGEDDEVICE",
-      "title": "Managed device",
+      "title": "Managed devices",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisaManagedDevice.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaManagedDevice.Tests.ps1"
       ],
@@ -996,7 +926,6 @@
       "id": "MTCISAMANAGEDDEVICEREGISTRATION",
       "title": "Managed device registration",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisaManagedDeviceRegistration.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaManagedDeviceRegistration.Tests.ps1"
       ],
@@ -1008,9 +937,8 @@
     },
     {
       "id": "MTCISAMETHODSMIGRATION",
-      "title": "Methods migration",
+      "title": "Authentication methods migration",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaMethodsMigration.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaMethodsMigration.Tests.ps1"
       ],
@@ -1022,9 +950,8 @@
     },
     {
       "id": "MTCISAMFA",
-      "title": "MFA",
+      "title": "Multi-factor authentication",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaMfa.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaMfa.Tests.ps1"
       ],
@@ -1036,9 +963,8 @@
     },
     {
       "id": "MTCISANOTIFYHIGHRISKUSERS",
-      "title": "Notify high risk users",
+      "title": "Notify high-risk users",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaNotifyHighRiskUsers.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaNotifyHighRiskUsers.Tests.ps1"
       ],
@@ -1052,7 +978,6 @@
       "id": "MTCISAPASSWORDEXPIRATION",
       "title": "Password expiration",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPasswordExpiration.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaPasswordExpiration.Tests.ps1"
       ],
@@ -1066,7 +991,6 @@
       "id": "MTCISAPERMANENTROLEASSIGNMENT",
       "title": "Permanent role assignment",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPermanentRoleAssignment.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaPermanentRoleAssignment.Tests.ps1"
       ],
@@ -1078,9 +1002,8 @@
     },
     {
       "id": "MTCISAPHISHRESISTANT",
-      "title": "Phish resistant",
+      "title": "Phishing-resistant sign-in",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPhishResistant.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaPhishResistant.Tests.ps1"
       ],
@@ -1092,9 +1015,8 @@
     },
     {
       "id": "MTCISAPRIVILEGEDPHISHRESISTANT",
-      "title": "PrivilegedPhish resistant",
+      "title": "Privileged phishing-resistant sign-in",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPrivilegedPhishResistant.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaPrivilegedPhishResistant.Tests.ps1"
       ],
@@ -1108,7 +1030,6 @@
       "id": "MTCISAREQUIREACTIVATIONAPPROVAL",
       "title": "Require activation approval",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaRequireActivationApproval.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaRequireActivationApproval.Tests.ps1"
       ],
@@ -1122,7 +1043,6 @@
       "id": "MTCISAUNMANAGEDROLEASSIGNMENTS",
       "title": "Unmanaged role assignments",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaUnmanagedRoleAssignments.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1"
       ],
@@ -1134,9 +1054,8 @@
     },
     {
       "id": "MTCISAWEAKFACTOR",
-      "title": "Weak factor",
+      "title": "Weak authentication factors",
       "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaWeakFactor.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaWeakFactor.Tests.ps1"
       ],
@@ -1150,7 +1069,6 @@
       "id": "MTCISASPOSHARING",
       "title": "SharePoint sharing",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaSpoSharing.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaSpoSharing.Tests.ps1"
       ],
@@ -1162,1453 +1080,10 @@
     },
     {
       "id": "MTCISASPOSHARINGALLOWEDDOMAIN",
-      "title": "SharePoint sharing allowed domain",
+      "title": "SharePoint allowed sharing domains",
       "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaSpoSharingAllowedDomain.Tests.ps1.",
       "frameworkMappings": [
         "Test-MtCisaSpoSharingAllowedDomain.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "EIDSCA.GENERATED_ALT01",
-      "title": "EIDSCA generated (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-EIDSCA.Generated-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-EIDSCA.Generated-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTMDEANTIVIRUSPOLICY_ALT01",
-      "title": "Defender antivirus policy (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtMdeAntivirusPolicy-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtMdeAntivirusPolicy-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTMDIHEALTHISSUES_ALT01",
-      "title": "Defender identity health issues (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtMdiHealthIssues-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtMdiHealthIssues-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "APPMANAGEMENTPOLICIES_ALT01",
-      "title": "App management policies (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-AppManagementPolicies-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-AppManagementPolicies-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "APPREGISTRATIONS_ALT01",
-      "title": "App registrations (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-AppRegistrations-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-AppRegistrations-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "AUTHENTICATIONMETHODBASELINE_ALT01",
-      "title": "Authentication method baseline (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-AuthenticationMethodBaseline-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-AuthenticationMethodBaseline-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "AUTHENTICATIONMETHODBASELINE_ALT02",
-      "title": "Authentication method baseline (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-AuthenticationMethodBaseline-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-AuthenticationMethodBaseline-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "CONDITIONALACCESSBASELINE_ALT01",
-      "title": "ConditionalAccessBaseline (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-ConditionalAccessBaseline-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-ConditionalAccessBaseline-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "CONDITIONALACCESSWHATIF_ALT01",
-      "title": "ConditionalAccessWhatIf (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-ConditionalAccessWhatIf-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-ConditionalAccessWhatIf-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "ENTRARECOMMENDATIONS_ALT01",
-      "title": "Entra recommendations (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-EntraRecommendations-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-EntraRecommendations-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "GROUPS_ALT01",
-      "title": "Groups (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-Groups-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-Groups-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "GROUPS_ALT02",
-      "title": "Groups (scenario B)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-Groups-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-Groups-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTAPPREGISTRATIONOWNERSWITHOUTMFA_ALT01",
-      "title": "App registrationOwnersWithoutMFA (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtAppRegistrationOwnersWithoutMFA-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtAppRegistrationOwnersWithoutMFA-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTITLEMENTMANAGEMENTDELETEDGROUPS_ALT01",
-      "title": "Entitlement managementDeletedGroups (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtEntitlementManagementDeletedGroups-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntitlementManagementDeletedGroups-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTITLEMENTMANAGEMENTINACTIVEPOLICIES_ALT01",
-      "title": "Entitlement managementInactivePolicies (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementInactivePolicies-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntitlementManagementInactivePolicies-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTITLEMENTMANAGEMENTORPHANEDRESOURCES_ALT01",
-      "title": "Entitlement managementOrphanedResources (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementOrphanedResources-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntitlementManagementOrphanedResources-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTITLEMENTMANAGEMENTVALIDAPPROVERS_ALT01",
-      "title": "Entitlement managementValidApprovers (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementValidApprovers-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntitlementManagementValidApprovers-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTITLEMENTMANAGEMENTVALIDRESOURCEROLES_ALT01",
-      "title": "Entitlement managementValidResourceRoles (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntitlementManagementValidResourceRoles-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntitlementManagementValidResourceRoles-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTRADEVICEREGISTRATIONPOLICY_ALT01",
-      "title": "Entra device registration policy (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtEntraDeviceRegistrationPolicy-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntraDeviceRegistrationPolicy-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTENTRAIDCONNECT_ALT01",
-      "title": "Entra ID connect (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtEntraIDConnect-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtEntraIDConnect-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTHIGHRISKAPPPERMISSIONS_ALT01",
-      "title": "High risk app permissions (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtHighRiskAppPermissions-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtHighRiskAppPermissions-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTONPREMISESSYNCHRONIZATION_ALT01",
-      "title": "On premises synchronization (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtOnPremisesSynchronization-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtOnPremisesSynchronization-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTSECURITYGROUPCREATIONRESTRICTED_ALT01",
-      "title": "Security group creation restricted (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtSecurityGroupCreationRestricted-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtSecurityGroupCreationRestricted-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTTENANTCREATIONRESTRICTED_ALT01",
-      "title": "Tenant creation restricted (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtTenantCreationRestricted-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtTenantCreationRestricted-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "PRIVILEGEDASSIGNMENTS_ALT01",
-      "title": "Privileged assignments (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-PrivilegedAssignments-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-PrivilegedAssignments-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTINTUNECONNECTORHEALTH_ALT01",
-      "title": "Intune connector health (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtIntuneConnectorHealth-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtIntuneConnectorHealth-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTINTUNEPLATFORM_ALT01",
-      "title": "Intune platform (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtIntunePlatform-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtIntunePlatform-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "XSPMCRITICALASSETMANAGEMENT_ALT01",
-      "title": "XSPM CriticalAssetManagement (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmCriticalAssetManagement-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-XspmCriticalAssetManagement-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "XSPMDEVICES_ALT01",
-      "title": "XSPM Devices (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmDevices-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-XspmDevices-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "XSPMPRIVILEGEDIDENTITIES_ALT01",
-      "title": "XSPM PrivilegedIdentities (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-XspmPrivilegedIdentities-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-XspmPrivilegedIdentities-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCIS365PUBLICGROUP_ALT01",
-      "title": "365PublicGroup (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCis365PublicGroup-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCis365PublicGroup-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISADMINCONSENTWORKFLOWENABLED_ALT01",
-      "title": "Admin consent workflow enabled (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisAdminConsentWorkflowEnabled-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisAdminConsentWorkflowEnabled-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISADMINCONSENTWORKFLOWENABLED_ALT02",
-      "title": "Admin consent workflow enabled (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisAdminConsentWorkflowEnabled-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisAdminConsentWorkflowEnabled-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISCLOUDADMIN_ALT01",
-      "title": "CloudAdmin (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtCisCloudAdmin-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisCloudAdmin-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISCREATETENANTDISALLOWED_ALT01",
-      "title": "Create tenant disallowed (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisCreateTenantDisallowed-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisCreateTenantDisallowed-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISCREATETENANTDISALLOWED_ALT02",
-      "title": "Create tenant disallowed (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisCreateTenantDisallowed-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisCreateTenantDisallowed-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISCUSTOMERLOCKBOX_ALT01",
-      "title": "CustomerLockBox (scenario A)",
-      "functionalArea": "Security Operations & Threat Protection",
-      "description": "Demo control derived from Test-MtCisCustomerLockBox-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisCustomerLockBox-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISDEVICESWITHOUTCOMPLIANCEPOLICYMARKED_ALT01",
-      "title": "Devices without compliance policy (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisDevicesWithoutCompliancePolicyMarked-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisDevicesWithoutCompliancePolicyMarked-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISENSUREGUESTACCESSRESTRICTED_ALT01",
-      "title": "EnsureGuestAccessRestricted (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureGuestAccessRestricted-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisEnsureGuestAccessRestricted-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISENSUREGUESTACCESSRESTRICTED_ALT02",
-      "title": "EnsureGuestAccessRestricted (scenario B)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureGuestAccessRestricted-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisEnsureGuestAccessRestricted-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISENSUREGUESTUSERDYNAMICGROUP_ALT01",
-      "title": "EnsureGuestUserDynamicGroup (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureGuestUserDynamicGroup-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisEnsureGuestUserDynamicGroup-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISENSUREUSERCONSENTTOAPPSDISALLOWED_ALT01",
-      "title": "EnsureUserConsentToAppsDisallowed (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureUserConsentToAppsDisallowed-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisEnsureUserConsentToAppsDisallowed-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISENSUREUSERCONSENTTOAPPSDISALLOWED_ALT02",
-      "title": "EnsureUserConsentToAppsDisallowed (scenario B)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisEnsureUserConsentToAppsDisallowed-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisEnsureUserConsentToAppsDisallowed-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISFORMSPHISHINGPROTECTIONENABLED_ALT01",
-      "title": "Forms phishing protection enabled (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisFormsPhishingProtectionEnabled-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisFormsPhishingProtectionEnabled-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISGLOBALADMINCOUNT_ALT01",
-      "title": "Global admin count (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisGlobalAdminCount-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisGlobalAdminCount-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISGLOBALADMINCOUNT_ALT02",
-      "title": "Global admin count (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisGlobalAdminCount-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisGlobalAdminCount-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISPASSWORDEXPIRY_ALT01",
-      "title": "PasswordExpiry (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisPasswordExpiry-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisPasswordExpiry-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPOB2BINTEGRATION_ALT01",
-      "title": "SharePoint B2B integration (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisSpoB2BIntegration-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoB2BIntegration-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPODEFAULTSHARINGLINK_ALT01",
-      "title": "SharePoint default sharing link (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLink-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoDefaultSharingLink-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPODEFAULTSHARINGLINK_ALT02",
-      "title": "SharePoint default sharing link (scenario B)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLink-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoDefaultSharingLink-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPODEFAULTSHARINGLINKPERMISSION_ALT01",
-      "title": "SharePoint default sharing linkPermission (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLinkPermission-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoDefaultSharingLinkPermission-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPODEFAULTSHARINGLINKPERMISSION_ALT02",
-      "title": "SharePoint default sharing linkPermission (scenario B)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoDefaultSharingLinkPermission-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoDefaultSharingLinkPermission-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPOGUESTACCESSEXPIRY_ALT01",
-      "title": "SharePoint guest access expiry (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoGuestAccessExpiry-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoGuestAccessExpiry-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPOGUESTACCESSEXPIRY_ALT02",
-      "title": "SharePoint guest access expiry (scenario B)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoGuestAccessExpiry-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoGuestAccessExpiry-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPOGUESTCANNOTSHAREUNOWNEDITEM_ALT01",
-      "title": "SharePoint guest cannot share unowned item (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoGuestCannotShareUnownedItem-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoGuestCannotShareUnownedItem-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISSPOPREVENTDOWNLOADMALICIOUSFILE_ALT01",
-      "title": "SharePoint prevent malicious file downloads (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisSpoPreventDownloadMaliciousFile-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisSpoPreventDownloadMaliciousFile-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISTHIRDPARTYANDCUSTOMAPPS_ALT01",
-      "title": "ThirdPartyAndCustomApps (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisThirdPartyAndCustomApps-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisThirdPartyAndCustomApps-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISTHIRDPARTYAPPLICATIONSDISALLOWED_ALT01",
-      "title": "Third party applications disallowed (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisThirdPartyApplicationsDisallowed-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisThirdPartyApplicationsDisallowed-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISTHIRDPARTYAPPLICATIONSDISALLOWED_ALT02",
-      "title": "Third party applications disallowed (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisThirdPartyApplicationsDisallowed-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisThirdPartyApplicationsDisallowed-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISTHIRDPARTYSTORAGESERVICESRESTRICTED_ALT01",
-      "title": "Third party storage services restricted (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisThirdPartyStorageServicesRestricted-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisThirdPartyStorageServicesRestricted-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISUSEROWNEDAPPSRESTRICTED_ALT01",
-      "title": "User owned apps restricted (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisUserOwnedAppsRestricted-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisUserOwnedAppsRestricted-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISWEAKAUTHENTICATIONMETHODSDISABLED_ALT01",
-      "title": "Weak authentication methods disabled (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisWeakAuthenticationMethodsDisabled-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisWeakAuthenticationMethodsDisabled-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAACTIVATIONNOTIFICATIONGLOBALADMIN_ALT01",
-      "title": "ActivationNotificationGlobalAdmin (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaActivationNotificationGlobalAdmin-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaActivationNotificationGlobalAdmin-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAACTIVATIONNOTIFICATIONOTHER_ALT01",
-      "title": "ActivationNotificationOther (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaActivationNotificationOther-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaActivationNotificationOther-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAAPPADMINCONSENT_ALT01",
-      "title": "App admin consent (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppAdminConsent-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAppAdminConsent-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAAPPGROUPOWNERCONSENT_ALT01",
-      "title": "App group owner consent (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppGroupOwnerConsent-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAppGroupOwnerConsent-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAAPPREGISTRATION_ALT01",
-      "title": "App registration (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppRegistration-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAppRegistration-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAAPPUSERCONSENT_ALT01",
-      "title": "App user consent (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAppUserConsent-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAppUserConsent-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAASSIGNMENTNOTIFICATION_ALT01",
-      "title": "AssignmentNotification (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisaAssignmentNotification-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAssignmentNotification-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAAUTHENTICATORCONTEXT_ALT01",
-      "title": "Authenticator context (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaAuthenticatorContext-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaAuthenticatorContext-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKHIGHRISKSIGNINS_ALT01",
-      "title": "Block high risk sign ins (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskSignIns-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockHighRiskSignIns-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKHIGHRISKSIGNINS_ALT02",
-      "title": "Block high risk sign ins (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskSignIns-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockHighRiskSignIns-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKHIGHRISKUSERS_ALT01",
-      "title": "Block high risk users (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskUsers-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockHighRiskUsers-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKHIGHRISKUSERS_ALT02",
-      "title": "Block high risk users (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockHighRiskUsers-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockHighRiskUsers-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKLEGACYAUTH_ALT01",
-      "title": "Block legacy auth (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockLegacyAuth-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockLegacyAuth-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISABLOCKLEGACYAUTH_ALT02",
-      "title": "Block legacy auth (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaBlockLegacyAuth-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaBlockLegacyAuth-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISACLOUDGLOBALADMIN_ALT01",
-      "title": "Cloud global admin (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaCloudGlobalAdmin-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaCloudGlobalAdmin-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISACROSSTENANTINBOUNDDEFAULT_ALT01",
-      "title": "Cross tenant inbound default (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaCrossTenantInboundDefault-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaCrossTenantInboundDefault-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISACROSSTENANTINBOUNDDEFAULT_ALT02",
-      "title": "Cross tenant inbound default (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaCrossTenantInboundDefault-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaCrossTenantInboundDefault-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISADIAGNOSTICSETTINGS_ALT01",
-      "title": "DiagnosticSettings (scenario A)",
-      "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Demo control derived from Test-MtCisaDiagnosticSettings-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaDiagnosticSettings-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGLOBALADMINCOUNT_ALT01",
-      "title": "Global admin count (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminCount-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGlobalAdminCount-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGLOBALADMINCOUNT_ALT02",
-      "title": "Global admin count (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminCount-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGlobalAdminCount-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGLOBALADMINRATIO_ALT01",
-      "title": "Global admin ratio (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminRatio-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGlobalAdminRatio-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGLOBALADMINRATIO_ALT02",
-      "title": "Global admin ratio (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaGlobalAdminRatio-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGlobalAdminRatio-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGUESTINVITATION_ALT01",
-      "title": "Guest invitation (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestInvitation-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGuestInvitation-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGUESTINVITATION_ALT02",
-      "title": "Guest invitation (scenario B)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestInvitation-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGuestInvitation-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGUESTUSERACCESS_ALT01",
-      "title": "Guest user access (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestUserAccess-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGuestUserAccess-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAGUESTUSERACCESS_ALT02",
-      "title": "Guest user access (scenario B)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaGuestUserAccess-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaGuestUserAccess-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAMANAGEDDEVICE_ALT01",
-      "title": "Managed device (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisaManagedDevice-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaManagedDevice-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAMANAGEDDEVICEREGISTRATION_ALT01",
-      "title": "Managed device registration (scenario A)",
-      "functionalArea": "Endpoint & Device Management",
-      "description": "Demo control derived from Test-MtCisaManagedDeviceRegistration-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaManagedDeviceRegistration-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAMETHODSMIGRATION_ALT01",
-      "title": "Methods migration (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaMethodsMigration-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaMethodsMigration-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAMFA_ALT01",
-      "title": "MFA (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaMfa-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaMfa-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAMFA_ALT02",
-      "title": "MFA (scenario B)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaMfa-Alt02.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaMfa-Alt02.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISANOTIFYHIGHRISKUSERS_ALT01",
-      "title": "Notify high risk users (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaNotifyHighRiskUsers-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaNotifyHighRiskUsers-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAPASSWORDEXPIRATION_ALT01",
-      "title": "Password expiration (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPasswordExpiration-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaPasswordExpiration-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAPERMANENTROLEASSIGNMENT_ALT01",
-      "title": "Permanent role assignment (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPermanentRoleAssignment-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaPermanentRoleAssignment-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAPHISHRESISTANT_ALT01",
-      "title": "Phish resistant (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPhishResistant-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaPhishResistant-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAPRIVILEGEDPHISHRESISTANT_ALT01",
-      "title": "PrivilegedPhish resistant (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaPrivilegedPhishResistant-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaPrivilegedPhishResistant-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAREQUIREACTIVATIONAPPROVAL_ALT01",
-      "title": "Require activation approval (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaRequireActivationApproval-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaRequireActivationApproval-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAUNMANAGEDROLEASSIGNMENTS_ALT01",
-      "title": "Unmanaged role assignments (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaUnmanagedRoleAssignments-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaUnmanagedRoleAssignments-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISAWEAKFACTOR_ALT01",
-      "title": "Weak factor (scenario A)",
-      "functionalArea": "Identity & Access Management",
-      "description": "Demo control derived from Test-MtCisaWeakFactor-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaWeakFactor-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISASPOSHARING_ALT01",
-      "title": "SharePoint sharing (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaSpoSharing-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaSpoSharing-Alt01.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTCISASPOSHARINGALLOWEDDOMAIN_ALT01",
-      "title": "SharePoint sharing allowed domain (scenario A)",
-      "functionalArea": "Collaboration & Communication",
-      "description": "Demo control derived from Test-MtCisaSpoSharingAllowedDomain-Alt01.Tests.ps1.",
-      "frameworkMappings": [
-        "Test-MtCisaSpoSharingAllowedDomain-Alt01.Tests.ps1"
       ],
       "duplicatePolicy": "single",
       "scoring": {

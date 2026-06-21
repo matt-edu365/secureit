@@ -1,0 +1,9 @@
+{
+    "MTCISCLOUDADMIN": "Checks that administrator access is tightly controlled.",
+    "MTCISCUSTOMERLOCKBOX": "Checks that Microsoft support access requires customer approval.",
+    "MTHIGHRISKAPPPERMISSIONS": "Checks that risky app permissions are reviewed before they are granted.",
+    "PRIVILEGEDASSIGNMENTS": "Checks that privileged assignments are tightly controlled.",
+    "XSPMCRITICALASSETMANAGEMENT": "Checks that critical assets are identified and protected.",
+    "XSPMDEVICES": "Checks that devices are included in exposure management reviews.",
+    "XSPMPRIVILEGEDIDENTITIES": "Checks that privileged identities are included in exposure management reviews."
+}

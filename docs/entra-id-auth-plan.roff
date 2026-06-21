@@ -1,0 +1,148 @@
+.ll 6.5i
+.ad l
+.nh
+.ft B
+.ps 18
+SecureIT Entra ID Authentication Plan
+.ft R
+.ps 10
+.sp 1
+Prepared for SecureIT on 2026-06-22.
+.sp 1
+Current login flow status: development-only routing based on local seed data. This plan replaces it with proper Microsoft Entra ID sign-in for customers and ICT365 administrators.
+.sp 1
+.ft B
+1. Goal
+.ft R
+.sp 0.2
+Use Microsoft Entra ID as the only sign-in method for the SecureIT web app so customer tenants land in their own portal and ICT365 staff land in the admin area.
+.sp 1
+.ft B
+2. Recommended Identity Model
+.ft R
+.sp 0.2
+Use one multi-tenant Entra app registration for SecureIT.
+.sp 0.2
+Use the authorization code flow with PKCE.
+.sp 0.2
+Use a server-side session after the callback. Do not trust query-string routing or client-side identity flags.
+.sp 0.2
+Use claims to decide access:
+.sp 0.2
+- `tid` maps the sign-in to a SecureIT tenant record.
+.sp 0.2
+- an admin app role or admin group membership grants access to ICT365-only pages.
+.sp 0.2
+- customer users are routed to the tenant that matches their Entra tenant ID.
+.sp 1
+.ft B
+3. Entra Portal Setup
+.ft R
+.sp 0.2
+Create a new app registration for SecureIT.
+.sp 0.2
+Recommended account type: accounts in any organizational directory.
+.sp 0.2
+Add web redirect URIs for the SecureIT callback and logout return path.
+.sp 0.2
+Enable ID token and authorization code sign-in.
+.sp 0.2
+Create an admin app role such as `SecureIT.Admin`.
+.sp 0.2
+Assign that role only to ICT365 staff or an ICT365 admin group.
+.sp 0.2
+If you want stronger customer governance, restrict approved customer tenants by tenant ID in SecureIT and require admin consent during onboarding.
+.sp 1
+.ft B
+4. App Configuration
+.ft R
+.sp 0.2
+Add separate Entra auth settings to SecureIT config and environment variables.
+.sp 0.2
+Suggested variables:
+.sp 0.2
+- `SECUREIT_ENTRA_TENANT_ID`
+.sp 0.2
+- `SECUREIT_ENTRA_CLIENT_ID`
+.sp 0.2
+- `SECUREIT_ENTRA_CLIENT_SECRET`
+.sp 0.2
+- `SECUREIT_ENTRA_REDIRECT_URI`
+.sp 0.2
+- `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI`
+.sp 0.2
+- `SECUREIT_ENTRA_ALLOWED_TENANT_IDS`
+.sp 0.2
+- `SECUREIT_ENTRA_ADMIN_GROUP_ID` or `SECUREIT_ENTRA_ADMIN_APP_ROLE`
+.sp 0.2
+Keep these separate from the existing Key Vault and reporting settings.
+.sp 1
+.ft B
+5. App Changes
+.ft R
+.sp 0.2
+Replace the current login router in `app/login.php` with a redirect to Microsoft sign-in.
+.sp 0.2
+Add a callback endpoint that validates state, nonce, issuer, audience, and token signature.
+.sp 0.2
+Store only the minimum identity facts in the session: email, name, Entra tenant ID, object ID, role, and resolved SecureIT tenant key.
+.sp 0.2
+Add access guards so:
+.sp 0.2
+- admin pages require the admin role
+.sp 0.2
+- customer pages require a matched tenant record
+.sp 0.2
+- unauthorised users are sent back to login with a clear error
+.sp 0.2
+Update logout so it clears the SecureIT session and, optionally, returns the user to the Entra logout endpoint.
+.sp 1
+.ft B
+6. Tenant Routing Rules
+.ft R
+.sp 0.2
+Use the signed-in user's Entra tenant ID to resolve the customer portal.
+.sp 0.2
+If one Entra tenant maps to one SecureIT tenant, route directly to that tenant page.
+.sp 0.2
+If one user can access multiple customer tenants, add a post-login tenant picker. Do not let the user choose a tenant before authentication.
+.sp 0.2
+Keep ICT365 admin access separate from customer access so the admin dashboard does not depend on customer tenant mapping.
+.sp 1
+.ft B
+7. Rollout Plan
+.ft R
+.sp 0.2
+Phase 1: create the Entra app registration and confirm callback URLs.
+.sp 0.2
+Phase 2: build the callback/session layer and keep the old login only as a temporary fallback in non-production environments.
+.sp 0.2
+Phase 3: wire admin and customer access checks into the existing page guards.
+.sp 0.2
+Phase 4: onboard one ICT365 admin account and one customer tenant for validation.
+.sp 0.2
+Phase 5: remove the seed-based login shortcut from production paths.
+.sp 0.2
+Phase 6: document the onboarding steps for new customer tenants.
+.sp 1
+.ft B
+8. Security Checklist
+.ft R
+.sp 0.2
+Validate JWT signatures against Entra JWKS.
+.sp 0.2
+Check the issuer, audience, nonce, and token expiry on every login.
+.sp 0.2
+Use secure, HttpOnly, SameSite cookies.
+.sp 0.2
+Do not store user passwords in SecureIT.
+.sp 0.2
+Do not route access based on email text alone.
+.sp 0.2
+Keep audit logs for sign-in success, failure, and role checks.
+.sp 1
+.ft B
+9. Practical Next Step
+.ft R
+.sp 0.2
+Start with a single SecureIT Entra app registration, admin role assignment, and a callback proof of concept. Once that works, connect tenant mapping and then replace the development login flow.

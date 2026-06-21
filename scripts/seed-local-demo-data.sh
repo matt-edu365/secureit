@@ -100,29 +100,6 @@ base_tests = [
     "Test-MtCisaSpoSharingAllowedDomain.Tests.ps1",
 ]
 
-second_variant_tests = {
-    "Test-AuthenticationMethodBaseline.Tests.ps1",
-    "Test-Groups.Tests.ps1",
-    "Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1",
-    "Test-MtCisCreateTenantDisallowed.Tests.ps1",
-    "Test-MtCisEnsureGuestAccessRestricted.Tests.ps1",
-    "Test-MtCisEnsureUserConsentToAppsDisallowed.Tests.ps1",
-    "Test-MtCisGlobalAdminCount.Tests.ps1",
-    "Test-MtCisSpoDefaultSharingLink.Tests.ps1",
-    "Test-MtCisSpoDefaultSharingLinkPermission.Tests.ps1",
-    "Test-MtCisSpoGuestAccessExpiry.Tests.ps1",
-    "Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1",
-    "Test-MtCisaBlockHighRiskSignIns.Tests.ps1",
-    "Test-MtCisaBlockHighRiskUsers.Tests.ps1",
-    "Test-MtCisaBlockLegacyAuth.Tests.ps1",
-    "Test-MtCisaCrossTenantInboundDefault.Tests.ps1",
-    "Test-MtCisaGlobalAdminCount.Tests.ps1",
-    "Test-MtCisaGlobalAdminRatio.Tests.ps1",
-    "Test-MtCisaGuestInvitation.Tests.ps1",
-    "Test-MtCisaGuestUserAccess.Tests.ps1",
-    "Test-MtCisaMfa.Tests.ps1",
-}
-
 def strip_variant(name: str) -> str:
     name = name.removeprefix("Test-").removesuffix(".Tests.ps1")
     if "-Alt" in name:
@@ -159,88 +136,111 @@ def family_for(test_name: str) -> str:
 
 def title_for(test_name: str) -> str:
     base = strip_variant(test_name)
-    variants = []
-    if "-Alt01" in test_name:
-        variants.append("scenario A")
-    elif "-Alt02" in test_name:
-        variants.append("scenario B")
+    title_overrides = {
+        "EIDSCA.Generated": "Entra security baseline review",
+        "ConditionalAccessBaseline": "Conditional Access baseline",
+        "ConditionalAccessWhatIf": "Conditional Access what-if analysis",
+        "MtMdeAntivirusPolicy": "Defender antivirus policy",
+        "MtMdiHealthIssues": "Defender identity health issues",
+        "AppManagementPolicies": "App management policies",
+        "AppRegistrations": "App registrations",
+        "AuthenticationMethodBaseline": "Authentication method baseline",
+        "Groups": "Groups",
+        "MtAppRegistrationOwnersWithoutMFA": "App registration owners without MFA",
+        "MtEntitlementManagementDeletedGroups": "Entitlement management deleted groups",
+        "MtEntitlementManagementInactivePolicies": "Entitlement management inactive policies",
+        "MtEntitlementManagementOrphanedResources": "Entitlement management orphaned resources",
+        "MtEntitlementManagementValidApprovers": "Entitlement management valid approvers",
+        "MtEntitlementManagementValidResourceRoles": "Entitlement management valid resource roles",
+        "MtEntraDeviceRegistrationPolicy": "Entra device registration policy",
+        "MtEntraIDConnect": "Entra ID Connect",
+        "MtHighRiskAppPermissions": "High-risk app permissions",
+        "MtOnPremisesSynchronization": "On-premises synchronization",
+        "MtSecurityGroupCreationRestricted": "Security group creation restricted",
+        "MtTenantCreationRestricted": "Tenant creation restricted",
+        "PrivilegedAssignments": "Privileged assignments",
+        "MtIntuneConnectorHealth": "Intune connector health",
+        "MtIntunePlatform": "Intune platform settings",
+        "XspmCriticalAssetManagement": "XSPM critical asset management",
+        "XspmDevices": "XSPM devices",
+        "XspmPrivilegedIdentities": "XSPM privileged identities",
+        "MtCis365PublicGroup": "Microsoft 365 public groups",
+        "MtCisAdminConsentWorkflowEnabled": "Admin consent workflow",
+        "MtCisCloudAdmin": "Cloud admin access",
+        "MtCisCreateTenantDisallowed": "Tenant creation disallowed",
+        "MtCisCustomerLockBox": "Customer lockbox",
+        "MtCisDevicesWithoutCompliancePolicyMarked": "Devices without compliance policy",
+        "MtCisEnsureGuestAccessRestricted": "Guest access restrictions",
+        "MtCisEnsureGuestUserDynamicGroup": "Guest user dynamic groups",
+        "MtCisEnsureUserConsentToAppsDisallowed": "User app consent disallowed",
+        "MtCisFormsPhishingProtectionEnabled": "Forms phishing protection",
+        "MtCisGlobalAdminCount": "Global administrator count",
+        "MtCisPasswordExpiry": "Password expiry",
+        "MtCisSpoB2BIntegration": "SharePoint B2B integration",
+        "MtCisSpoDefaultSharingLink": "SharePoint default sharing link",
+        "MtCisSpoDefaultSharingLinkPermission": "SharePoint default sharing link permissions",
+        "MtCisSpoGuestAccessExpiry": "SharePoint guest access expiry",
+        "MtCisSpoGuestCannotShareUnownedItem": "SharePoint guest sharing restrictions",
+        "MtCisSpoPreventDownloadMaliciousFile": "SharePoint malicious file download protection",
+        "MtCisThirdPartyAndCustomApps": "Third-party and custom apps",
+        "MtCisThirdPartyApplicationsDisallowed": "Third-party applications disallowed",
+        "MtCisThirdPartyStorageServicesRestricted": "Third-party storage services restricted",
+        "MtCisUserOwnedAppsRestricted": "User-owned apps restricted",
+        "MtCisWeakAuthenticationMethodsDisabled": "Weak authentication methods disabled",
+        "MtCisaActivationNotificationGlobalAdmin": "Activation notifications for global admins",
+        "MtCisaActivationNotificationOther": "Activation notifications for other privileged roles",
+        "MtCisaAppAdminConsent": "Admin app consent",
+        "MtCisaAppGroupOwnerConsent": "Group owner app consent",
+        "MtCisaAppRegistration": "App registration",
+        "MtCisaAppUserConsent": "User app consent",
+        "MtCisaAssignmentNotification": "Assignment notifications",
+        "MtCisaAuthenticatorContext": "Authenticator context",
+        "MtCisaBlockHighRiskSignIns": "Block high-risk sign-ins",
+        "MtCisaBlockHighRiskUsers": "Block high-risk users",
+        "MtCisaBlockLegacyAuth": "Block legacy authentication",
+        "MtCisaCloudGlobalAdmin": "Cloud global administrator access",
+        "MtCisaCrossTenantInboundDefault": "Cross-tenant inbound defaults",
+        "MtCisaDiagnosticSettings": "Diagnostic settings",
+        "MtCisaGlobalAdminCount": "Global administrator count",
+        "MtCisaGlobalAdminRatio": "Global administrator ratio",
+        "MtCisaGuestInvitation": "Guest invitations",
+        "MtCisaGuestUserAccess": "Guest user access",
+        "MtCisaManagedDevice": "Managed devices",
+        "MtCisaManagedDeviceRegistration": "Managed device registration",
+        "MtCisaMethodsMigration": "Authentication methods migration",
+        "MtCisaMfa": "Multi-factor authentication",
+        "MtCisaNotifyHighRiskUsers": "Notify high-risk users",
+        "MtCisaPasswordExpiration": "Password expiration",
+        "MtCisaPermanentRoleAssignment": "Permanent role assignment",
+        "MtCisaPhishResistant": "Phishing-resistant sign-in",
+        "MtCisaPrivilegedPhishResistant": "Privileged phishing-resistant sign-in",
+        "MtCisaRequireActivationApproval": "Require activation approval",
+        "MtCisaUnmanagedRoleAssignments": "Unmanaged role assignments",
+        "MtCisaWeakFactor": "Weak authentication factors",
+        "MtCisaSpoSharing": "SharePoint sharing",
+        "MtCisaSpoSharingAllowedDomain": "SharePoint allowed sharing domains",
+        "ConditionalAccessBaseline": "Conditional Access baseline",
+        "ConditionalAccessWhatIf": "Conditional Access what-if analysis",
+        "EIDSCA.Generated": "Entra security baseline review",
+        "EntraRecommendations": "Entra recommendations",
+        "EntraDeviceRegistrationPolicy": "Entra device registration policy",
+        "EntraIDConnect": "Entra ID Connect",
+        "MdeAntivirusPolicy": "Defender antivirus policy",
+        "MdiHealthIssues": "Defender identity health issues",
+        "OnPremisesSynchronization": "On-premises synchronization",
+        "PasswordExpiry": "Password expiry",
+        "ThirdPartyAndCustomApps": "Third-party and custom apps",
+    }
 
-    replacements = [
-        ("Test-", ""),
-        ("Mt", ""),
-        ("Cisa", ""),
-        ("Cis", ""),
-        ("Xspm", "XSPM "),
-        ("EntraIDConnect", "Entra ID connect"),
-        ("EntraDeviceRegistrationPolicy", "Entra device registration policy"),
-        ("AuthenticationMethodBaseline", "Authentication method baseline"),
-        ("SecurityGroupCreationRestricted", "Security group creation restricted"),
-        ("TenantCreationRestricted", "Tenant creation restricted"),
-        ("AdminConsentWorkflowEnabled", "Admin consent workflow enabled"),
-        ("CreateTenantDisallowed", "Create tenant disallowed"),
-        ("FormsPhishingProtectionEnabled", "Forms phishing protection enabled"),
-        ("ThirdPartyApplicationsDisallowed", "Third party applications disallowed"),
-        ("WeakAuthenticationMethodsDisabled", "Weak authentication methods disabled"),
-        ("AppAdminConsent", "App admin consent"),
-        ("AppGroupOwnerConsent", "App group owner consent"),
-        ("AppRegistration", "App registration"),
-        ("AppUserConsent", "App user consent"),
-        ("AuthenticatorContext", "Authenticator context"),
-        ("BlockHighRiskSignIns", "Block high risk sign-ins"),
-        ("BlockHighRiskUsers", "Block high risk users"),
-        ("BlockLegacyAuth", "Block legacy auth"),
-        ("CloudGlobalAdmin", "Cloud global admin"),
-        ("CrossTenantInboundDefault", "Cross tenant inbound default"),
-        ("GlobalAdminCount", "Global admin count"),
-        ("GlobalAdminRatio", "Global admin ratio"),
-        ("GuestInvitation", "Guest invitation"),
-        ("GuestUserAccess", "Guest user access"),
-        ("MethodsMigration", "Methods migration"),
-        ("Mfa", "MFA"),
-        ("NotifyHighRiskUsers", "Notify high risk users"),
-        ("PasswordExpiration", "Password expiration"),
-        ("PhishResistant", "Phish resistant"),
-        ("PrivilegedPhishResistant", "Privileged phish resistant"),
-        ("WeakFactor", "Weak factor"),
-        ("ThirdPartyStorageServicesRestricted", "Third party storage services restricted"),
-        ("UserOwnedAppsRestricted", "User owned apps restricted"),
-        ("PermanentRoleAssignment", "Permanent role assignment"),
-        ("RequireActivationApproval", "Require activation approval"),
-        ("UnmanagedRoleAssignments", "Unmanaged role assignments"),
-        ("SpoDefaultSharingLink", "SharePoint default sharing link"),
-        ("SpoDefaultSharingLinkPermission", "SharePoint default sharing link permission"),
-        ("SpoGuestAccessExpiry", "SharePoint guest access expiry"),
-        ("SpoGuestCannotShareUnownedItem", "SharePoint guest cannot share unowned item"),
-        ("SpoPreventDownloadMaliciousFile", "SharePoint prevent malicious file downloads"),
-        ("SpoSharingAllowedDomain", "SharePoint sharing allowed domain"),
-        ("SpoSharing", "SharePoint sharing"),
-        ("SpoB2BIntegration", "SharePoint B2B integration"),
-        ("Groups", "Groups"),
-        ("AppManagementPolicies", "App management policies"),
-        ("EntitlementManagement", "Entitlement management"),
-        ("IntuneConnectorHealth", "Intune connector health"),
-        ("IntunePlatform", "Intune platform"),
-        ("MdeAntivirusPolicy", "Defender antivirus policy"),
-        ("MdiHealthIssues", "Defender identity health issues"),
-        ("ManagedDeviceRegistration", "Managed device registration"),
-        ("ManagedDevice", "Managed device"),
-        ("DevicesWithoutCompliancePolicyMarked", "Devices without compliance policy"),
-        ("HighRiskAppPermissions", "High risk app permissions"),
-        ("PrivilegedAssignments", "Privileged assignments"),
-        ("AppRegistrations", "App registrations"),
-        ("EntraRecommendations", "Entra recommendations"),
-        ("OnPremisesSynchronization", "On-premises synchronization"),
-        ("AppRegistrationOwnersWithoutMFA", "App registration owners without MFA"),
-        ("EIDSCA.Generated", "EIDSCA generated"),
-    ]
+    if base in title_overrides:
+        return title_overrides[base]
 
-    text = base
-    for old, new in replacements:
-        text = text.replace(old, new)
-    text = text.replace("-", " ")
+    text = base.replace("-", " ")
+    text = text.replace("Mt", "")
+    text = text.replace("Cisa", "")
+    text = text.replace("Cis", "")
+    text = text.replace("Xspm", "XSPM ")
     text = " ".join(text.split())
-    if variants:
-        text = f"{text} ({', '.join(variants)})"
     return text
 
 def control_id_for(test_name: str) -> str:
@@ -253,11 +253,6 @@ def control_id_for(test_name: str) -> str:
 
 def result_for(tenant: str, test_name: str) -> str:
     base = strip_variant(test_name)
-    variant = 0
-    if "-Alt01" in test_name:
-        variant = 1
-    elif "-Alt02" in test_name:
-        variant = 2
 
     contoso_fail = {
         "AuthenticationMethodBaseline",
@@ -291,42 +286,22 @@ def result_for(tenant: str, test_name: str) -> str:
     }
 
     if tenant == "contoso-prod":
-        if variant == 0:
-            if base in contoso_fail:
-                return "Fail"
-            if base in contoso_skip:
-                return "Skipped"
-            return "Pass"
-        if variant == 1:
-            if base in contoso_fail and ("Guest" in base or "CisSpo" in base or "Mfa" in base):
-                return "Fail"
-            if base in contoso_skip:
-                return "Skipped"
-            return "Pass"
-        if variant == 2:
-            if base in contoso_fail and ("Mfa" in base or "GlobalAdmin" in base or "BlockLegacyAuth" in base):
-                return "Fail"
-            if base in contoso_skip:
-                return "Skipped"
-            return "Pass"
+        if base in contoso_fail:
+            return "Fail"
+        if base in contoso_skip:
+            return "Skipped"
+        return "Pass"
 
     if tenant == "fabrikam-prod":
-        if variant == 0 and base in {"MtCisaPasswordExpiration", "MtCisaMethodsMigration"}:
-            return "Skipped"
-        if variant == 1 and base in {"MtCisAdminConsentWorkflowEnabled", "MtCisaGlobalAdminRatio"}:
+        if base in {"MtCisaPasswordExpiration", "MtCisaMethodsMigration"}:
             return "Skipped"
         return "Pass"
 
     return "Pass"
 
 def build_test_suite() -> list[str]:
-    tests: list[str] = []
-    tests.extend(base_tests)
-    for test in base_tests:
-        tests.append(test.replace(".Tests.ps1", "-Alt01.Tests.ps1"))
-        if test in second_variant_tests:
-            tests.append(test.replace(".Tests.ps1", "-Alt02.Tests.ps1"))
-    assert len(tests) == 186, len(tests)
+    tests: list[str] = list(base_tests)
+    assert len(tests) == 83, len(tests)
     return tests
 
 def make_tenant(tenant_key: str, tenant_name: str, generated_at: str, history_at: str) -> None:
@@ -440,10 +415,10 @@ def build_runtime_tenants() -> dict:
     }
 
 def build_canonical_controls(tests: list[str]) -> dict:
-    return {
-        "version": 1,
-        "description": "Local demo canonical SecureIT control mapping for testing the container app.",
-        "functionalAreas": [
+        return {
+            "version": 1,
+            "description": "Local demo canonical SecureIT control mapping for testing the container app.",
+            "functionalAreas": [
             "Identity & Access Management",
             "Email & Calendaring",
             "Collaboration & Communication",
@@ -453,12 +428,11 @@ def build_canonical_controls(tests: list[str]) -> dict:
             "Compliance, Governance & Data Protection",
             "Productivity, Automation & AI",
         ],
-        "controls": [
-            {
-                "id": control_id_for(test_name),
-                "title": title_for(test_name),
-                "functionalArea": family_for(test_name),
-                "description": f"Demo control derived from {test_name}.",
+            "controls": [
+                {
+                    "id": control_id_for(test_name),
+                    "title": title_for(test_name),
+                    "functionalArea": family_for(test_name),
                 "frameworkMappings": [test_name],
                 "duplicatePolicy": "single",
                 "scoring": {"weight": 1, "passLogic": "direct"},

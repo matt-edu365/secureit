@@ -1,8 +1,9 @@
 services:
   secureit:
-    image: ghcr.io/matt-edu365/secureit:latest
+    image: ${SECUREIT_IMAGE:-ghcr.io/matt-edu365/secureit:latest}
     container_name: secureit
     restart: unless-stopped
+    pull_policy: ${SECUREIT_PULL_POLICY:-always}
     ports:
       - "8089:80"
     environment:

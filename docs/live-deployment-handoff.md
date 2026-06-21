@@ -61,7 +61,7 @@ A reverse proxy or ingress layer must:
 - present `https://secureit.ict365.ky`
 - terminate TLS
 - forward traffic to the SecureIT container
-- optionally enforce access restrictions while auth is still prototype-level
+  - optionally enforce access restrictions while the production auth model is still being finalised
 
 ### 3. Persistent storage
 Persistent mounted storage must exist for:
@@ -128,7 +128,7 @@ The next agent should treat this as a priority integration decision.
 
 ## Authentication warning
 
-The current app login flow is still prototype-level.
+The current app login flow is a development sign-in surface and should not be treated as the final production auth model.
 
 Before real customer exposure, decide one of these:
 - reverse-proxy auth in front of the app

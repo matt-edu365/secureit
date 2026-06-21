@@ -1,4 +1,4 @@
-name: Maester Weekly Legacy
+name: SecureIT Weekly Legacy
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ on:
           - oidc
 
 jobs:
-  run-maester:
+  run-assessment:
     runs-on: windows-latest
     permissions:
       contents: read
@@ -98,7 +98,7 @@ jobs:
           Import-Module Maester -Force
           Install-MaesterTests
 
-      - name: Run Maester assessment
+      - name: Run SecureIT assessment engine
         shell: pwsh
         env:
           PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
@@ -109,7 +109,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maester-weekly-${{ matrix.tenant_key }}-${{ github.run_number }}
+          name: secureit-weekly-${{ matrix.tenant_key }}-${{ github.run_number }}
           path: output/${{ matrix.tenant_key }}/
 
       - name: Note legacy workflow output usage
@@ -117,16 +117,16 @@ jobs:
         shell: pwsh
         run: |
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Legacy workflow note"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- This workflow no longer publishes to any prototype/shared-host environment."
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- This workflow no longer publishes to the SecureIT app runtime."
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Use generated artifacts or app-import bundles with the Docker-based SecureIT deployment path at https://secureit.ict365.ky."
       - name: Send weekly summary email
         if: ${{ env.SMTP_HOST != '' && env.EMAIL_FROM != '' && env.EMAIL_TO != '' }}
         shell: pwsh
         run: |
           $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
-          $subject = "Maester Weekly Report - $($summary.tenantName) - $($summary.failed) failed of $($summary.total)"
+          $subject = "SecureIT Weekly Report - $($summary.tenantName) - $($summary.failed) failed of $($summary.total)"
           $bodyLines = @(
-            'Maester weekly report',
+            'SecureIT weekly report',
             '',
             "Tenant: $($summary.tenantName)",
             "Tenant key: $($summary.tenantKey)",
@@ -166,7 +166,7 @@ jobs:
         run: |
           if (Test-Path $env:MAESTER_SUMMARY_PATH) {
             $summary = Get-Content -Raw -Path $env:MAESTER_SUMMARY_PATH | ConvertFrom-Json
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: $($summary.tenantName)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# SecureIT assessment run: $($summary.tenantName)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Tenant key: $($summary.tenantKey)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Total: $($summary.total)"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Passed: $($summary.passed)"
@@ -177,6 +177,6 @@ jobs:
             }
           }
           else {
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# Maester run: ${{ matrix.tenant_key }}"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "# SecureIT assessment run: ${{ matrix.tenant_key }}"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- No summary file was generated.'
           }

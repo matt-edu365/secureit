@@ -16,7 +16,6 @@
       "id": "IDENTITY_PASSWORD_EXPIRY_DISABLED",
       "title": "User passwords do not expire",
       "functionalArea": "Identity & Access Management",
-      "description": "Tenant password expiry policy is configured so user passwords do not expire.",
       "frameworkMappings": [
         "CISA.MS.AAD.6.1",
         "CIS.M365.1.3.1"
@@ -32,7 +31,6 @@
       "id": "IDENTITY_GLOBAL_ADMIN_COUNT",
       "title": "Global administrator count is controlled",
       "functionalArea": "Identity & Access Management",
-      "description": "The number of Global Administrators stays within recommended bounds.",
       "frameworkMappings": [
         "CIS.M365.1.1.3",
         "CISA.MS.AAD.7.1",
@@ -49,7 +47,6 @@
       "id": "IDENTITY_BLOCK_LEGACY_AUTH",
       "title": "Legacy authentication is blocked",
       "functionalArea": "Identity & Access Management",
-      "description": "Legacy authentication protocols are blocked or restricted in line with modern identity security guidance.",
       "frameworkMappings": [
         "CISA.MS.AAD.1.1"
       ],
@@ -63,7 +60,6 @@
       "id": "IDENTITY_HIGH_RISK_USER_PROTECTION",
       "title": "High-risk users and sign-ins are protected",
       "functionalArea": "Identity & Access Management",
-      "description": "High-risk users and sign-ins are blocked or challenged appropriately.",
       "frameworkMappings": [
         "CISA.MS.AAD.2.1",
         "CISA.MS.AAD.2.2",
@@ -79,7 +75,6 @@
       "id": "IDENTITY_PHISH_RESISTANT_MFA",
       "title": "Phish-resistant MFA is enforced for key users",
       "functionalArea": "Identity & Access Management",
-      "description": "Phish-resistant MFA is available and enforced appropriately, especially for privileged users.",
       "frameworkMappings": [
         "CISA.MS.AAD.3.1",
         "CISA.MS.AAD.3.2",
@@ -99,7 +94,6 @@
       "id": "IDENTITY_CONDITIONAL_ACCESS_BASELINE",
       "title": "Conditional Access baseline is in place",
       "functionalArea": "Identity & Access Management",
-      "description": "Key Conditional Access controls are configured for device compliance, modern authentication, and privileged protections.",
       "frameworkMappings": [
         "MT.1001",
         "MT.1003",
@@ -120,7 +114,6 @@
       "id": "IDENTITY_APP_CONSENT_RESTRICTIONS",
       "title": "Application consent and registration are controlled",
       "functionalArea": "Identity & Access Management",
-      "description": "App registrations, consent workflows, and risky application permissions are restricted appropriately.",
       "frameworkMappings": [
         "MT.1002",
         "MT.1050",
@@ -146,7 +139,6 @@
       "id": "IDENTITY_PRIVILEGED_ACCESS_GOVERNANCE",
       "title": "Privileged access is tightly governed",
       "functionalArea": "Identity & Access Management",
-      "description": "Privileged roles are limited, monitored, approval-based, and time-bound where appropriate.",
       "frameworkMappings": [
         "MT.1025",
         "MT.1026",
@@ -174,7 +166,6 @@
       "id": "IDENTITY_GUEST_AND_CROSS_TENANT_CONTROLS",
       "title": "Guest and cross-tenant access is restricted",
       "functionalArea": "Identity & Access Management",
-      "description": "Guest access, invitations, and cross-tenant defaults are configured safely.",
       "frameworkMappings": [
         "CIS.M365.5.1.6.2",
         "CISA.MS.AAD.8.1",
@@ -191,7 +182,6 @@
       "id": "FILES_SHAREPOINT_SHARING_CONTROLS",
       "title": "SharePoint and file sharing controls are restricted",
       "functionalArea": "Files, Intranet & Content Management",
-      "description": "SharePoint sharing defaults, guest settings, and risky download behaviours are constrained appropriately.",
       "frameworkMappings": [
         "CIS.M365.5.1.3.1",
         "CIS.M365.7.2.2",
@@ -213,7 +203,6 @@
       "id": "ENDPOINT_INTUNE_BASELINE",
       "title": "Endpoint management baseline is in place",
       "functionalArea": "Endpoint & Device Management",
-      "description": "Intune and managed device settings show an acceptable security baseline.",
       "frameworkMappings": [
         "CIS.M365.4.1",
         "CISA.MS.AAD.3.7",
@@ -243,7 +232,6 @@
       "id": "SECOPS_DEFENDER_POSTURE",
       "title": "Defender and exposure posture is healthy",
       "functionalArea": "Security Operations & Threat Protection",
-      "description": "Exposure management and Microsoft Defender related controls meet SecureIT expectations.",
       "frameworkMappings": [
         "MT.1059.*",
         "MT.1085",
@@ -277,7 +265,6 @@
       "id": "COMPLIANCE_CORE_TENANT_GOVERNANCE",
       "title": "Core tenant governance settings are compliant",
       "functionalArea": "Compliance, Governance & Data Protection",
-      "description": "Core governance and tenant-level data protection settings align with SecureIT expectations.",
       "frameworkMappings": [
         "CIS.M365.1.2.1",
         "CIS.M365.1.3.5",
@@ -294,7 +281,6 @@
       "id": "EMAIL_DEFENDER_MAIL_PROTECTION",
       "title": "Email threat protection baseline is active",
       "functionalArea": "Email & Calendaring",
-      "description": "Microsoft 365 email scanning and related mail protection controls are active where evidence is available in app-only runs.",
       "frameworkMappings": [
         "MT.1151",
         "MT.1010",
@@ -310,7 +296,6 @@
       "id": "EMAIL_FORMS_PHISHING_PROTECTION",
       "title": "Forms phishing protection is enabled",
       "functionalArea": "Email & Calendaring",
-      "description": "Microsoft Forms phishing protection is enabled for internal users.",
       "frameworkMappings": [
         "CIS.M365.1.3.5"
       ],
@@ -324,7 +309,6 @@
       "id": "COLLAB_GROUP_AND_TEAM_GOVERNANCE",
       "title": "Microsoft 365 groups and Teams creation are governed",
       "functionalArea": "Collaboration & Communication",
-      "description": "Group and Team creation, guest behaviour, and related collaboration governance are restricted appropriately.",
       "frameworkMappings": [
         "CIS.M365.1.2.1",
         "MT.1055",
@@ -341,7 +325,6 @@
       "id": "COLLAB_GUEST_AND_EXTERNAL_COLLABORATION",
       "title": "Guest and external collaboration are restricted",
       "functionalArea": "Collaboration & Communication",
-      "description": "Guest user groups and external collaboration pathways are controlled to reduce oversharing risk.",
       "frameworkMappings": [
         "CIS.M365.5.1.3.1",
         "CISA.MS.SHAREPOINT.1.3"
@@ -356,7 +339,6 @@
       "id": "PRODUCTIVITY_APP_PLATFORM_GOVERNANCE",
       "title": "Apps and low-code productivity platforms are governed",
       "functionalArea": "Productivity, Automation & AI",
-      "description": "Application and service principal management restrictions are enforced to reduce unmanaged automation and app sprawl.",
       "frameworkMappings": [
         "MT.1002",
         "CIS.M365.8.4.1",

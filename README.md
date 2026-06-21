@@ -1,52 +1,28 @@
 # SecureIT
 
-SecureIT is ICT365's multi-tenant Microsoft 365 security reporting and posture portal, adapted from a Maester-driven reporting workflow into a customer-facing SecureIT product.
+SecureIT is ICT365's multi-tenant Microsoft 365 security reporting and posture portal.
 
-GitHub repository:
+Repository:
 - `https://github.com/matt-edu365/secureit`
 
-## What this repo is now
+## Current model
 
-This repository is no longer just an initial scaffold.
+SecureIT now has one development and test path:
+- build a Docker image from the repository
+- run that image as the local or host test environment
+- mount runtime data outside the image
 
-It currently contains:
-- GitHub Actions workflows for manual and legacy Maester runs
-- a container-ready SecureIT PHP app in `app/`
-- legacy shared-host code and deployment material retained only as reference in `website/` and `deploy/maester/`
-- PowerShell tooling for tenant resolution, Maester execution, summary generation, report publishing, and app-bundle import
-- SecureIT-specific canonical control mapping examples and functional-area scoring scaffolding
-- Azure OIDC and Azure Key Vault diagnostic workflows
+There is no separate simulated or shared-host test environment.
 
-## Product direction
+## Core rule
 
-SecureIT started as a Maester automation and report-publication prototype.
+- **Maester remains the assessment engine**
+- **SecureIT is the product and runtime surface**
+- **all test environments must be built as Docker images**
 
-The current direction is:
-- keep Maester as the underlying assessment engine
-- adapt the presentation, structure, workflow, and customer experience into SecureIT
-- move from raw Maester-oriented report handling toward SecureIT-branded tenant dashboards, onboarding, and customer-facing control areas
-- keep traceability back to Maester output while avoiding exposing Maester internals directly as the product surface
+That keeps the codebase and runtime aligned and avoids drift between the local build and the deployed image.
 
-In short:
-- **Maester remains the engine**
-- **SecureIT is the product and customer-facing layer**
-
-## Branding adaptation: Maester -> SecureIT
-
-The repo is in an active branding transition.
-
-That means:
-- report generation still comes from Maester
-- older workflow names, deploy paths, and some historical docs still refer to Maester
-- the UI, dashboard, portal wording, and customer-facing language are being standardised around SecureIT
-- some legacy paths still use `maester` in filenames or directories for compatibility with older deployment history
-
-Current practical rule:
-- use **SecureIT** in documentation, UI copy, customer-facing language, and architecture descriptions
-- treat **Maester** as the underlying technical dependency or report engine where relevant
-- do not rename legacy compatibility paths unless the deployment impact is understood first
-
-## Current repository layout
+## What lives where
 
 ```text
 .github/
@@ -55,157 +31,90 @@ app/
 config/
 custom-tests/
 data/
-deploy/
-  maester/
-docker/
 docs/
 output/
 scripts/
-website/
+shared/
 Dockerfile
 docker-compose.yml
 README.md
 ```
 
-## Main application surfaces
+## Runtime surfaces
 
-### 1. `app/`
-The current SecureIT application.
-
-Purpose:
-- container-ready PHP app
-- intended target for Docker, GHCR, and Proxmox deployment
-- reads tenant metadata and report bundles from writable runtime storage
-- includes dashboard, login, portal, tenant, admin, onboarding, and Key Vault-related surfaces
-
-### 2. `website/`
-Legacy shared-host prototype source.
+### `app/`
+The SecureIT web application.
 
 Purpose:
-- retains the original shared-host implementation for reference during migration
-- no longer part of the intended active deployment path
+- customer-facing dashboard, login, portal, tenant, admin, onboarding, and Key Vault surfaces
+- reads tenant metadata and report bundles from mounted runtime storage
 
-### 3. `deploy/maester/`
-Legacy deployable shared-host bundle.
+### `shared/`
+Shared PHP helpers used by both the app and any supported companion surfaces.
 
 Purpose:
-- former shared-host deploy bundle retained for reference
-- transitional only, not part of the active product deployment model
+- keep common runtime logic in one place
+- avoid divergence in scoring and runtime rules
+- package shared dependencies into the Docker image
 
-## GitHub Actions workflows
+### `data/`
+Runtime storage mounted into the container.
 
-Current workflows present in the repo:
-- `docker-publish.yml`
-  - manually builds and publishes the SecureIT container image to GHCR
-- `maester-manual-run.yml`
-  - the main modern manual-run workflow, supports certificate and client-secret auth, test profile selection, and app-import bundle creation
-- `maester-weekly.yml`
-  - legacy weekly/manual workflow path still retained in the repo
-- `azure-oidc-diagnostic.yml`
-  - validates Azure OIDC login assumptions
-- `azure-keyvault-smoke-test.yml`
-  - tests Azure Key Vault secret retrieval via OIDC login
+Expected uses:
+- `tenants.json`
+- `reports/<tenant-key>/...`
+- `canonical-controls.json` if canonical scoring is enabled
 
-## Runtime and configuration model
+## Local Docker workflow
 
-Tracked example files are intended as templates.
+Build and run the local test image from the repository root:
 
-Important tracked examples:
-- `config/tenants.example.json`
-- `config/canonical-controls.example.json`
-- `data/tenants.example.json`
-- `deploy/config.tenants.example.json`
-- `deploy/maester/tenants.example.json`
-- `deploy/maester/admin-config.example.json`
-- `config/admin-config.example.json`
-
-Typical runtime files:
-- `config/tenants.json`
-- `data/tenants.json`
-- `deploy/config.tenants.json`
-- `deploy/maester/tenants.json`
-- `deploy/maester/admin-config.json`
-
-These runtime files are environment-specific and should be treated carefully.
-
-## App report import flow
-
-The repo now supports a cleaner app-facing report import path.
-
-Generated output can be prepared into:
-- `app-import/<tenant-key>/...`
-
-Then imported into app runtime storage with:
-
-```powershell
-pwsh ./scripts/Import-AppReportBundle.ps1 -TenantKey ict365 -SourcePath ./app-import/ict365
+```bash
+docker compose up -d --build --pull never
 ```
 
-Default destination:
-- `data/reports/<tenant-key>/...`
+The local service is exposed on:
+- `http://127.0.0.1:8088/`
 
-This is an important bridge between Maester-run output and the SecureIT app runtime.
+The local container uses:
+- `Dockerfile`
+- `docker-compose.yml`
+- mounted `data/`
+- mounted `.local/` for local identity seed data, if present
 
-## SecureIT functional areas and canonical controls
+## Report flow
 
-SecureIT is moving away from treating every raw Maester framework item as an independent customer-facing control.
+SecureIT does not generate reports inside the app container.
 
-Intended model:
-- keep raw Maester output for traceability
-- collapse duplicate framework checks into canonical SecureIT controls
-- map those controls into SecureIT functional areas
-- derive customer-facing posture from canonical SecureIT controls instead of duplicated raw test IDs
+Typical flow:
+1. GitHub Actions runs Maester
+2. workflow output is produced under `output/<tenant-key>/...`
+3. a bundle is prepared for app import
+4. `scripts/Import-AppReportBundle.ps1` imports that into runtime storage
+5. the app reads the imported bundle from `data/reports/<tenant-key>/...`
 
-Tracked example mapping:
+## Functional-area scoring
+
+SecureIT uses canonical functional areas rather than raw duplicate framework checks.
+
+Key files:
 - `config/canonical-controls.example.json`
+- `shared/functional-areas.php`
 
 ## Deployment direction
 
-### Legacy reference material
-- legacy deploy bundle under `deploy/maester/`
-- legacy website source under `website/`
-
-### Planned product path
-- SecureIT app in `app/`
+Current target:
 - Docker image built from `Dockerfile`
-- image published to GitHub Container Registry
-- target image name: `ghcr.io/matt-edu365/secureit`
-- intended runtime on Proxmox or equivalent Docker host
-- planned product hostname: `https://secureit.ict365.ky`
+- image published to GHCR as `ghcr.io/matt-edu365/secureit`
+- runtime on Docker or Proxmox-backed Docker host
+- public hostname `https://secureit.ict365.ky`
 
-## Current status summary
+## Working rule for future changes
 
-What is already true:
-- the GitHub repo exists and is active
-- SecureIT branding is already being applied across docs and app surfaces
-- the app surface is more advanced than the legacy prototype
-- manual Maester execution workflow exists and supports app-import bundle preparation
-- Azure OIDC and Key Vault diagnostic workflows exist
-- there is still technical and directory debt from the original Maester prototype
+Whenever you update SecureIT:
+1. update the app/runtime code
+2. update the shared helper if the rule is common
+3. update the Docker image and local compose test path
+4. update the docs that describe the runtime contract
 
-What still needs deliberate cleanup:
-- reduce documentation drift
-- decide when to retire `website/` and `deploy/maester/`
-- align workflow naming and legacy labels with current SecureIT reality
-- continue moving customer-facing language from Maester terminology to SecureIT terminology
-- complete the handoff from prototype publication to app-first deployment
-
-## Recommended working rule
-
-Keep these aligned whenever practical:
-1. local working copy
-2. GitHub repo
-3. target runtime environment
-
-If they differ intentionally, document the drift clearly in a commit, note, or handoff.
-
-## Handoff
-
-For the next Codex-based agent, start with:
-- `README.md`
-- `docs/repo-structure.md`
-- `docs/build-plan.md`
-- `docs/website-plan.md`
-- `docs/handoff-codex-agent.md`
-
-That handoff doc is intended to be the continuation reference for the next agent.
+That keeps the Docker-based test environment and the live deployment aligned.

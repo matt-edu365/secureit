@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../shared/functional-areas.php';
 function secureit_config(): array {
     static $config = null;
     if ($config === null) {
@@ -71,6 +72,64 @@ function secureit_find_tenant(string $tenantKey): ?array {
         }
     }
     return null;
+}
+
+function secureit_load_test_descriptions(): array {
+    $config = secureit_config();
+    $descriptions = [];
+
+    $dir = trim((string) ($config['test_descriptions_dir'] ?? ''));
+    if ($dir !== '' && is_dir($dir)) {
+        $files = glob(rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*.json') ?: [];
+        sort($files);
+        foreach ($files as $path) {
+            $data = json_decode(file_get_contents($path), true);
+            if (!is_array($data)) {
+                continue;
+            }
+            foreach ($data as $key => $value) {
+                if (is_string($key) && is_string($value) && $key !== '') {
+                    $descriptions[$key] = $value;
+                }
+            }
+        }
+    }
+
+    return $descriptions;
+}
+
+function secureit_control_description_for_title(string $title, array $descriptions): string {
+    $baseTitle = trim(preg_replace('/\s*\(scenario [^)]+\)$/i', '', $title) ?? $title);
+    if ($baseTitle !== '' && isset($descriptions[$baseTitle])) {
+        return (string) $descriptions[$baseTitle];
+    }
+
+    if ($baseTitle !== '') {
+        return 'Checks that ' . strtolower($baseTitle) . ' is configured appropriately.';
+    }
+
+    return '';
+}
+
+function secureit_control_description_for_control(array $control, array $descriptions): string {
+    $controlId = trim((string) ($control['id'] ?? ''));
+    if ($controlId !== '' && isset($descriptions[$controlId])) {
+        return (string) $descriptions[$controlId];
+    }
+
+    foreach (($control['frameworkMappings'] ?? []) as $mapping) {
+        $mapping = trim((string) $mapping);
+        if ($mapping !== '' && isset($descriptions[$mapping])) {
+            return (string) $descriptions[$mapping];
+        }
+    }
+
+    $title = trim((string) ($control['title'] ?? ''));
+    if ($title !== '') {
+        return secureit_control_description_for_title($title, $descriptions);
+    }
+
+    return '';
 }
 
 function secureit_start_session(): void {
@@ -223,6 +282,16 @@ function secureit_load_canonical_controls(): array {
         }
         $data = json_decode(file_get_contents($path), true);
         if (is_array($data)) {
+            $descriptions = secureit_load_test_descriptions();
+            $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
+            foreach ($controls as &$control) {
+                if (!is_array($control)) {
+                    continue;
+                }
+                $control['description'] = secureit_control_description_for_control($control, $descriptions);
+            }
+            unset($control);
+            $data['controls'] = $controls;
             return $data;
         }
     }
@@ -306,18 +375,6 @@ function secureit_extract_test_ids_from_embedded_summary(?array $embedded): arra
         $ids[] = $test['id'];
     }
     return array_values(array_unique($ids));
-}
-
-function secureit_is_pass_result(string $result): bool {
-    return in_array($result, ['pass', 'passed'], true);
-}
-
-function secureit_is_fail_result(string $result): bool {
-    return in_array($result, ['fail', 'failed', 'error'], true);
-}
-
-function secureit_is_neutral_result(string $result): bool {
-    return in_array($result, ['skipped', 'notrun', 'not run', 'investigate', 'unknown'], true);
 }
 
 function secureit_evaluate_control_status(array $matchedTests, string $passLogic): string {
@@ -412,6 +469,7 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             'status' => 'No data',
             'tone' => 'neutral',
             'score' => null,
+            'scoreLabel' => 'Score unavailable',
             'testsTotal' => 0,
             'testsPassed' => 0,
             'testsFailed' => 0,
@@ -510,6 +568,7 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
             $area['status'] = 'No data';
             $area['tone'] = 'neutral';
             $area['score'] = null;
+            $area['scoreLabel'] = 'Score unavailable';
             continue;
         }
 
@@ -527,16 +586,12 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
 
         $score = $weightedTotal > 0 ? (int) round(($weightedEarned / $weightedTotal) * 100) : null;
         $area['score'] = $score;
-
-        if ($score >= 85) {
-            $area['status'] = 'Healthy';
-            $area['tone'] = 'good';
-        } elseif ($score >= 65) {
-            $area['status'] = 'Watch';
-            $area['tone'] = 'warn';
-        } else {
-            $area['status'] = 'Needs attention';
-            $area['tone'] = 'bad';
+        $areaStatus = secureit_functional_area_status_from_score($score);
+        $area['status'] = $areaStatus['status'];
+        $area['tone'] = $areaStatus['tone'];
+        $area['scoreLabel'] = $areaStatus['scoreLabel'];
+        if ($score === null) {
+            $area['scoreLabel'] = 'Score unavailable';
         }
     }
     unset($area);
@@ -1468,7 +1523,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       <div class="footer-grid">
         <div>
           <div class="footer-heading">SecureIT by ICT365</div>
-          <p class="footer-copy">Container-ready SecureIT surface aligned with the ICT365 prototype experience for managed Microsoft 365 security reporting, customer posture visibility, and tenant onboarding.</p>
+          <p class="footer-copy">Container-ready SecureIT surface for managed Microsoft 365 security reporting, customer posture visibility, and tenant onboarding.</p>
         </div>
         <div>
           <div class="footer-heading">Explore</div>

@@ -5,7 +5,10 @@ RUN a2enmod rewrite headers \
     && chown -R www-data:www-data /var/www/data
 
 COPY app/ /var/www/html/
+COPY shared/ /var/www/shared/
 COPY docker/apache-site.conf /etc/apache2/sites-available/000-default.conf
+
+RUN php -r 'require "/var/www/html/lib.php"; exit((int) (!function_exists("secureit_functional_area_catalog") || !function_exists("secureit_resolve_canonical_area_scores")));'
 
 ENV SECUREIT_APP_NAME="SecureIT" \
     SECUREIT_BASE_URL="https://secureit.ict365.ky" \

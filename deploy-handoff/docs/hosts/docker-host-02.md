@@ -50,3 +50,4 @@
 - Production changes on this host should record the approval point, maintenance-window decision, env-file validation, and monitoring outcome in the deployment summary.
 - The full observed runtime estate for this host is cataloged in `infra/terraform/envs/prod` and `ansible/inventories/prod/host_vars/docker-host-02.yml`.
 - Tracked runtime definitions now exist for `portainer`, `postiz-app`, `mcpflow`, `open-brain`, `metabase`, `paperclip-serpbear-umami`, `unifi-toolkit`, and `uptime-kuma`.
+- If the SecureIT GHCR pull is unauthorized, set `SECUREIT_IMAGE` to a locally built image tag already present on this host and reapply the stack with `SECUREIT_PULL_POLICY=never`.

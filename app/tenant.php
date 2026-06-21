@@ -27,6 +27,76 @@ if ($selectedAreaName !== '') {
     }
 }
 
+function secureit_functional_area_description(string $areaName): string {
+    foreach (secureit_functional_area_catalog() as $area) {
+        if (($area['name'] ?? '') === $areaName) {
+            return (string) ($area['description'] ?? '');
+        }
+    }
+
+    return 'SecureIT reviews the Microsoft 365 services, policies, controls, and checks that map to this area.';
+}
+
+function secureit_functional_area_partial_test_count(array $area): int {
+    $partialTests = [];
+    foreach (($area['controls'] ?? []) as $control) {
+        if (($control['status'] ?? '') !== 'partial') {
+            continue;
+        }
+        foreach (($control['matchedTests'] ?? []) as $test) {
+            $testId = secureit_normalise_mapping_id((string) ($test['id'] ?? ''));
+            if ($testId !== '') {
+                $partialTests[$testId] = true;
+            }
+        }
+    }
+
+    return count($partialTests);
+}
+
+function secureit_functional_area_analysis_text(array $area): string {
+    $controlsTotal = (int) ($area['controlsTotal'] ?? 0);
+    if ($controlsTotal === 0) {
+        return 'No canonical controls are currently mapped to this functional area, so SecureIT cannot calculate an area score yet.';
+    }
+
+    $score = $area['score'];
+    $controlsPassing = (int) ($area['controlsPassing'] ?? 0);
+    $controlsPartial = (int) ($area['controlsPartial'] ?? 0);
+    $controlsFailing = (int) ($area['controlsFailing'] ?? 0);
+    $controlsUnmapped = (int) ($area['controlsUnmapped'] ?? 0);
+    $testsTotal = (int) ($area['testsTotal'] ?? 0);
+    $testsPassed = (int) ($area['testsPassed'] ?? 0);
+    $testsFailed = (int) ($area['testsFailed'] ?? 0);
+    $testsSkipped = (int) ($area['testsSkipped'] ?? 0);
+
+    $summary = [];
+    $summary[] = sprintf(
+        'This area scores %s across %d controls.',
+        $score !== null ? (string) $score . '%' : 'unavailable',
+        $controlsTotal
+    );
+    $summary[] = sprintf(
+        '%d controls passed, %d were partially passed, %d failed, and %d are unmapped.',
+        $controlsPassing,
+        $controlsPartial,
+        $controlsFailing,
+        $controlsUnmapped
+    );
+
+    if ($testsTotal > 0) {
+        $summary[] = sprintf(
+            'The matched checks behind this area include %d tests with %d passed, %d failed, and %d skipped.',
+            $testsTotal,
+            $testsPassed,
+            $testsFailed,
+            $testsSkipped
+        );
+    }
+
+    return implode(' ', $summary);
+}
+
 function secureit_functional_area_visual(string $areaName): array {
     $visuals = [
         'Identity & Access Management' => [
@@ -111,34 +181,55 @@ ob_start();
   <article class="card panel" style="height:100%; display:flex; flex-direction:column; padding-bottom:34px;">
     <div class="section-header" style="margin-bottom:18px;">
       <div>
-        <h2 class="section-title"><?php echo htmlspecialchars(($tenant['name'] ?? $tenantKey) . ' - SecureIT Dashboard'); ?></h2>
+        <h2 class="section-title">
+          <?php echo htmlspecialchars(($tenant['name'] ?? $tenantKey) . ' - ' . ($selectedArea ? ($selectedArea['name'] ?? 'Functional area') : 'SecureIT Dashboard')); ?>
+        </h2>
       </div>
     </div>
-    <div class="kv">
-      <div class="kv-row"><div class="kv-label">Tenant ID</div><div class="kv-value"><?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div></div>
-      <div class="kv-row"><div class="kv-label">Report recipient</div><div class="kv-value"><?php echo htmlspecialchars($tenant['emailTo'] ?? ''); ?></div></div>
-      <div class="kv-row"><div class="kv-label">Latest analysis</div><div class="kv-value"><?php echo htmlspecialchars($analysisText); ?></div></div>
-    </div>
+    <?php if ($selectedArea): ?>
+      <div class="kv">
+        <div class="kv-row">
+          <div class="kv-label">Technologies encompassed</div>
+          <div class="kv-value"><?php echo htmlspecialchars(secureit_functional_area_description((string) ($selectedArea['name'] ?? ''))); ?></div>
+        </div>
+        <div class="kv-row">
+          <div class="kv-label">Analysis</div>
+          <div class="kv-value"><?php echo htmlspecialchars(secureit_functional_area_analysis_text($selectedArea)); ?></div>
+        </div>
+      </div>
+    <?php else: ?>
+      <div class="kv">
+        <div class="kv-row"><div class="kv-label">Tenant ID</div><div class="kv-value"><?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div></div>
+        <div class="kv-row"><div class="kv-label">Report recipient</div><div class="kv-value"><?php echo htmlspecialchars($tenant['emailTo'] ?? ''); ?></div></div>
+        <div class="kv-row"><div class="kv-label">Latest analysis</div><div class="kv-value"><?php echo htmlspecialchars($analysisText); ?></div></div>
+      </div>
+    <?php endif; ?>
   </article>
 
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
     <div class="section-header" style="margin-bottom:18px;">
       <div>
-        <h2 class="section-title">Latest posture</h2>
-        <div class="muted">Operational snapshot of the latest report.</div>
+        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
+        <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Operational snapshot of the latest report.'; ?></div>
       </div>
     </div>
 
     <?php if ($summary): ?>
       <div class="stats-row" style="margin-bottom:14px;">
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['total']); ?></strong><span>Total</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['passed']); ?></strong><span>Passed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['skipped']); ?></strong><span>Skipped</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Total</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsPassed'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsFailed'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
       </div>
-      <div class="muted" style="margin-bottom:8px;">Pass rate</div>
-      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>
-      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) $counts['passRate']); ?>% tests passed, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
+      <?php if ($selectedArea): ?>
+        <?php $partialTests = secureit_functional_area_partial_test_count($selectedArea); ?>
+        <?php if ($partialTests > 0): ?>
+          <div class="muted" style="margin-bottom:10px;">** <?php echo htmlspecialchars((string) $partialTests); ?> tests were partially passed.</div>
+        <?php endif; ?>
+      <?php endif; ?>
+      <div class="muted" style="margin-bottom:8px;"><?php echo $selectedArea ? 'Area pass rate' : 'Pass rate'; ?></div>
+      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['testsTotal'] ?? 0) > 0) ? round((($selectedArea['testsPassed'] ?? 0) / max(1, (int) ($selectedArea['testsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
+      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['testsTotal'] ?? 0) > 0) ? round((($selectedArea['testsPassed'] ?? 0) / max(1, (int) ($selectedArea['testsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>% tests passed<?php echo $selectedArea ? ' in this area' : ''; ?>, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
     <?php else: ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No published report yet.</strong>
@@ -150,28 +241,18 @@ ob_start();
 <section class="section">
   <div class="section-header">
     <div>
-      <h2 class="section-title">Functional area coverage</h2>
-      <div class="muted">Click any area to drill into the underlying controls and matched checks.</div>
+      <h2 class="section-title">Functional areas:</h2>
     </div>
   </div>
   <?php if ($selectedArea): ?>
     <article class="card panel" style="margin-bottom:18px;">
       <div class="section-header" style="margin-bottom:14px;">
         <div>
-          <h3 class="section-title" style="font-size:1.2rem;">Area drill-down: <?php echo htmlspecialchars($selectedArea['name'] ?? 'Functional area'); ?></h3>
-          <div class="muted">Showing the controls and evidence that contribute to this area score.</div>
+          <h3 class="section-title" style="font-size:1.2rem;"><?php echo htmlspecialchars($selectedArea['name'] ?? 'Functional area'); ?></h3>
         </div>
         <div class="inline-links">
-          <a class="textlink" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>#functional-areas">Back to all areas</a>
+          <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to all areas</a>
         </div>
-      </div>
-      <div class="stats-row" style="margin-bottom:14px;">
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['score'] ?? '0')); ?></strong><span>Score</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsTotal'] ?? 0)); ?></strong><span>Total controls</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsPassing'] ?? 0)); ?></strong><span>Passing</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsPartial'] ?? 0)); ?></strong><span>Partial</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsFailing'] ?? 0)); ?></strong><span>Failing</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsUnmapped'] ?? 0)); ?></strong><span>Unmapped</span></div>
       </div>
       <?php if (!empty($selectedArea['controls'])): ?>
         <div class="table-wrap">
@@ -247,20 +328,10 @@ ob_start();
         <?php $areaHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode((string) ($area['name'] ?? '')); ?>
         <?php $areaVisual = secureit_functional_area_visual((string) ($area['name'] ?? '')); ?>
         <?php
-          $areaScore = $area['score'];
-          $scoreTone = 'tone-neutral';
-          $scoreLabel = 'Score unavailable';
-          if ($areaScore !== null) {
-              $scoreValue = (int) $areaScore;
-              $scoreLabel = 'Score: ' . $scoreValue . '%';
-              if ($scoreValue >= 85) {
-                  $scoreTone = 'tone-good';
-              } elseif ($scoreValue >= 70) {
-                  $scoreTone = 'tone-warn';
-              } else {
-                  $scoreTone = 'tone-bad';
-              }
-          }
+          $areaScore = $area['score'] !== null ? (int) $area['score'] : null;
+          $scoreState = secureit_functional_area_status_from_score($areaScore);
+          $scoreTone = 'tone-' . $scoreState['tone'];
+          $scoreLabel = $scoreState['scoreLabel'];
         ?>
         <a class="card feature-card" href="<?php echo htmlspecialchars($areaHref); ?>" style="display:block; text-decoration:none; color:inherit;">
           <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">

@@ -1,5 +1,7 @@
 services:
   secureit:
+    build:
+      context: .
     image: ghcr.io/matt-edu365/secureit:latest
     container_name: secureit
     restart: unless-stopped

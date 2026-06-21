@@ -35,7 +35,7 @@ ob_start();
       <article class="panel">
         <div style="margin-bottom:20px;">
           <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:left;">SecureIT Login</h2>
-          <div class="muted">Use your Microsoft 365 identity to access the SecureIT portal. This is a visual prototype of the eventual sign-in experience.</div>
+          <div class="muted">Use your Microsoft 365 identity to access the SecureIT portal.</div>
         </div>
 
         <div class="empty-state" style="margin-bottom:22px;">
@@ -61,7 +61,7 @@ ob_start();
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
             <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">Prototype routing is now enabled: a local seed file can map specific identities to a customer tenant page or to the admin dashboard. If no seed is found, any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard and other addresses return here.</p>
+            <p class="field-note">Local seed routing can map specific identities to a customer tenant page or to the admin dashboard. If no seed is found, any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard and other addresses return here.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -74,7 +74,7 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;">Prototype behaviour only: local seeded identities can override the route to a tenant page, otherwise <strong>@ict365.ky</strong> users go to the admin dashboard and other addresses come back to this page.</p>
+          <p class="field-note" style="margin-top:0;">Local seeded identities can override the route to a tenant page, otherwise <strong>@ict365.ky</strong> users go to the admin dashboard and other addresses come back to this page.</p>
         </form>
       </article>
 
@@ -86,7 +86,7 @@ ob_start();
 
         <?php if ($enquiryReceived): ?>
           <div class="success" style="margin-bottom:18px;">
-            Thanks, your enquiry has been captured for the prototype flow.
+            Thanks, your enquiry has been captured.
           </div>
         <?php endif; ?>
 

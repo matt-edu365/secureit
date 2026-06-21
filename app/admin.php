@@ -102,7 +102,7 @@ ob_start();
       <h3 class="section-title">Reporting defaults</h3>
 
       <label for="base_site_url">Base site URL</label>
-      <input id="base_site_url" name="base_site_url" placeholder="https://example.ict365.uk" value="<?php echo htmlspecialchars($config['reports']['baseSiteUrl'] ?? secureit_config()['base_url']); ?>">
+      <input id="base_site_url" name="base_site_url" placeholder="https://secureit.ict365.ky" value="<?php echo htmlspecialchars($config['reports']['baseSiteUrl'] ?? secureit_config()['base_url']); ?>">
       <p class="field-note">Used when tenant report URLs need to be derived from the common platform address.</p>
 
       <button type="submit">Save admin settings</button>

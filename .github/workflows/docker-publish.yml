@@ -1,6 +1,9 @@
 name: Publish SecureIT Container
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:

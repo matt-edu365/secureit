@@ -19,6 +19,15 @@
 - Tenant metadata file: `/var/www/data/tenants.json`
 - Report bundle root: `/var/www/data/reports`
 - Entra runtime variables must be supplied by the Portainer stack or host environment
+- Required Entra stack variables:
+  - `SECUREIT_ENTRA_CLIENT_ID`
+  - `SECUREIT_ENTRA_CLIENT_SECRET`
+  - `SECUREIT_ENTRA_AUTHORITY`
+  - `SECUREIT_ENTRA_REDIRECT_URI`
+  - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI`
+  - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS`
+- Optional Entra stack variables:
+  - `SECUREIT_ENTRA_ALLOWED_TENANT_IDS`
 - Health check expectation: root path responds over HTTP on port `80`
 
 ## Deployment notes
@@ -41,6 +50,7 @@
 - Import published report bundles into `data/reports/<tenant-key>/...` as needed.
 - Review admin config defaults if the runtime needs shared mail or reporting settings.
 - Confirm `SECUREIT_ENTRA_CLIENT_ID`, `SECUREIT_ENTRA_CLIENT_SECRET`, and the Entra redirect/logout URLs are present in the stack before exposing the public route.
+- Do not put `SECUREIT_ENTRA_CLIENT_SECRET` in GitHub; enter it in Portainer or in a host-only env file instead.
 - Add or update an Uptime Kuma monitor after the public hostname is live.
 
 ## Cloudflare handoff

@@ -13,6 +13,13 @@ services:
       SECUREIT_TENANTS_FILE: "/var/www/data/tenants.json"
       SECUREIT_REPORTS_ROOT: "/var/www/data/reports"
       SECUREIT_IDENTITY_SEEDS_FILE: "/var/www/local/identity-seeds.json"
+      SECUREIT_ENTRA_AUTHORITY: "${SECUREIT_ENTRA_AUTHORITY:-organizations}"
+      SECUREIT_ENTRA_CLIENT_ID: "${SECUREIT_ENTRA_CLIENT_ID:-}"
+      SECUREIT_ENTRA_CLIENT_SECRET: "${SECUREIT_ENTRA_CLIENT_SECRET:-}"
+      SECUREIT_ENTRA_REDIRECT_URI: "${SECUREIT_ENTRA_REDIRECT_URI:-http://localhost:8088/auth/callback}"
+      SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI: "${SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI:-http://localhost:8088/login.php}"
+      SECUREIT_ENTRA_ALLOWED_TENANT_IDS: "${SECUREIT_ENTRA_ALLOWED_TENANT_IDS:-}"
+      SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS: "${SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS:-ict365.ky}"
     volumes:
       - ./data:/var/www/data
       - ./.local:/var/www/local

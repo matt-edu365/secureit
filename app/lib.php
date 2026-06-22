@@ -27,6 +27,27 @@ function secureit_current_request_base_url(): string {
     return $scheme . '://' . $host;
 }
 
+function secureit_auth_request_base_url(): string {
+    $baseUrl = secureit_current_request_base_url();
+    $parts = parse_url($baseUrl);
+    if (!is_array($parts)) {
+        return rtrim($baseUrl, '/');
+    }
+
+    $host = strtolower((string) ($parts['host'] ?? ''));
+    if ($host === '127.0.0.1') {
+        $parts['host'] = 'localhost';
+    }
+
+    $scheme = (string) ($parts['scheme'] ?? 'http');
+    $authority = (string) ($parts['host'] ?? '');
+    if (isset($parts['port'])) {
+        $authority .= ':' . $parts['port'];
+    }
+
+    return $scheme . '://' . $authority;
+}
+
 function secureit_entra_config(): array {
     $config = secureit_config();
     $allowedTenantIds = secureit_parse_comma_list((string) ($config['entra_allowed_tenant_ids'] ?? ''));
@@ -67,13 +88,21 @@ function secureit_entra_oauth_base(): string {
     return 'https://login.microsoftonline.com/' . rawurlencode($config['authority']) . '/oauth2/v2.0';
 }
 
+function secureit_entra_logout_url(): string {
+    $query = http_build_query([
+        'post_logout_redirect_uri' => secureit_entra_post_logout_redirect_uri(),
+    ], '', '&', PHP_QUERY_RFC3986);
+
+    return secureit_entra_oauth_base() . '/logout?' . $query;
+}
+
 function secureit_entra_redirect_uri(): string {
     $config = secureit_entra_config();
     if ($config['redirectUri'] !== '') {
         return $config['redirectUri'];
     }
 
-    return rtrim(secureit_current_request_base_url(), '/') . '/auth/callback';
+    return rtrim(secureit_auth_request_base_url(), '/') . '/auth/callback';
 }
 
 function secureit_entra_post_logout_redirect_uri(): string {
@@ -82,7 +111,7 @@ function secureit_entra_post_logout_redirect_uri(): string {
         return $config['postLogoutRedirectUri'];
     }
 
-    return rtrim(secureit_current_request_base_url(), '/') . '/login.php';
+    return rtrim(secureit_auth_request_base_url(), '/') . '/login.php';
 }
 
 function secureit_http_get_json(string $url): array {

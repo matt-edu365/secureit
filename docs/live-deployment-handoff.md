@@ -87,6 +87,12 @@ Likely later:
 - `SECUREIT_AZURE_CLIENT_SECRET=<secureit-app-client-secret>`
 - `SECUREIT_KEY_VAULT_NAME=<key-vault-name>`
 - or `SECUREIT_KEY_VAULT_URI=<vault-uri>`
+- `SECUREIT_ENTRA_TENANT_ID=<ict365-or-common-authority>`
+- `SECUREIT_ENTRA_CLIENT_ID=<secureit-login-app-client-id>`
+- `SECUREIT_ENTRA_CLIENT_SECRET=<secureit-login-app-client-secret>`
+- `SECUREIT_ENTRA_REDIRECT_URI=https://secureit.ict365.ky/auth/callback`
+- `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
+- `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
 ## Permission requirements
 
@@ -128,14 +134,15 @@ The next agent should treat this as a priority integration decision.
 
 ## Authentication warning
 
-The current app login flow is a development sign-in surface and should not be treated as the final production auth model.
+The current app now uses an Entra ID-backed login flow in the codebase, but production sign-in is only real once the live app registration, redirect URIs, and logout URLs are configured and tested end to end.
 
-Before real customer exposure, decide one of these:
-- reverse-proxy auth in front of the app
-- Microsoft identity based real sign-in
-- restricted/private admin-only access until proper auth is implemented
+Before real customer exposure, confirm the live tenant configuration and sign-in routing:
+- Entra redirect URIs are registered for `/auth/callback`
+- logout return URLs and front-channel logout URLs are registered
+- admin and customer access rules work as intended
+- the first customer tenant can sign in without seeing any other tenant
 
-Do not assume current `login.php` is production-ready authentication.
+Do not assume the fallback seed-based login path is the production auth model.
 
 ## Post-deploy validation checklist
 

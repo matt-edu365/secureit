@@ -83,6 +83,12 @@ docker compose up -d
 - `SECUREIT_AZURE_CLIENT_ID=<secureit-app-client-id>`
 - `SECUREIT_AZURE_CLIENT_SECRET=<secureit-app-client-secret>`
 - `SECUREIT_KEY_VAULT_NAME=<key-vault-name>`
+- `SECUREIT_ENTRA_TENANT_ID=<ict365-or-common-authority>`
+- `SECUREIT_ENTRA_CLIENT_ID=<secureit-login-app-client-id>`
+- `SECUREIT_ENTRA_CLIENT_SECRET=<secureit-login-app-client-secret>`
+- `SECUREIT_ENTRA_REDIRECT_URI=https://secureit.ict365.ky/auth/callback`
+- `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
+- `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
 ## Recommended deployment validation
 

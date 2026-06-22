@@ -36,7 +36,7 @@ Goal: allow customer/internal portal pages to trigger the existing manual Maeste
 
 ## Entra ID authentication
 
-Goal: replace the current development login router with proper Microsoft Entra ID sign-in for both customer tenants and ICT365 administrators.
+Goal: finish validating the Microsoft Entra ID sign-in flow for both customer tenants and ICT365 administrators.
 
 ### Requirements
 - Entra ID OpenID Connect sign-in for the SecureIT web app
@@ -46,8 +46,8 @@ Goal: replace the current development login router with proper Microsoft Entra I
 - onboarding guidance for customer tenant setup and consent
 
 ### Status
-- Not implemented yet.
-- Needs a concrete identity model, app registration, callback flow, and route-to-tenant mapping.
+- Core implementation is in place.
+- Still needs live Entra tenant validation, customer onboarding testing, and any final production hardening that emerges from phase 4.
 
 ## Entra validation rollout
 

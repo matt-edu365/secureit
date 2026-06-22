@@ -179,6 +179,18 @@ ob_start();
         </div>
       </div>
 
+      <div class="empty-state" style="width:100%; max-width:100%; box-sizing:border-box; overflow-wrap:anywhere; border-color: rgba(15,118,110,0.22); background:#eef7f6;">
+        <strong>Phase 4 first-customer checklist</strong>
+        <p class="muted" style="margin:8px 0 0;">Use this first tenant to prove the Entra flow end to end before onboarding any others.</p>
+        <ul style="margin:10px 0 0 18px; padding:0; line-height:1.6;">
+          <li>Capture the customer tenant ID and confirm it matches the Entra directory.</li>
+          <li>Register the customer Entra app and record its client ID.</li>
+          <li>Grant the required application permissions and admin consent.</li>
+          <li>Sign in as a customer user and verify the tenant page opens automatically.</li>
+          <li>Sign in as an ICT365 admin and verify the tenant also appears in the dashboard.</li>
+        </ul>
+      </div>
+
       <div>
         <h3 class="section-title" style="font-size:1.35rem; margin-bottom:12px;">Required Entra ID / Microsoft Graph permissions</h3>
         <div class="table-wrap">

@@ -74,7 +74,7 @@ docker compose up -d --build --pull never
 ```
 
 The local service is exposed on:
-- `http://127.0.0.1:8088/`
+- `http://localhost:8088/`
 
 The local container uses:
 - `Dockerfile`

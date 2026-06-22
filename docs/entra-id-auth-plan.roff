@@ -10,6 +10,7 @@ SecureIT Entra ID Authentication Plan
 Prepared for SecureIT on 2026-06-22.
 .sp 1
 Current login flow status: development-only routing based on local seed data. This plan replaces it with proper Microsoft Entra ID sign-in for customers and ICT365 administrators.
+Current implementation status: the Entra login, callback, and logout hooks now exist in the codebase, but phase 4 validation is still needed before the flow is treated as production-ready.
 .sp 1
 .ft B
 1. Goal
@@ -26,6 +27,7 @@ Use one multi-tenant Entra app registration for SecureIT.
 Use the authorization code flow with PKCE.
 .sp 0.2
 Use a server-side session after the callback. Do not trust query-string routing or client-side identity flags.
+The current code already follows this model; the remaining work is validating the flow against real tenants and production Entra configuration.
 .sp 0.2
 Use claims to decide access:
 .sp 0.2
@@ -60,6 +62,7 @@ Create an admin app role such as `SecureIT.Admin`.
 Assign that role only to ICT365 staff or an ICT365 admin group.
 .sp 0.2
 If ICT365 sign-ins all use the `@ict365.ky` domain, SecureIT can also treat that domain as admin by default during phase 4 validation.
+That domain-based admin rule is currently implemented for the first validation pass.
 .sp 0.2
 If you want stronger customer governance, restrict approved customer tenants by tenant ID in SecureIT and require admin consent during onboarding.
 .sp 1
@@ -68,6 +71,7 @@ If you want stronger customer governance, restrict approved customer tenants by 
 .ft R
 .sp 0.2
 Add separate Entra auth settings to SecureIT config and environment variables.
+The current app already reads these settings from environment variables.
 .sp 0.2
 Suggested variables:
 .sp 0.2
@@ -106,6 +110,7 @@ Add access guards so:
 - unauthorised users are sent back to login with a clear error
 .sp 0.2
 Update logout so it clears the SecureIT session and, optionally, returns the user to the Entra logout endpoint.
+These code paths are already present; the remaining task is to validate their behaviour end to end.
 .sp 1
 .ft B
 6. Tenant Routing Rules

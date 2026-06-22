@@ -13,6 +13,16 @@ $dashboard = secureit_dashboard_stats($tenants);
 ob_start();
 ?>
 <section class="section">
+  <div class="empty-state" style="margin-bottom:22px; background:#eef7f6; border-color: rgba(15,118,110,0.22);">
+    <strong>Phase 4 validation</strong>
+    <p class="muted" style="margin:8px 0 0;">ICT365 administrators sign in from the <strong>@ict365.ky</strong> domain and can open any customer tenant page from this dashboard. Customer users should only reach their own tenant page, so use this view to validate one admin account and the first customer tenant together.</p>
+    <ul style="margin:10px 0 0 18px; padding:0; line-height:1.6;">
+      <li>Confirm the admin session lands here after Entra sign-in.</li>
+      <li>Open a customer tenant page from the tenant cards below.</li>
+      <li>Verify the customer tenant page still opens for the owning tenant only.</li>
+    </ul>
+  </div>
+
   <div class="section-header">
     <div>
       <h2 class="section-title">Tenant overview</h2>

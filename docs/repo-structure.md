@@ -17,6 +17,9 @@ SecureIT/
       maester-weekly.yml
   app/
     admin.php
+    auth/
+      callback.php
+      logout.php
     config.php
     dashboard.php
     index.php

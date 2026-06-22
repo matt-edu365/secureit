@@ -657,6 +657,32 @@ function secureit_require_admin_access(string $redirect = 'login.php?denied=1'):
     }
 }
 
+function secureit_current_user_tenant_key(): ?string {
+    $auth = secureit_current_auth_context();
+    $tenantKey = trim((string) ($auth['tenantKey'] ?? ''));
+    return $tenantKey !== '' ? $tenantKey : null;
+}
+
+function secureit_require_tenant_access(string $tenantKey, string $redirect = 'login.php?denied=1'): void {
+    $tenantKey = trim($tenantKey);
+    if ($tenantKey === '') {
+        header('Location: ' . $redirect, true, 302);
+        exit;
+    }
+
+    if (secureit_user_is_admin()) {
+        return;
+    }
+
+    $currentTenantKey = secureit_current_user_tenant_key();
+    if ($currentTenantKey !== null && strcasecmp($currentTenantKey, $tenantKey) === 0) {
+        return;
+    }
+
+    header('Location: ' . $redirect, true, 302);
+    exit;
+}
+
 function secureit_load_identity_seeds(): array {
     $config = secureit_config();
     $path = trim((string) ($config['identity_seeds_file'] ?? ''));

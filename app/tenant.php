@@ -11,6 +11,8 @@ if (!$tenant) {
     exit;
 }
 
+secureit_require_tenant_access($tenantKey);
+
 $summary = secureit_tenant_summary($tenantKey);
 $counts = secureit_summary_counts($summary);
 $areaData = secureit_resolve_canonical_area_scores($tenantKey);

@@ -3,15 +3,24 @@ require __DIR__ . '/lib.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['ms_login'])) {
+        $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
+        $route = secureit_resolve_login_route($m365Email);
+
         if (secureit_entra_is_enabled()) {
-            $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
+            if (($route['source'] ?? '') === 'seed') {
+                $identity = $route['identity'] ?? [];
+                $role = ($identity['role'] ?? null) === 'admin' || ($route['route'] ?? '') === 'dashboard.php' ? 'admin' : 'customer';
+                $tenantKey = $identity['tenantKey'] ?? null;
+                secureit_set_auth_context($role, $m365Email, is_string($tenantKey) ? $tenantKey : null, ['identitySource' => $route['source'] ?? 'default']);
+                header('Location: ' . $route['route'], true, 302);
+                exit;
+            }
+
             header('Location: ' . secureit_entra_login_url($m365Email), true, 302);
             exit;
         }
 
-        $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
-        $route = secureit_resolve_login_route($m365Email);
-        if (($route['source'] ?? '') === 'seed' || ($route['source'] ?? '') === 'domain') {
+        if (($route['source'] ?? '') === 'seed') {
             $identity = $route['identity'] ?? [];
             $role = ($identity['role'] ?? null) === 'admin' || ($route['route'] ?? '') === 'dashboard.php' ? 'admin' : 'customer';
             $tenantKey = $identity['tenantKey'] ?? null;
@@ -76,7 +85,7 @@ ob_start();
         <?php if ($unknownIdentity): ?>
           <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
             <strong>No matching local identity</strong>
-            <p class="muted" style="margin:8px 0 0;">Use `fab@local`, `con@local`, or an `@ict365.ky` administrator account.</p>
+            <p class="muted" style="margin:8px 0 0;">Use `fab@local` or `con@local` on localhost, or sign in with Microsoft Entra for normal access.</p>
           </div>
         <?php endif; ?>
 
@@ -91,7 +100,7 @@ ob_start();
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
             <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">When Microsoft Entra sign-in is configured, SecureIT will redirect you to Microsoft after you press the button below. In development mode, local seed routing can still map specific identities to a customer tenant page or to the admin dashboard.</p>
+            <p class="field-note">When Microsoft Entra sign-in is configured, SecureIT will redirect you to Microsoft after you press the button below. On localhost only, `fab@local` and `con@local` can still use the seeded development identities.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -104,7 +113,7 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;"><?php echo secureit_entra_is_enabled() ? 'Microsoft Entra authentication is enabled for this environment.' : 'Local seeded identities are still active because Microsoft Entra authentication is not configured yet.'; ?></p>
+          <p class="field-note" style="margin-top:0;"><?php echo secureit_entra_is_enabled() ? 'Microsoft Entra authentication is enabled for this environment. Local seeded identities are only available on localhost.' : 'Local seeded identities are still active because Microsoft Entra authentication is not configured yet.'; ?></p>
         </form>
       </article>
 

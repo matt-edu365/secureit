@@ -115,6 +115,11 @@ function secureit_entra_post_logout_redirect_uri(): string {
     return rtrim(secureit_auth_request_base_url(), '/') . '/login.php';
 }
 
+function secureit_is_local_identity_environment(): bool {
+    $host = strtolower((string) (parse_url(secureit_current_request_base_url(), PHP_URL_HOST) ?: ''));
+    return in_array($host, ['localhost', '127.0.0.1'], true);
+}
+
 function secureit_http_get_json(string $url): array {
     $ch = curl_init($url);
     if ($ch === false) {
@@ -752,7 +757,7 @@ function secureit_load_identity_seeds(): array {
 function secureit_resolve_login_route(string $email): array {
     $email = strtolower(trim($email));
     $seed = $email !== '' ? (secureit_load_identity_seeds()[$email] ?? null) : null;
-    if (is_array($seed)) {
+    if (secureit_is_local_identity_environment() && is_array($seed)) {
         $tenantKey = trim((string) ($seed['tenantKey'] ?? ''));
         if (($seed['role'] ?? 'customer') === 'admin') {
             return [
@@ -774,14 +779,6 @@ function secureit_resolve_login_route(string $email): array {
             'route' => 'login.php?unknown=1',
             'identity' => $seed,
             'source' => 'seed',
-        ];
-    }
-
-    if ($email !== '' && str_ends_with($email, '@ict365.ky')) {
-        return [
-            'route' => 'dashboard.php',
-            'identity' => null,
-            'source' => 'domain',
         ];
     }
 

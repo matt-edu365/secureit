@@ -130,13 +130,13 @@ Keep ICT365 admin access separate from customer access so the admin dashboard do
 .sp 0.2
 Phase 1: create the Entra app registration and confirm callback URLs.
 .sp 0.2
-Phase 2: build the callback/session layer and keep the old login only as a temporary fallback in non-production environments.
+Phase 2: build the callback/session layer and keep the old login only as a localhost-only fallback for `fab@local` and `con@local`.
 .sp 0.2
 Phase 3: wire admin and customer access checks into the existing page guards.
 .sp 0.2
 Phase 4: onboard one ICT365 admin account and one customer tenant for validation.
 .sp 0.2
-Phase 5: remove the seed-based login shortcut from production paths.
+Phase 5: remove the seed-based login shortcut from any non-localhost runtime paths.
 .sp 0.2
 Phase 6: document the onboarding steps for new customer tenants.
 .sp 1

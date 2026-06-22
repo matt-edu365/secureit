@@ -135,12 +135,14 @@ The next agent should treat this as a priority integration decision.
 ## Authentication warning
 
 The current app now uses an Entra ID-backed login flow in the codebase, but production sign-in is only real once the live app registration, redirect URIs, and logout URLs are configured and tested end to end.
+The localhost-only seed identities (`fab@local` and `con@local`) are development conveniences and must not be treated as a live deployment path.
 
 Before real customer exposure, confirm the live tenant configuration and sign-in routing:
 - Entra redirect URIs are registered for `/auth/callback`
 - logout return URLs and front-channel logout URLs are registered
 - admin and customer access rules work as intended
 - the first customer tenant can sign in without seeing any other tenant
+- local `.local/identity-seeds.json` data is not mounted or relied on in the production container
 
 Do not assume the fallback seed-based login path is the production auth model.
 

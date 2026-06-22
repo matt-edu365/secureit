@@ -41,6 +41,12 @@ Expected environment:
 - `SECUREIT_BASE_URL=https://secureit.ict365.ky`
 - `SECUREIT_TENANTS_FILE=/var/www/data/tenants.json`
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
+- `SECUREIT_ENTRA_CLIENT_ID=<entra-app-client-id>`
+- `SECUREIT_ENTRA_CLIENT_SECRET=<entra-app-client-secret>`
+- `SECUREIT_ENTRA_AUTHORITY=organizations`
+- `SECUREIT_ENTRA_REDIRECT_URI=http://localhost:8088/auth/callback`
+- `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=http://localhost:8088/login.php`
+- `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
 If canonical scoring is enabled:
 - `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json`
@@ -67,6 +73,7 @@ Minimum success state:
 - tenant metadata is readable from mounted `data/tenants.json`
 - imported tenant summaries render from mounted `data/reports/`
 - tenant detail view loads for a valid tenant
+- non-`fab@local` and non-`con@local` logins are redirected through Microsoft Entra
 - runtime writes stay inside mounted storage
 
 ## Deeper checks

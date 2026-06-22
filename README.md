@@ -80,7 +80,8 @@ The local container uses:
 - `Dockerfile`
 - `docker-compose.yml`
 - mounted `data/`
-- mounted `.local/` for local identity seed data, if present
+- mounted `.local/` for localhost-only identity seed data (`fab@local` and `con@local`), if present
+- `SECUREIT_ENTRA_*` environment variables for Entra sign-in testing, if set in the shell before `docker compose up`
 
 ## Report flow
 

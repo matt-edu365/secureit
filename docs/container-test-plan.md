@@ -52,6 +52,7 @@ Verify:
 - `http://localhost:8088/login.php`
 - `http://localhost:8088/auth/callback`
 - `http://localhost:8088/auth/logout`
+- `http://localhost:8088/auth/unavailable.php`
 - `http://localhost:8088/onboard.php`
 - `http://localhost:8088/tenant.php?tenant=<tenant-key>`
 - `http://localhost:8088/admin.php`
@@ -62,7 +63,7 @@ Use a real tenant key from the mounted runtime data.
 
 Minimum success state:
 - SecureIT branding renders correctly
-- login, callback, logout, and dashboard pages load without fatal errors
+- login, callback, logout, unavailable, and dashboard pages load without fatal errors
 - tenant metadata is readable from mounted `data/tenants.json`
 - imported tenant summaries render from mounted `data/reports/`
 - tenant detail view loads for a valid tenant

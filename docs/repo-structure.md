@@ -20,6 +20,7 @@ SecureIT/
     auth/
       callback.php
       logout.php
+      unavailable.php
     config.php
     dashboard.php
     index.php

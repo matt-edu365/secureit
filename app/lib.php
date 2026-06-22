@@ -378,7 +378,12 @@ function secureit_entra_map_tenant(string $entraTenantId): ?array {
 
 function secureit_entra_response_error(string $message, string $code = 'auth_error'): void {
     secureit_clear_auth_context();
-    header('Location: /login.php?' . http_build_query([$code => $message], '', '&', PHP_QUERY_RFC3986), true, 302);
+    $query = http_build_query(['auth_error' => $code, 'auth_message' => $message], '', '&', PHP_QUERY_RFC3986);
+    $route = in_array($code, ['tenant_unauthorised', 'tenant_unknown'], true)
+        ? '/auth/unavailable.php'
+        : '/login.php';
+
+    header('Location: ' . $route . '?' . $query, true, 302);
     exit;
 }
 

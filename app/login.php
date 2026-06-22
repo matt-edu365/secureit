@@ -33,8 +33,11 @@ $enquiryReceived = isset($_GET['enquiry']) && $_GET['enquiry'] === 'received';
 $unknownIdentity = isset($_GET['unknown']) && $_GET['unknown'] === '1';
 $deniedAccess = isset($_GET['denied']) && $_GET['denied'] === '1';
 $authError = trim((string) ($_GET['auth_error'] ?? ''));
+$authMessage = trim((string) ($_GET['auth_message'] ?? ''));
 $authErrorMessage = '';
-if ($authError !== '') {
+if ($authMessage !== '') {
+    $authErrorMessage = $authMessage;
+} elseif ($authError !== '') {
     $authErrorMessage = match ($authError) {
         'missing_config' => 'Microsoft Entra sign-in is not configured on this environment yet.',
         'missing_code' => 'The sign-in response was missing the authorization code.',

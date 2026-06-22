@@ -17,11 +17,12 @@ Use this bundle to deploy SecureIT to the ICT365 Docker host.
 2. Deploy the stack on `docker-host-02`.
 3. Use `deploy-handoff/docker/secureit/portainer-stack.yaml` as the stack definition.
 4. Bind host port `8089` to container port `80`.
-5. Keep the persistent volume `secureit_data`.
-6. Publish `secureit.ict365.ky` through Cloudflare Tunnel to `http://192.168.36.40:8089`.
-7. Add or update the Uptime Kuma monitor for `https://secureit.ict365.ky/`.
-8. Verify `http://192.168.36.40:8089/` returns `200`.
-9. Verify the public hostname works after DNS and tunnel propagation.
+5. Supply the Entra runtime variables in the stack or Portainer environment.
+6. Keep the persistent volume `secureit_data`.
+7. Publish `secureit.ict365.ky` through Cloudflare Tunnel to `http://192.168.36.40:8089`.
+8. Add or update the Uptime Kuma monitor for `https://secureit.ict365.ky/`.
+9. Verify `http://192.168.36.40:8089/` returns `200`.
+10. Verify the public hostname works after DNS and tunnel propagation.
 
 ## Registry fallback
 - The stack defaults to `ghcr.io/matt-edu365/secureit:latest`.
@@ -33,6 +34,7 @@ Use this bundle to deploy SecureIT to the ICT365 Docker host.
 - Runtime data root: `/var/www/data`
 - Tenant file: `/var/www/data/tenants.json`
 - Reports root: `/var/www/data/reports`
+- Entra sign-in requires `SECUREIT_ENTRA_*` variables in the live stack
 
 ## Rollback
 - Remove the SecureIT stack from the Docker host.

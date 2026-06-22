@@ -18,6 +18,7 @@
 - Runtime data root: `/var/www/data`
 - Tenant metadata file: `/var/www/data/tenants.json`
 - Report bundle root: `/var/www/data/reports`
+- Entra runtime variables must be supplied by the Portainer stack or host environment
 - Health check expectation: root path responds over HTTP on port `80`
 
 ## Deployment notes
@@ -25,6 +26,7 @@
 - The host port is `8089` to avoid colliding with the existing `8088` binding used by the Temporal UI in the Postiz stack.
 - Cloudflare Tunnel should publish `secureit.ict365.ky` to `http://192.168.36.40:8089` when the route is added.
 - Runtime data belongs on the Docker host volume, not inside the image.
+- The live container should not mount `.local/identity-seeds.json`; `fab@local` and `con@local` are localhost-only development identities.
 - The deployment record still needs explicit approval evidence and a published monitor outcome to be considered fully compliant.
 - If `ghcr.io/matt-edu365/secureit:latest` returns `unauthorized`, temporarily point `SECUREIT_IMAGE` at a host-local image tag and set `SECUREIT_PULL_POLICY=never` until registry access is fixed.
 
@@ -38,6 +40,7 @@
 - Add tenant records to `data/tenants.json` or the host-mounted runtime equivalent.
 - Import published report bundles into `data/reports/<tenant-key>/...` as needed.
 - Review admin config defaults if the runtime needs shared mail or reporting settings.
+- Confirm `SECUREIT_ENTRA_CLIENT_ID`, `SECUREIT_ENTRA_CLIENT_SECRET`, and the Entra redirect/logout URLs are present in the stack before exposing the public route.
 - Add or update an Uptime Kuma monitor after the public hostname is live.
 
 ## Cloudflare handoff

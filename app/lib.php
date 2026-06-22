@@ -8,6 +8,454 @@ function secureit_config(): array {
     return $config;
 }
 
+function secureit_current_request_base_url(): string {
+    $forwardedProto = trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $scheme = 'http';
+    if ($forwardedProto !== '') {
+        $scheme = strtolower(trim(explode(',', $forwardedProto)[0]));
+    } elseif (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+        $scheme = 'https';
+    }
+
+    $forwardedHost = trim((string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+    $host = $forwardedHost !== '' ? trim(explode(',', $forwardedHost)[0]) : trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '') {
+        $baseUrl = trim((string) (secureit_config()['base_url'] ?? ''));
+        return rtrim($baseUrl, '/');
+    }
+
+    return $scheme . '://' . $host;
+}
+
+function secureit_entra_config(): array {
+    $config = secureit_config();
+    $allowedTenantIds = secureit_parse_comma_list((string) ($config['entra_allowed_tenant_ids'] ?? ''));
+
+    return [
+        'authority' => trim((string) ($config['entra_authority'] ?? 'organizations')),
+        'clientId' => trim((string) ($config['entra_client_id'] ?? '')),
+        'clientSecret' => trim((string) ($config['entra_client_secret'] ?? '')),
+        'redirectUri' => trim((string) ($config['entra_redirect_uri'] ?? '')),
+        'postLogoutRedirectUri' => trim((string) ($config['entra_post_logout_redirect_uri'] ?? '')),
+        'allowedTenantIds' => array_values(array_unique($allowedTenantIds)),
+        'adminAppRole' => trim((string) ($config['entra_admin_app_role'] ?? 'SecureIT.Admin')),
+    ];
+}
+
+function secureit_entra_is_enabled(): bool {
+    $config = secureit_entra_config();
+    return $config['clientId'] !== '' && $config['clientSecret'] !== '';
+}
+
+function secureit_entra_oidc_base(): string {
+    $config = secureit_entra_config();
+    return 'https://login.microsoftonline.com/' . rawurlencode($config['authority']) . '/v2.0';
+}
+
+function secureit_entra_discovery_url(): string {
+    return secureit_entra_oidc_base() . '/.well-known/openid-configuration';
+}
+
+function secureit_entra_jwks_url(): string {
+    $response = secureit_http_get_json(secureit_entra_discovery_url());
+    $jwksUrl = trim((string) ($response['jwks_uri'] ?? ''));
+    return $jwksUrl !== '' ? $jwksUrl : secureit_entra_oidc_base() . '/discovery/v2.0/keys';
+}
+
+function secureit_entra_oauth_base(): string {
+    $config = secureit_entra_config();
+    return 'https://login.microsoftonline.com/' . rawurlencode($config['authority']) . '/oauth2/v2.0';
+}
+
+function secureit_entra_redirect_uri(): string {
+    $config = secureit_entra_config();
+    if ($config['redirectUri'] !== '') {
+        return $config['redirectUri'];
+    }
+
+    return rtrim(secureit_current_request_base_url(), '/') . '/auth/callback';
+}
+
+function secureit_entra_post_logout_redirect_uri(): string {
+    $config = secureit_entra_config();
+    if ($config['postLogoutRedirectUri'] !== '') {
+        return $config['postLogoutRedirectUri'];
+    }
+
+    return rtrim(secureit_current_request_base_url(), '/') . '/login.php';
+}
+
+function secureit_http_get_json(string $url): array {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+        ],
+    ]);
+
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($body === false || $status >= 400) {
+        return [];
+    }
+
+    $data = json_decode($body, true);
+    return is_array($data) ? $data : [];
+}
+
+function secureit_http_post_form(string $url, array $fields): array {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($fields, '', '&', PHP_QUERY_RFC3986),
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Content-Type: application/x-www-form-urlencoded',
+        ],
+    ]);
+
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($body === false || $status >= 400) {
+        return [];
+    }
+
+    $data = json_decode($body, true);
+    return is_array($data) ? $data : [];
+}
+
+function secureit_base64url_encode(string $value): string {
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+function secureit_base64url_decode(string $value): string|false {
+    $remainder = strlen($value) % 4;
+    if ($remainder > 0) {
+        $value .= str_repeat('=', 4 - $remainder);
+    }
+
+    return base64_decode(strtr($value, '-_', '+/'), true);
+}
+
+function secureit_random_base64url(int $bytes = 32): string {
+    return secureit_base64url_encode(random_bytes($bytes));
+}
+
+function secureit_jwt_decode_segment(string $segment): array|string|null {
+    $decoded = secureit_base64url_decode($segment);
+    if ($decoded === false) {
+        return null;
+    }
+
+    $json = json_decode($decoded, true);
+    return is_array($json) ? $json : $decoded;
+}
+
+function secureit_jwt_decode(string $jwt): ?array {
+    $parts = explode('.', $jwt);
+    if (count($parts) !== 3) {
+        return null;
+    }
+
+    $header = secureit_jwt_decode_segment($parts[0]);
+    $payload = secureit_jwt_decode_segment($parts[1]);
+    if (!is_array($header) || !is_array($payload)) {
+        return null;
+    }
+
+    return [
+        'header' => $header,
+        'payload' => $payload,
+        'signedPart' => $parts[0] . '.' . $parts[1],
+        'signature' => $parts[2],
+    ];
+}
+
+function secureit_jwt_verify_signature(string $jwt, array $jwks): bool {
+    $decoded = secureit_jwt_decode($jwt);
+    if (!$decoded) {
+        return false;
+    }
+
+    $kid = (string) ($decoded['header']['kid'] ?? '');
+    $alg = (string) ($decoded['header']['alg'] ?? '');
+    if ($kid === '' || !in_array($alg, ['RS256'], true)) {
+        return false;
+    }
+
+    foreach (($jwks['keys'] ?? []) as $key) {
+        if (!is_array($key) || (string) ($key['kid'] ?? '') !== $kid) {
+            continue;
+        }
+
+        $x5c = $key['x5c'][0] ?? null;
+        if (!is_string($x5c) || $x5c === '') {
+            continue;
+        }
+
+        $certificate = "-----BEGIN CERTIFICATE-----\n" . chunk_split($x5c, 64, "\n") . "-----END CERTIFICATE-----\n";
+        $publicKey = openssl_pkey_get_public($certificate);
+        if ($publicKey === false) {
+            continue;
+        }
+
+        $signature = secureit_base64url_decode((string) $decoded['signature']);
+        if ($signature === false) {
+            return false;
+        }
+
+        $result = openssl_verify((string) $decoded['signedPart'], $signature, $publicKey, OPENSSL_ALGO_SHA256);
+        return $result === 1;
+    }
+
+    return false;
+}
+
+function secureit_parse_comma_list(string $value): array {
+    $items = [];
+    foreach (preg_split('/[,\s;]+/', $value) ?: [] as $item) {
+        $item = strtolower(trim((string) $item));
+        if ($item !== '') {
+            $items[] = $item;
+        }
+    }
+
+    return array_values(array_unique($items));
+}
+
+function secureit_entra_login_url(?string $loginHint = null): string {
+    $config = secureit_entra_config();
+    $state = secureit_random_base64url(24);
+    $nonce = secureit_random_base64url(24);
+    $verifier = secureit_random_base64url(48);
+    $challenge = secureit_base64url_encode(hash('sha256', $verifier, true));
+
+    secureit_start_session();
+    $_SESSION['secureit_entra_oidc'] = [
+        'state' => $state,
+        'nonce' => $nonce,
+        'codeVerifier' => $verifier,
+        'createdAt' => time(),
+    ];
+
+    $params = [
+        'client_id' => $config['clientId'],
+        'response_type' => 'code',
+        'redirect_uri' => secureit_entra_redirect_uri(),
+        'response_mode' => 'query',
+        'scope' => 'openid profile email',
+        'state' => $state,
+        'nonce' => $nonce,
+        'code_challenge' => $challenge,
+        'code_challenge_method' => 'S256',
+        'prompt' => 'select_account',
+    ];
+
+    $loginHint = strtolower(trim((string) $loginHint));
+    if ($loginHint !== '') {
+        $params['login_hint'] = $loginHint;
+        $domain = substr(strrchr($loginHint, '@') ?: '', 1);
+        if ($domain !== '') {
+            $params['domain_hint'] = $domain;
+        }
+    }
+
+    $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+
+    return secureit_entra_oauth_base() . '/authorize?' . $query;
+}
+
+function secureit_entra_auth_context(): ?array {
+    secureit_start_session();
+    $auth = $_SESSION['secureit_entra_oidc'] ?? null;
+    return is_array($auth) ? $auth : null;
+}
+
+function secureit_entra_clear_auth_context(): void {
+    secureit_start_session();
+    unset($_SESSION['secureit_entra_oidc']);
+}
+
+function secureit_entra_authorize_roles(array $claims): array {
+    $roles = $claims['roles'] ?? [];
+    if (is_string($roles)) {
+        $roles = [$roles];
+    }
+    if (!is_array($roles)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('strval', $roles), static fn($value) => trim($value) !== ''));
+}
+
+function secureit_entra_is_admin_claim(array $claims): bool {
+    $config = secureit_entra_config();
+    return in_array($config['adminAppRole'], secureit_entra_authorize_roles($claims), true);
+}
+
+function secureit_entra_map_tenant(string $entraTenantId): ?array {
+    $entraTenantId = strtolower(trim($entraTenantId));
+    if ($entraTenantId === '') {
+        return null;
+    }
+
+    foreach ((secureit_load_tenants()['tenants'] ?? []) as $tenant) {
+        if (!is_array($tenant)) {
+            continue;
+        }
+
+        if (strtolower(trim((string) ($tenant['tenantId'] ?? ''))) === $entraTenantId) {
+            return $tenant;
+        }
+    }
+
+    return null;
+}
+
+function secureit_entra_response_error(string $message, string $code = 'auth_error'): void {
+    secureit_clear_auth_context();
+    header('Location: /login.php?' . http_build_query([$code => $message], '', '&', PHP_QUERY_RFC3986), true, 302);
+    exit;
+}
+
+function secureit_entra_validate_and_decode_id_token(string $idToken): array {
+    $token = secureit_jwt_decode($idToken);
+    if (!$token) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    $claims = $token['payload'];
+    $jwks = secureit_http_get_json(secureit_entra_jwks_url());
+    if (!$jwks || !secureit_jwt_verify_signature($idToken, $jwks)) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    $config = secureit_entra_config();
+    $now = time();
+    $issuerTenantId = strtolower(trim((string) ($claims['tid'] ?? '')));
+    $issuer = strtolower(trim((string) ($claims['iss'] ?? '')));
+    $expectedIssuer = $issuerTenantId !== ''
+        ? 'https://login.microsoftonline.com/' . $issuerTenantId . '/v2.0'
+        : '';
+
+    if ($expectedIssuer === '' || $issuer !== strtolower($expectedIssuer)) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    if ((string) ($claims['aud'] ?? '') !== $config['clientId']) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    if (isset($claims['exp']) && (int) $claims['exp'] < ($now - 60)) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    if (isset($claims['nbf']) && (int) $claims['nbf'] > ($now + 60)) {
+        return ['ok' => false, 'code' => 'token_invalid'];
+    }
+
+    $authContext = secureit_entra_auth_context();
+    if (!$authContext) {
+        return ['ok' => false, 'code' => 'state_mismatch'];
+    }
+
+    if ((string) ($claims['nonce'] ?? '') !== (string) ($authContext['nonce'] ?? '')) {
+        return ['ok' => false, 'code' => 'state_mismatch'];
+    }
+
+    if (($config['allowedTenantIds'] ?? []) && !in_array($issuerTenantId, $config['allowedTenantIds'], true) && !secureit_entra_is_admin_claim($claims)) {
+        return ['ok' => false, 'code' => 'tenant_unauthorised'];
+    }
+
+    return ['ok' => true, 'claims' => $claims];
+}
+
+function secureit_entra_exchange_code_for_tokens(string $code): array {
+    $config = secureit_entra_config();
+    $authContext = secureit_entra_auth_context();
+    if (!$authContext) {
+        return [];
+    }
+
+    return secureit_http_post_form(secureit_entra_oauth_base() . '/token', [
+        'client_id' => $config['clientId'],
+        'client_secret' => $config['clientSecret'],
+        'grant_type' => 'authorization_code',
+        'code' => $code,
+        'redirect_uri' => secureit_entra_redirect_uri(),
+        'code_verifier' => (string) ($authContext['codeVerifier'] ?? ''),
+        'scope' => 'openid profile email',
+    ]);
+}
+
+function secureit_entra_finalize_login(array $claims): array {
+    $email = strtolower(trim((string) ($claims['preferred_username'] ?? $claims['email'] ?? $claims['upn'] ?? '')));
+    $name = trim((string) ($claims['name'] ?? $claims['given_name'] ?? ''));
+    $entraTenantId = strtolower(trim((string) ($claims['tid'] ?? '')));
+
+    if ($entraTenantId === '') {
+        return [
+            'ok' => false,
+            'message' => 'The Entra tenant ID was missing from the sign-in response.',
+        ];
+    }
+
+    if (secureit_entra_is_admin_claim($claims)) {
+        secureit_set_auth_context('admin', $email !== '' ? $email : null, null, [
+            'name' => $name,
+            'tenantId' => $entraTenantId,
+            'objectId' => trim((string) ($claims['oid'] ?? '')),
+            'identitySource' => 'entra',
+        ]);
+
+        return [
+            'ok' => true,
+            'route' => '/dashboard.php',
+        ];
+    }
+
+    $tenant = secureit_entra_map_tenant($entraTenantId);
+    if (!$tenant) {
+        return [
+            'ok' => false,
+            'message' => 'No SecureIT tenant is linked to that Entra tenant.',
+        ];
+    }
+
+    $tenantKey = (string) ($tenant['id'] ?? '');
+    secureit_set_auth_context('customer', $email !== '' ? $email : null, $tenantKey, [
+        'name' => $name,
+        'tenantId' => $entraTenantId,
+        'objectId' => trim((string) ($claims['oid'] ?? '')),
+        'identitySource' => 'entra',
+    ]);
+
+    return [
+        'ok' => true,
+        'route' => '/tenant.php?tenant=' . rawurlencode($tenantKey),
+    ];
+}
+
 function secureit_load_tenants(): array {
     $config = secureit_config();
     $path = $config['tenants_file'];

@@ -1,0 +1,3 @@
+RewriteEngine On
+
+RewriteRule ^auth/callback/?$ auth/callback.php [L,QSA]

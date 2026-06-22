@@ -3,6 +3,12 @@ require __DIR__ . '/lib.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['ms_login'])) {
+        if (secureit_entra_is_enabled()) {
+            $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
+            header('Location: ' . secureit_entra_login_url($m365Email), true, 302);
+            exit;
+        }
+
         $m365Email = strtolower(trim($_POST['m365_email'] ?? ''));
         $route = secureit_resolve_login_route($m365Email);
         if (($route['source'] ?? '') === 'seed' || ($route['source'] ?? '') === 'domain') {
@@ -26,6 +32,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $enquiryReceived = isset($_GET['enquiry']) && $_GET['enquiry'] === 'received';
 $unknownIdentity = isset($_GET['unknown']) && $_GET['unknown'] === '1';
 $deniedAccess = isset($_GET['denied']) && $_GET['denied'] === '1';
+$authError = trim((string) ($_GET['auth_error'] ?? ''));
+$authErrorMessage = '';
+if ($authError !== '') {
+    $authErrorMessage = match ($authError) {
+        'missing_config' => 'Microsoft Entra sign-in is not configured on this environment yet.',
+        'missing_code' => 'The sign-in response was missing the authorization code.',
+        'state_mismatch' => 'The sign-in session could not be verified.',
+        'token_exchange_failed' => 'SecureIT could not complete the sign-in with Microsoft.',
+        'token_invalid' => 'Microsoft returned a sign-in token that could not be validated.',
+        'tenant_unauthorised' => 'That Microsoft 365 tenant is not allowed to sign in here.',
+        'tenant_unknown' => 'No SecureIT tenant is linked to that Microsoft 365 tenant.',
+        default => 'The sign-in could not be completed.',
+    };
+}
 
 ob_start();
 ?>
@@ -37,6 +57,13 @@ ob_start();
           <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:left;">SecureIT Login</h2>
           <div class="muted">Use your Microsoft 365 identity to access the SecureIT portal.</div>
         </div>
+
+        <?php if ($authErrorMessage !== ''): ?>
+          <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
+            <strong>Sign-in could not be completed</strong>
+            <p class="muted" style="margin:8px 0 0;"><?php echo htmlspecialchars($authErrorMessage); ?></p>
+          </div>
+        <?php endif; ?>
 
         <div class="empty-state" style="margin-bottom:22px;">
           <strong>Existing customers</strong>
@@ -61,7 +88,7 @@ ob_start();
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
             <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">Local seed routing can map specific identities to a customer tenant page or to the admin dashboard. If no seed is found, any sign-in using an <strong>@ict365.ky</strong> address is sent to the ICT365 admin dashboard and other addresses return here.</p>
+            <p class="field-note">When Microsoft Entra sign-in is configured, SecureIT will redirect you to Microsoft after you press the button below. In development mode, local seed routing can still map specific identities to a customer tenant page or to the admin dashboard.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -74,7 +101,7 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;">Local seeded identities can override the route to a tenant page, otherwise <strong>@ict365.ky</strong> users go to the admin dashboard and other addresses come back to this page.</p>
+          <p class="field-note" style="margin-top:0;"><?php echo secureit_entra_is_enabled() ? 'Microsoft Entra authentication is enabled for this environment.' : 'Local seeded identities are still active because Microsoft Entra authentication is not configured yet.'; ?></p>
         </form>
       </article>
 

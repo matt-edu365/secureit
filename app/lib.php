@@ -59,6 +59,7 @@ function secureit_entra_config(): array {
         'redirectUri' => trim((string) ($config['entra_redirect_uri'] ?? '')),
         'postLogoutRedirectUri' => trim((string) ($config['entra_post_logout_redirect_uri'] ?? '')),
         'allowedTenantIds' => array_values(array_unique($allowedTenantIds)),
+        'adminEmailDomains' => secureit_parse_comma_list((string) ($config['entra_admin_email_domains'] ?? 'ict365.ky')),
         'adminAppRole' => trim((string) ($config['entra_admin_app_role'] ?? 'SecureIT.Admin')),
     ];
 }
@@ -339,7 +340,21 @@ function secureit_entra_authorize_roles(array $claims): array {
 
 function secureit_entra_is_admin_claim(array $claims): bool {
     $config = secureit_entra_config();
-    return in_array($config['adminAppRole'], secureit_entra_authorize_roles($claims), true);
+    if (in_array($config['adminAppRole'], secureit_entra_authorize_roles($claims), true)) {
+        return true;
+    }
+
+    $email = strtolower(trim((string) ($claims['preferred_username'] ?? $claims['email'] ?? $claims['upn'] ?? '')));
+    if ($email === '' || !str_contains($email, '@')) {
+        return false;
+    }
+
+    $domain = substr(strrchr($email, '@') ?: '', 1);
+    if ($domain === '') {
+        return false;
+    }
+
+    return in_array($domain, $config['adminEmailDomains'] ?? [], true);
 }
 
 function secureit_entra_map_tenant(string $entraTenantId): ?array {

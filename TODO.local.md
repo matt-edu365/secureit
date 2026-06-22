@@ -48,3 +48,14 @@ Goal: replace the current development login router with proper Microsoft Entra I
 ### Status
 - Not implemented yet.
 - Needs a concrete identity model, app registration, callback flow, and route-to-tenant mapping.
+
+## Entra validation rollout
+
+Phase 4 focus:
+- validate one ICT365 admin sign-in from the `@ict365.ky` domain
+- validate one customer sign-in mapped to a single tenant
+- confirm admins can open customer tenant pages from the dashboard
+- confirm customers cannot open any tenant except their own
+
+Current rule:
+- any successful Entra sign-in from the `@ict365.ky` domain should be treated as an admin session unless a more specific Entra app role overrides it later

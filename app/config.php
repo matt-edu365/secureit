@@ -14,6 +14,7 @@ return [
     'entra_redirect_uri' => getenv('SECUREIT_ENTRA_REDIRECT_URI') ?: '',
     'entra_post_logout_redirect_uri' => getenv('SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI') ?: '',
     'entra_allowed_tenant_ids' => getenv('SECUREIT_ENTRA_ALLOWED_TENANT_IDS') ?: '',
+    'entra_admin_email_domains' => getenv('SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS') ?: 'ict365.ky',
     'entra_admin_app_role' => getenv('SECUREIT_ENTRA_ADMIN_APP_ROLE') ?: 'SecureIT.Admin',
     'azure_tenant_id' => getenv('SECUREIT_AZURE_TENANT_ID') ?: '',
     'azure_client_id' => getenv('SECUREIT_AZURE_CLIENT_ID') ?: '',

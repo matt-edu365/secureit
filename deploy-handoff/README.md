@@ -34,7 +34,7 @@ Use this bundle to deploy SecureIT to the ICT365 Docker host.
 - Runtime data root: `/var/www/data`
 - Tenant file: `/var/www/data/tenants.json`
 - Reports root: `/var/www/data/reports`
-- Canonical controls file: `/var/www/data/canonical-controls.json`
+- Canonical controls file: `/var/www/data/canonical-controls.json` (seeded into the volume from the image on first start if missing)
 - Entra sign-in requires `SECUREIT_ENTRA_*` variables in the live stack
 - Required Entra stack variables:
   - `SECUREIT_ENTRA_CLIENT_ID`

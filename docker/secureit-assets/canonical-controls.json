@@ -1,0 +1,1095 @@
+{
+  "version": 1,
+  "description": "Local demo canonical SecureIT control mapping for testing the container app.",
+  "functionalAreas": [
+    "Identity & Access Management",
+    "Email & Calendaring",
+    "Collaboration & Communication",
+    "Files, Intranet & Content Management",
+    "Endpoint & Device Management",
+    "Security Operations & Threat Protection",
+    "Compliance, Governance & Data Protection",
+    "Productivity, Automation & AI"
+  ],
+  "controls": [
+    {
+      "id": "EIDSCA.GENERATED",
+      "title": "Entra security baseline review",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-EIDSCA.Generated.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTMDEANTIVIRUSPOLICY",
+      "title": "Defender antivirus policy",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtMdeAntivirusPolicy.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTMDIHEALTHISSUES",
+      "title": "Defender identity health issues",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtMdiHealthIssues.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "APPMANAGEMENTPOLICIES",
+      "title": "App management policies",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-AppManagementPolicies.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "APPREGISTRATIONS",
+      "title": "App registrations",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-AppRegistrations.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "AUTHENTICATIONMETHODBASELINE",
+      "title": "Authentication method baseline",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-AuthenticationMethodBaseline.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "CONDITIONALACCESSBASELINE",
+      "title": "Conditional Access baseline",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-ConditionalAccessBaseline.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "CONDITIONALACCESSWHATIF",
+      "title": "Conditional Access what-if analysis",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-ConditionalAccessWhatIf.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "ENTRARECOMMENDATIONS",
+      "title": "Entra recommendations",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-EntraRecommendations.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "GROUPS",
+      "title": "Groups",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-Groups.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTAPPREGISTRATIONOWNERSWITHOUTMFA",
+      "title": "App registration owners without MFA",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTITLEMENTMANAGEMENTDELETEDGROUPS",
+      "title": "Entitlement management deleted groups",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtEntitlementManagementDeletedGroups.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTITLEMENTMANAGEMENTINACTIVEPOLICIES",
+      "title": "Entitlement management inactive policies",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtEntitlementManagementInactivePolicies.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTITLEMENTMANAGEMENTORPHANEDRESOURCES",
+      "title": "Entitlement management orphaned resources",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtEntitlementManagementOrphanedResources.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTITLEMENTMANAGEMENTVALIDAPPROVERS",
+      "title": "Entitlement management valid approvers",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtEntitlementManagementValidApprovers.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTITLEMENTMANAGEMENTVALIDRESOURCEROLES",
+      "title": "Entitlement management valid resource roles",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtEntitlementManagementValidResourceRoles.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTRADEVICEREGISTRATIONPOLICY",
+      "title": "Entra device registration policy",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtEntraDeviceRegistrationPolicy.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTENTRAIDCONNECT",
+      "title": "Entra ID Connect",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtEntraIDConnect.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTHIGHRISKAPPPERMISSIONS",
+      "title": "High-risk app permissions",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-MtHighRiskAppPermissions.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTONPREMISESSYNCHRONIZATION",
+      "title": "On-premises synchronization",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtOnPremisesSynchronization.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTSECURITYGROUPCREATIONRESTRICTED",
+      "title": "Security group creation restricted",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtSecurityGroupCreationRestricted.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTTENANTCREATIONRESTRICTED",
+      "title": "Tenant creation restricted",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtTenantCreationRestricted.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "PRIVILEGEDASSIGNMENTS",
+      "title": "Privileged assignments",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-PrivilegedAssignments.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTINTUNECONNECTORHEALTH",
+      "title": "Intune connector health",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtIntuneConnectorHealth.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTINTUNEPLATFORM",
+      "title": "Intune platform settings",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtIntunePlatform.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "XSPMCRITICALASSETMANAGEMENT",
+      "title": "XSPM critical asset management",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-XspmCriticalAssetManagement.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "XSPMDEVICES",
+      "title": "XSPM devices",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-XspmDevices.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "XSPMPRIVILEGEDIDENTITIES",
+      "title": "XSPM privileged identities",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-XspmPrivilegedIdentities.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCIS365PUBLICGROUP",
+      "title": "Microsoft 365 public groups",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCis365PublicGroup.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISADMINCONSENTWORKFLOWENABLED",
+      "title": "Admin consent workflow",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISCLOUDADMIN",
+      "title": "Cloud admin access",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-MtCisCloudAdmin.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISCREATETENANTDISALLOWED",
+      "title": "Tenant creation disallowed",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisCreateTenantDisallowed.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISCUSTOMERLOCKBOX",
+      "title": "Customer lockbox",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Test-MtCisCustomerLockBox.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISDEVICESWITHOUTCOMPLIANCEPOLICYMARKED",
+      "title": "Devices without compliance policy",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtCisDevicesWithoutCompliancePolicyMarked.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISENSUREGUESTACCESSRESTRICTED",
+      "title": "Guest access restrictions",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisEnsureGuestAccessRestricted.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISENSUREGUESTUSERDYNAMICGROUP",
+      "title": "Guest user dynamic groups",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisEnsureGuestUserDynamicGroup.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISENSUREUSERCONSENTTOAPPSDISALLOWED",
+      "title": "User app consent disallowed",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisEnsureUserConsentToAppsDisallowed.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISFORMSPHISHINGPROTECTIONENABLED",
+      "title": "Forms phishing protection",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISGLOBALADMINCOUNT",
+      "title": "Global administrator count",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisGlobalAdminCount.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISPASSWORDEXPIRY",
+      "title": "Password expiry",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisPasswordExpiry.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPOB2BINTEGRATION",
+      "title": "SharePoint B2B integration",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtCisSpoB2BIntegration.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPODEFAULTSHARINGLINK",
+      "title": "SharePoint default sharing link",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisSpoDefaultSharingLink.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPODEFAULTSHARINGLINKPERMISSION",
+      "title": "SharePoint default sharing link permissions",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisSpoDefaultSharingLinkPermission.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPOGUESTACCESSEXPIRY",
+      "title": "SharePoint guest access expiry",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisSpoGuestAccessExpiry.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPOGUESTCANNOTSHAREUNOWNEDITEM",
+      "title": "SharePoint guest sharing restrictions",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisSpoGuestCannotShareUnownedItem.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISSPOPREVENTDOWNLOADMALICIOUSFILE",
+      "title": "SharePoint malicious file download protection",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisSpoPreventDownloadMaliciousFile.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISTHIRDPARTYANDCUSTOMAPPS",
+      "title": "Third-party and custom apps",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisThirdPartyAndCustomApps.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISTHIRDPARTYAPPLICATIONSDISALLOWED",
+      "title": "Third-party applications disallowed",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISTHIRDPARTYSTORAGESERVICESRESTRICTED",
+      "title": "Third-party storage services restricted",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisThirdPartyStorageServicesRestricted.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISUSEROWNEDAPPSRESTRICTED",
+      "title": "User-owned apps restricted",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisUserOwnedAppsRestricted.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISWEAKAUTHENTICATIONMETHODSDISABLED",
+      "title": "Weak authentication methods disabled",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAACTIVATIONNOTIFICATIONGLOBALADMIN",
+      "title": "Activation notifications for global admins",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaActivationNotificationGlobalAdmin.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAACTIVATIONNOTIFICATIONOTHER",
+      "title": "Activation notifications for other privileged roles",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaActivationNotificationOther.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAAPPADMINCONSENT",
+      "title": "Admin app consent",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaAppAdminConsent.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAAPPGROUPOWNERCONSENT",
+      "title": "Group owner app consent",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaAppGroupOwnerConsent.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAAPPREGISTRATION",
+      "title": "App registration",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaAppRegistration.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAAPPUSERCONSENT",
+      "title": "User app consent",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaAppUserConsent.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAASSIGNMENTNOTIFICATION",
+      "title": "Assignment notifications",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisaAssignmentNotification.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAAUTHENTICATORCONTEXT",
+      "title": "Authenticator context",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaAuthenticatorContext.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISABLOCKHIGHRISKSIGNINS",
+      "title": "Block high-risk sign-ins",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaBlockHighRiskSignIns.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISABLOCKHIGHRISKUSERS",
+      "title": "Block high-risk users",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaBlockHighRiskUsers.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISABLOCKLEGACYAUTH",
+      "title": "Block legacy authentication",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaBlockLegacyAuth.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISACLOUDGLOBALADMIN",
+      "title": "Cloud global administrator access",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaCloudGlobalAdmin.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISACROSSTENANTINBOUNDDEFAULT",
+      "title": "Cross-tenant inbound defaults",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaCrossTenantInboundDefault.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISADIAGNOSTICSETTINGS",
+      "title": "Diagnostic settings",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Test-MtCisaDiagnosticSettings.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAGLOBALADMINCOUNT",
+      "title": "Global administrator count",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaGlobalAdminCount.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAGLOBALADMINRATIO",
+      "title": "Global administrator ratio",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaGlobalAdminRatio.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAGUESTINVITATION",
+      "title": "Guest invitations",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtCisaGuestInvitation.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAGUESTUSERACCESS",
+      "title": "Guest user access",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtCisaGuestUserAccess.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAMANAGEDDEVICE",
+      "title": "Managed devices",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtCisaManagedDevice.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAMANAGEDDEVICEREGISTRATION",
+      "title": "Managed device registration",
+      "functionalArea": "Endpoint & Device Management",
+      "frameworkMappings": [
+        "Test-MtCisaManagedDeviceRegistration.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAMETHODSMIGRATION",
+      "title": "Authentication methods migration",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaMethodsMigration.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAMFA",
+      "title": "Multi-factor authentication",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaMfa.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISANOTIFYHIGHRISKUSERS",
+      "title": "Notify high-risk users",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaNotifyHighRiskUsers.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAPASSWORDEXPIRATION",
+      "title": "Password expiration",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaPasswordExpiration.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAPERMANENTROLEASSIGNMENT",
+      "title": "Permanent role assignment",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaPermanentRoleAssignment.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAPHISHRESISTANT",
+      "title": "Phishing-resistant sign-in",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaPhishResistant.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAPRIVILEGEDPHISHRESISTANT",
+      "title": "Privileged phishing-resistant sign-in",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaPrivilegedPhishResistant.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAREQUIREACTIVATIONAPPROVAL",
+      "title": "Require activation approval",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaRequireActivationApproval.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAUNMANAGEDROLEASSIGNMENTS",
+      "title": "Unmanaged role assignments",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISAWEAKFACTOR",
+      "title": "Weak authentication factors",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Test-MtCisaWeakFactor.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISASPOSHARING",
+      "title": "SharePoint sharing",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtCisaSpoSharing.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISASPOSHARINGALLOWEDDOMAIN",
+      "title": "SharePoint allowed sharing domains",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Test-MtCisaSpoSharingAllowedDomain.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    }
+  ]
+}

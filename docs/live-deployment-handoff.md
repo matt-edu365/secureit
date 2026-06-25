@@ -143,6 +143,7 @@ Before real customer exposure, confirm the live tenant configuration and sign-in
 - admin and customer access rules work as intended
 - the first customer tenant can sign in without seeing any other tenant
 - local `.local/identity-seeds.json` data is not mounted or relied on in the production container
+- `/var/www/data/canonical-controls.json` is present in the live volume; the current image seeds it on first start if it is missing
 
 Do not assume the fallback seed-based login path is the production auth model.
 

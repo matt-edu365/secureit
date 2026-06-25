@@ -3,7 +3,7 @@ require __DIR__ . '/lib.php';
 
 $tenants = secureit_load_tenants()['tenants'] ?? [];
 $tenantCount = count($tenants);
-$controlCount = count(secureit_load_canonical_controls()['controls'] ?? []);
+$controlCount = secureit_total_canonical_control_count();
 
 ob_start();
 ?>
@@ -11,19 +11,19 @@ ob_start();
   <div class="metrics-grid">
     <div class="metric-stat">
       <div class="metric-value"><?php echo htmlspecialchars((string) $controlCount); ?></div>
-      <div class="metric-label">total checks</div>
+      <div class="metric-label">M365 security checks</div>
     </div>
     <div class="metric-stat">
       <div class="metric-value">8</div>
-      <div class="metric-label">number of functional areas covered</div>
+      <div class="metric-label">Functional Reporting Areas</div>
     </div>
     <div class="metric-stat">
-      <div class="metric-value" style="font-size:1.5rem; line-height:1.2;">What If</div>
-      <div class="metric-label">testing, simulate sign-in scenarios to verify which policies apply</div>
+      <div class="metric-value" style="font-size:1.5rem; line-height:1.2;">Automated reporting</div>
+      <div class="metric-label">run repeatable checks and deliver reports without manual effort</div>
     </div>
     <div class="metric-stat">
       <div class="metric-value" style="font-size:1.5rem; line-height:1.2;">Flexible reporting</div>
-      <div class="metric-label">SecureIT can generate formatted results in CSV, Excel, HTML, JSON, and Markdown</div>
+      <div class="metric-label">SecureIT generates reports in PDF, Excel, and HTML formats</div>
     </div>
   </div>
 </section>
@@ -31,8 +31,8 @@ ob_start();
 <section class="section" id="overview">
   <div class="section-heading">
     <div class="section-kicker">Continuous Microsoft 365 Security Visibility</div>
-    <h2 class="section-title">Continuous Microsoft 365 security posture monitoring</h2>
-    <p class="section-intro">Your Microsoft 365 environment is central to the way your organisation operates. SecureIT by ICT365 gives you clear, ongoing visibility of your Microsoft 365 security configuration through automated checks, regular reporting, and an easy-to-use customer portal.</p>
+    <h2 class="section-title" style="text-align:center; font-size:clamp(2rem, 4vw, 3.15rem);">Continuous Microsoft 365 Security Visibility</h2>
+    <p class="section-intro" style="max-width:960px; margin-left:auto; margin-right:auto; text-align:center;">Your M365 environment is central to the way your organisation operates. SecureIT gives you clear, ongoing visibility of your M365 security configuration through automated checks, regular reporting, and an easy-to-use portal.</p>
   </div>
 
   <div class="feature-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
@@ -104,7 +104,7 @@ ob_start();
     </article>
     <article class="partner-card">
       <h3>Automated reporting</h3>
-      <p>Deliver regular security posture reports directly to your chosen contacts so key stakeholders stay informed.</p>
+      <p>SecureIT delivers scheduled reporting so key stakeholders receive clear, consistent updates without manual preparation.</p>
     </article>
     <article class="partner-card">
       <h3>Manual report runs</h3>

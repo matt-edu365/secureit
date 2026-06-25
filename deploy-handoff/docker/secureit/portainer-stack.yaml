@@ -11,6 +11,7 @@ services:
       SECUREIT_BASE_URL: https://secureit.ict365.ky
       SECUREIT_TENANTS_FILE: /var/www/data/tenants.json
       SECUREIT_REPORTS_ROOT: /var/www/data/reports
+      SECUREIT_CANONICAL_CONTROLS_FILE: ${SECUREIT_CANONICAL_CONTROLS_FILE:-/var/www/data/canonical-controls.json}
       SECUREIT_ENTRA_AUTHORITY: ${SECUREIT_ENTRA_AUTHORITY:-organizations}
       SECUREIT_ENTRA_CLIENT_ID: ${SECUREIT_ENTRA_CLIENT_ID:-}
       SECUREIT_ENTRA_CLIENT_SECRET: ${SECUREIT_ENTRA_CLIENT_SECRET:-}

@@ -835,6 +835,33 @@ function secureit_load_canonical_controls(): array {
     ];
 }
 
+function secureit_total_canonical_control_count(): int {
+    $config = secureit_config();
+    $paths = [
+        $config['canonical_controls_file'] ?? '',
+        $config['canonical_controls_example_file'] ?? '',
+    ];
+
+    foreach ($paths as $path) {
+        if (!$path || !file_exists($path)) {
+            continue;
+        }
+
+        $data = json_decode(file_get_contents($path), true);
+        if (!is_array($data)) {
+            continue;
+        }
+
+        $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
+        $count = count($controls);
+        if ($count > 0) {
+            return $count;
+        }
+    }
+
+    return 0;
+}
+
 function secureit_tenant_embedded_summary(string $tenantKey): ?array {
     $path = secureit_reports_root() . '/' . $tenantKey . '/latest/embedded-summary.json';
     if (!file_exists($path)) {

@@ -6,6 +6,7 @@ RUN a2enmod rewrite headers \
 
 COPY app/ /var/www/html/
 COPY shared/ /var/www/shared/
+COPY config/ /var/www/config/
 COPY docker/secureit-assets/canonical-controls.json /usr/local/share/secureit/canonical-controls.json
 COPY docker/secureit-entrypoint.sh /usr/local/bin/secureit-entrypoint.sh
 COPY docker/apache-site.conf /etc/apache2/sites-available/000-default.conf

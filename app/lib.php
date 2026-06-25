@@ -793,6 +793,7 @@ function secureit_load_canonical_controls(): array {
     $config = secureit_config();
     $paths = [
         $config['canonical_controls_file'] ?? '',
+        '/usr/local/share/secureit/canonical-controls.json',
         $config['canonical_controls_example_file'] ?? '',
     ];
 
@@ -839,6 +840,7 @@ function secureit_total_canonical_control_count(): int {
     $config = secureit_config();
     $paths = [
         $config['canonical_controls_file'] ?? '',
+        '/usr/local/share/secureit/canonical-controls.json',
         $config['canonical_controls_example_file'] ?? '',
     ];
 

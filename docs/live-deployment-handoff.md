@@ -70,7 +70,7 @@ Persistent mounted storage must exist for:
 
 Likely additional runtime files:
 - `/var/www/data/admin-config.json`
-- `/var/www/data/canonical-controls.json` if canonical scoring is enabled later
+- `/var/www/data/canonical-controls.json` if canonical scoring is enabled later; this is optional because the app can fall back to the bundled image copy
 
 ## Minimum environment variables
 
@@ -81,7 +81,7 @@ Required minimum runtime variables:
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
 
 Likely later:
-- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json`
+- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` if you want to override the default runtime path; otherwise it can be omitted
 - `SECUREIT_AZURE_TENANT_ID=<app-tenant-id>`
 - `SECUREIT_AZURE_CLIENT_ID=<secureit-app-client-id>`
 - `SECUREIT_AZURE_CLIENT_SECRET=<secureit-app-client-secret>`
@@ -143,7 +143,7 @@ Before real customer exposure, confirm the live tenant configuration and sign-in
 - admin and customer access rules work as intended
 - the first customer tenant can sign in without seeing any other tenant
 - local `.local/identity-seeds.json` data is not mounted or relied on in the production container
-- `/var/www/data/canonical-controls.json` is present in the live volume; the current image seeds or refreshes it on startup if it is missing, empty, or resolves to zero controls
+- `/var/www/data/canonical-controls.json` is optional for the homepage total; if present it is used first, otherwise the bundled image copy provides the count
 
 Do not assume the fallback seed-based login path is the production auth model.
 

@@ -36,7 +36,7 @@ Already present:
 The container should assume:
 - tenant metadata lives in `/var/www/data/tenants.json`
 - reports live in `/var/www/data/reports`
-- canonical controls, if used, live in `/var/www/data/canonical-controls.json`
+- canonical controls, if used, live in `/var/www/data/canonical-controls.json`, but the app can fall back to the bundled image copy for the homepage total
 - shared runtime helpers are baked into the image
 
 ## Workflow-to-app bridge

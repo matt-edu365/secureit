@@ -63,7 +63,7 @@ Runtime storage mounted into the container.
 Expected uses:
 - `tenants.json`
 - `reports/<tenant-key>/...`
-- `canonical-controls.json` if canonical scoring is enabled
+- `canonical-controls.json` if canonical scoring is enabled, although the app can also fall back to the bundled image copy for the homepage total
 
 ## Local Docker workflow
 

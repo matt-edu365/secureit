@@ -48,8 +48,10 @@ Expected environment:
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=http://localhost:8088/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
-If canonical scoring is enabled:
+If you want to override the default canonical controls path:
 - `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json`
+
+Otherwise the homepage total uses the bundled image copy if the runtime file is missing or stale.
 
 ## Suggested pages
 

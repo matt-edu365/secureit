@@ -23,6 +23,8 @@ data/tenants.json
 deploy/config.tenants.json
 deploy/maester/tenants.json
 .local/
+TODO.local.md
+SESSION-RESUME.md
 
 # Published or generated sample site/report content
 deploy/maester/*/latest/

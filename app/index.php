@@ -30,7 +30,6 @@ ob_start();
 
 <section class="section" id="overview">
   <div class="section-heading">
-    <div class="section-kicker">Continuous Microsoft 365 Security Visibility</div>
     <h2 class="section-title" style="text-align:center; font-size:clamp(2rem, 4vw, 3.15rem);">Continuous Microsoft 365 Security Visibility</h2>
     <p class="section-intro" style="max-width:960px; margin-left:auto; margin-right:auto; text-align:center;">Your M365 environment is central to the way your organisation operates. SecureIT gives you clear, ongoing visibility of your M365 security configuration through automated checks, regular reporting, and an easy-to-use portal.</p>
   </div>

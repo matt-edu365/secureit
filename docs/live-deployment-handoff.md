@@ -70,7 +70,7 @@ Persistent mounted storage must exist for:
 
 Likely additional runtime files:
 - `/var/www/data/admin-config.json`
-- `/var/www/data/canonical-controls.json` if canonical scoring is enabled later; this is optional because the app can fall back to the bundled image copy
+- `/var/www/data/canonical-controls.json` if canonical scoring is enabled later; this is optional because Previous behaviour relied on the bundled image copy as a fallback
 
 ## Minimum environment variables
 
@@ -143,7 +143,7 @@ Before real customer exposure, confirm the live tenant configuration and sign-in
 - admin and customer access rules work as intended
 - the first customer tenant can sign in without seeing any other tenant
 - local `.local/identity-seeds.json` data is not mounted or relied on in the production container
-- `/var/www/data/canonical-controls.json` is optional for the homepage total; if present it is used first, otherwise the bundled image copy provides the count
+- `/var/www/data/canonical-controls.json` is optional for the homepage total; Previous behaviour was to use the runtime file first and then the bundled image copy as a fallback
 
 Do not assume the fallback seed-based login path is the production auth model.
 

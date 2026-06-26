@@ -18,7 +18,7 @@
 - Runtime data root: `/var/www/data`
 - Tenant metadata file: `/var/www/data/tenants.json`
 - Report bundle root: `/var/www/data/reports`
-- Canonical controls file: `/var/www/data/canonical-controls.json` (optional override via `SECUREIT_CANONICAL_CONTROLS_FILE`; the app falls back to the bundled image copy if the runtime file is missing or stale)
+- Canonical controls file: `/var/www/data/canonical-controls.json` (optional override via `SECUREIT_CANONICAL_CONTROLS_FILE`; Previous behaviour was to fall back to the bundled image copy if the runtime file was missing or stale)
 - Entra runtime variables must be supplied by the Portainer stack or host environment
 - Required Entra stack variables:
   - `SECUREIT_ENTRA_CLIENT_ID`
@@ -50,7 +50,7 @@
 - Add tenant records to `data/tenants.json` or the host-mounted runtime equivalent.
 - Import published report bundles into `data/reports/<tenant-key>/...` as needed.
 - Review admin config defaults if the runtime needs shared mail or reporting settings.
-- The homepage count now resolves from the runtime file first and then from the bundled image copy, so it should show the real M365 security checks total even if the live volume file is missing or stale.
+- The homepage count now resolves from the bundled image copy first. Previous behaviour was to read the runtime file first and then fall back to the bundled image copy if the runtime file was missing or stale.
 - Confirm `SECUREIT_ENTRA_CLIENT_ID`, `SECUREIT_ENTRA_CLIENT_SECRET`, and the Entra redirect/logout URLs are present in the stack before exposing the public route.
 - Do not put `SECUREIT_ENTRA_CLIENT_SECRET` in GitHub; enter it in Portainer or in a host-only env file instead.
 - Add or update an Uptime Kuma monitor after the public hostname is live.

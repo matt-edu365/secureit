@@ -187,7 +187,7 @@ ob_start();
 $content = ob_get_clean();
 secureit_render_shell('SecureIT Login', $content, [
     'pageTitle' => 'Sign in to SecureIT',
-    'pageIntro' => "Existing customers use your business / school email address to access your SecureIT portal.\n\nNot a subscriber? Fill out the form and one of the ICT365 team will get in touch.",
+    'pageIntro' => "Existing customers use your business / school email address to access your SecureIT portal.",
     'eyebrow' => '',
     'hideHeroChrome' => true,
     'heroIntroMaxWidth' => '840px',

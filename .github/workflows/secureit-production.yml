@@ -104,7 +104,10 @@ jobs:
             throw 'SecureIT did not return any tenants for this run.'
           }
 
-          $matrixJson = $tenants | ConvertTo-Json -Depth 20 -Compress
+          $matrixObject = [ordered]@{
+            include = @($tenants)
+          }
+          $matrixJson = $matrixObject | ConvertTo-Json -Depth 20 -Compress
           $summaryLines = @(
             "SecureIT Production discovery",
             "",
@@ -137,8 +140,7 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
+      matrix: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
     env:
       CONFIG_PATH: config/tenants.json
       TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'client-secret-full' }}

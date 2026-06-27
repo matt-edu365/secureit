@@ -148,10 +148,49 @@ function secureit_http_get_json(string $url): array {
     return is_array($data) ? $data : [];
 }
 
+function secureit_http_describe_json_error(int $status, string $body, string $fallback): string {
+    $body = trim($body);
+    if ($body === '') {
+        return $fallback;
+    }
+
+    $decoded = json_decode($body, true);
+    if (is_array($decoded)) {
+        $error = $decoded['error'] ?? [];
+        if (is_array($error)) {
+            $code = trim((string) ($error['code'] ?? ''));
+            $message = trim((string) ($error['message'] ?? ''));
+            if ($code !== '' && $message !== '') {
+                return 'HTTP ' . $status . ' Graph error ' . $code . ': ' . $message;
+            }
+            if ($message !== '') {
+                return 'HTTP ' . $status . ' Graph error: ' . $message;
+            }
+            if ($code !== '') {
+                return 'HTTP ' . $status . ' Graph error code: ' . $code;
+            }
+        }
+    }
+
+    $snippet = preg_replace('/\s+/', ' ', $body);
+    $snippet = trim(substr((string) $snippet, 0, 240));
+    if ($snippet !== '') {
+        return 'HTTP ' . $status . ' Graph response: ' . $snippet;
+    }
+
+    return $fallback;
+}
+
 function secureit_http_get_json_with_bearer(string $url, string $bearerToken): array {
     $ch = curl_init($url);
     if ($ch === false) {
-        return [];
+        return [
+            'ok' => false,
+            'status' => 0,
+            'data' => [],
+            'body' => '',
+            'error' => 'Unable to initialise the Graph request.',
+        ];
     }
 
     curl_setopt_array($ch, [
@@ -167,14 +206,51 @@ function secureit_http_get_json_with_bearer(string $url, string $bearerToken): a
 
     $body = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
 
-    if ($body === false || $status >= 400) {
-        return [];
+    if ($body === false) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => [],
+            'body' => '',
+            'error' => $curlError !== '' ? $curlError : 'The Graph request failed before a response body was returned.',
+        ];
     }
 
     $data = json_decode($body, true);
-    return is_array($data) ? $data : [];
+    if ($status >= 400) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => is_array($data) ? $data : [],
+            'body' => $body,
+            'error' => secureit_http_describe_json_error(
+                $status,
+                $body,
+                'Microsoft Graph rejected the request with HTTP ' . $status . '.'
+            ),
+        ];
+    }
+
+    if (!is_array($data)) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => [],
+            'body' => $body,
+            'error' => 'Microsoft Graph returned a non-JSON response.',
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'status' => $status,
+        'data' => $data,
+        'body' => $body,
+        'error' => '',
+    ];
 }
 
 function secureit_http_post_form(string $url, array $fields): array {
@@ -524,7 +600,13 @@ function secureit_entra_graph_get_json_for_tenant(string $tenantId, string $path
     $tenantId = trim($tenantId);
     $path = '/' . ltrim($path, '/');
     $token = secureit_entra_graph_access_token_for_tenant($tenantId);
-    return secureit_http_get_json_with_bearer('https://graph.microsoft.com/v1.0' . $path, $token);
+    $response = secureit_http_get_json_with_bearer('https://graph.microsoft.com/v1.0' . $path, $token);
+
+    if (empty($response['ok'])) {
+        throw new RuntimeException(trim((string) ($response['error'] ?? 'Unable to query Microsoft Graph.')));
+    }
+
+    return is_array($response['data'] ?? null) ? $response['data'] : [];
 }
 
 function secureit_entra_resolve_tenant_identity(string $tenantId): array {

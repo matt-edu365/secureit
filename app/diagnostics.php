@@ -168,6 +168,8 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
     return [
         'tenantKey' => trim((string) ($tenant['id'] ?? '')),
         'tenantName' => $tenantName,
+        'tenantId' => trim((string) ($tenant['tenantId'] ?? '')),
+        'clientId' => trim((string) ($tenant['clientId'] ?? '')),
         'officialTenantName' => $officialTenantName,
         'authMode' => $authMode,
         'ready' => $missing === [],
@@ -515,6 +517,8 @@ $rawLines[] = 'Weekly workflow not ready tenants: ' . $registryMissingCount;
 foreach ($registryStatuses as $status) {
     $rawLines[] = 'Tenant ' . ($status['tenantKey'] !== '' ? $status['tenantKey'] : '[unnamed]') . ': ready=' . secureit_diag_yes_no((bool) $status['ready']);
     $rawLines[] = '  Dashboard label: ' . ($status['tenantName'] !== '' ? $status['tenantName'] : '[not set]');
+    $rawLines[] = '  Tenant ID: ' . ($status['tenantId'] !== '' ? $status['tenantId'] : '[not set]');
+    $rawLines[] = '  Client ID: ' . ($status['clientId'] !== '' ? $status['clientId'] : '[not set]');
     $rawLines[] = '  Stored official Microsoft 365 tenant name: ' . ($status['officialTenantName'] !== '' ? $status['officialTenantName'] : '[not set]');
     $rawLines[] = '  Resolved official Microsoft 365 tenant name: ' . ($status['resolvedOfficialTenantName'] !== '' ? $status['resolvedOfficialTenantName'] : '[not set]');
     $rawLines[] = '  Effective official Microsoft 365 tenant name: ' . ($status['effectiveOfficialTenantName'] !== '' ? $status['effectiveOfficialTenantName'] : '[not set]');
@@ -676,6 +680,8 @@ ob_start();
           <div class="kv" style="margin-top:14px;">
             <div class="kv-row"><div class="kv-label">Tenant key</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantKey'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Dashboard label</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantName'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Tenant ID</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantId'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Client ID</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['clientId'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Official Microsoft 365 tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['officialTenantName'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Resolved official tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedOfficialTenantName'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Effective official tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['effectiveOfficialTenantName'] ?: '[not set]'); ?></div></div>

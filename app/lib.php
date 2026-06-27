@@ -148,6 +148,35 @@ function secureit_http_get_json(string $url): array {
     return is_array($data) ? $data : [];
 }
 
+function secureit_http_get_json_with_bearer(string $url, string $bearerToken): array {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Authorization: Bearer ' . $bearerToken,
+        ],
+    ]);
+
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($body === false || $status >= 400) {
+        return [];
+    }
+
+    $data = json_decode($body, true);
+    return is_array($data) ? $data : [];
+}
+
 function secureit_http_post_form(string $url, array $fields): array {
     $ch = curl_init($url);
     if ($ch === false) {
@@ -460,6 +489,133 @@ function secureit_entra_exchange_code_for_tokens(string $code): array {
         'code_verifier' => (string) ($authContext['codeVerifier'] ?? ''),
         'scope' => 'openid profile email',
     ]);
+}
+
+function secureit_entra_graph_access_token_for_tenant(string $tenantId): string {
+    $config = secureit_entra_config();
+    $tenantId = trim($tenantId);
+
+    if ($tenantId === '') {
+        throw new RuntimeException('Tenant ID is required to request a Microsoft Graph token.');
+    }
+    if ($config['clientId'] === '' || $config['clientSecret'] === '') {
+        throw new RuntimeException('Entra client credentials are not configured.');
+    }
+
+    $response = secureit_http_post_form(
+        'https://login.microsoftonline.com/' . rawurlencode($tenantId) . '/oauth2/v2.0/token',
+        [
+            'client_id' => $config['clientId'],
+            'client_secret' => $config['clientSecret'],
+            'grant_type' => 'client_credentials',
+            'scope' => 'https://graph.microsoft.com/.default',
+        ]
+    );
+
+    $accessToken = trim((string) ($response['access_token'] ?? ''));
+    if ($accessToken === '') {
+        throw new RuntimeException('Azure token response did not include a Microsoft Graph access token.');
+    }
+
+    return $accessToken;
+}
+
+function secureit_entra_graph_get_json_for_tenant(string $tenantId, string $path): array {
+    $tenantId = trim($tenantId);
+    $path = '/' . ltrim($path, '/');
+    $token = secureit_entra_graph_access_token_for_tenant($tenantId);
+    return secureit_http_get_json_with_bearer('https://graph.microsoft.com/v1.0' . $path, $token);
+}
+
+function secureit_entra_resolve_tenant_domain(string $tenantId): array {
+    $tenantId = trim($tenantId);
+    if ($tenantId === '') {
+        return [
+            'ok' => false,
+            'domain' => '',
+            'message' => 'Tenant ID was not provided.',
+        ];
+    }
+
+    try {
+        $organization = secureit_entra_graph_get_json_for_tenant($tenantId, '/organization?$select=displayName,verifiedDomains');
+    } catch (Throwable $exception) {
+        return [
+            'ok' => false,
+            'domain' => '',
+            'message' => $exception->getMessage(),
+        ];
+    }
+
+    $items = $organization['value'] ?? [];
+    if (!is_array($items) || $items === []) {
+        return [
+            'ok' => false,
+            'domain' => '',
+            'message' => 'Microsoft Graph did not return an organization record.',
+        ];
+    }
+
+    $verifiedDomains = $items[0]['verifiedDomains'] ?? [];
+    if (!is_array($verifiedDomains) || $verifiedDomains === []) {
+        return [
+            'ok' => false,
+            'domain' => '',
+            'message' => 'Microsoft Graph did not return any verified domains.',
+        ];
+    }
+
+    $candidates = [];
+    foreach ($verifiedDomains as $domainItem) {
+        if (!is_array($domainItem)) {
+            continue;
+        }
+
+        $name = trim((string) ($domainItem['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+
+        $candidates[] = [
+            'name' => $name,
+            'isDefault' => !empty($domainItem['isDefault']),
+            'isInitial' => !empty($domainItem['isInitial']),
+        ];
+    }
+
+    if ($candidates === []) {
+        return [
+            'ok' => false,
+            'domain' => '',
+            'message' => 'Microsoft Graph returned verified domains without usable names.',
+        ];
+    }
+
+    foreach ($candidates as $candidate) {
+        if ($candidate['isDefault']) {
+            return [
+                'ok' => true,
+                'domain' => $candidate['name'],
+                'message' => 'Resolved from the tenant default verified domain.',
+            ];
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        if ($candidate['isInitial']) {
+            return [
+                'ok' => true,
+                'domain' => $candidate['name'],
+                'message' => 'Resolved from the tenant initial verified domain.',
+            ];
+        }
+    }
+
+    return [
+        'ok' => true,
+        'domain' => $candidates[0]['name'],
+        'message' => 'Resolved from the first verified domain returned by Microsoft Graph.',
+    ];
 }
 
 function secureit_entra_finalize_login(array $claims): array {

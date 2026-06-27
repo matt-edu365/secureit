@@ -6,31 +6,28 @@ on:
       tenant_key:
         description: Tenant key from config/tenants.json
         required: true
-        default: ict365
+        default: ncvo
       tenant_name:
         description: Tenant display name
         required: true
-        default: ICT365 Cayman
+        default: NCVO
       tenant_domain:
-        description: Primary tenant domain for Exchange Online connection
+        description: NCVO primary tenant domain for Exchange Online connection
         required: true
-        default: EDU365GroupCayman.onmicrosoft.com
       tenant_id:
-        description: Microsoft 365 tenant ID
+        description: NCVO Microsoft 365 tenant ID
         required: true
-        default: 7c7c9c8d-8e91-4fbb-af84-16af4739c726
       client_id:
-        description: Microsoft 365 application ID
+        description: NCVO Microsoft 365 application ID
         required: true
-        default: 68cddeaf-29f7-4d60-b04c-12ce7663079e
       client_secret_name:
         description: Azure Key Vault secret name for the tenant app secret (must already exist)
         required: false
-        default: AZURE-CLIENT-SECRET-ICT365
+        default: AZURE-CLIENT-SECRET-NCVO
       auth_mode:
         description: Authentication mode for this run
         required: true
-        default: certificate
+        default: client-secret
         type: choice
         options:
           - certificate
@@ -38,11 +35,11 @@ on:
       report_base_url:
         description: Base URL for published reports
         required: false
-        default: https://secureit.ict365.ky/ict365
+        default: https://secureit.ict365.ky/ncvo
       email_to:
-        description: Report recipient email
+        description: NCVO report recipient email
         required: false
-        default: matt.fletcher@ict365.ky
+        default: ""
       test_profile:
         description: Test profile to run (client-secret-full is the 83-check run)
         required: true
@@ -90,8 +87,8 @@ jobs:
                 clientId = "${{ github.event.inputs.client_id }}"
                 authMode = "${{ github.event.inputs.auth_mode }}"
                 clientSecretName = "${{ github.event.inputs.client_secret_name }}"
-                certificateBase64 = "${{ secrets.AZURE_CLIENT_CERTIFICATE_B64_ICT365 }}"
-                certificatePassword = "${{ secrets.AZURE_CLIENT_CERTIFICATE_PASSWORD_ICT365 }}"
+                certificateBase64 = "${{ secrets.AZURE_CLIENT_CERTIFICATE_B64_NCVO }}"
+                certificatePassword = "${{ secrets.AZURE_CLIENT_CERTIFICATE_PASSWORD_NCVO }}"
                 reportBaseUrl = "${{ github.event.inputs.report_base_url }}"
                 emailTo = "${{ github.event.inputs.email_to }}"
               }

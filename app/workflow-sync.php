@@ -115,6 +115,7 @@ header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'ok' => true,
     'generatedAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+    'fingerprint' => secureit_workflow_sync_token_fingerprint(),
     'count' => count($payloadTenants),
     'readyCount' => count(array_filter($payloadTenants, static fn (array $tenant): bool => !empty($tenant['ready']))),
     'tenants' => $payloadTenants,

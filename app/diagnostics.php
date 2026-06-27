@@ -569,6 +569,7 @@ $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_ALLOWED_TENANT_IDS', trim(
 $rawLines[] = '';
 $rawLines[] = '[Workflow sync]';
 $rawLines[] = secureit_diag_env_line('SECUREIT_WORKFLOW_SYNC_TOKEN', (string) ($config['workflow_sync_token'] ?? ''), true);
+$rawLines[] = secureit_diag_json_line('SECUREIT_WORKFLOW_SYNC_TOKEN_FINGERPRINT', secureit_workflow_sync_token_fingerprint());
 
 $rawOutput = implode("\n", $rawLines) . "\n";
 $rawMode = in_array(strtolower((string) ($_GET['format'] ?? '')), ['raw', 'text', 'plain'], true) || isset($_GET['raw']);

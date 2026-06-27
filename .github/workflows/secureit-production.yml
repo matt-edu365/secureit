@@ -43,6 +43,8 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:SECUREIT_WORKFLOW_SYNC_TOKEN)) {
             throw 'SECUREIT_WORKFLOW_SYNC_TOKEN is not configured in GitHub.'
           }
+          $syncFingerprint = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($env:SECUREIT_WORKFLOW_SYNC_TOKEN))).Substring(0, 12)
+          "Workflow sync fingerprint: $syncFingerprint" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
           $tenantKey = ''
           if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
@@ -111,6 +113,10 @@ jobs:
           )
           foreach ($tenant in $tenants) {
             $summaryLines += "- $($tenant.tenantKey) | $($tenant.tenantName) | auth=$($tenant.authMode) | ready=$($tenant.ready)"
+          }
+          if ($responseBody.fingerprint) {
+            $summaryLines += ""
+            $summaryLines += "SecureIT fingerprint: $($responseBody.fingerprint)"
           }
           $summaryLines | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 

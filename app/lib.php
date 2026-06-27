@@ -82,6 +82,15 @@ function secureit_workflow_sync_token(): string {
     return trim((string) ($config['workflow_sync_token'] ?? ''));
 }
 
+function secureit_workflow_sync_token_fingerprint(): string {
+    $token = secureit_workflow_sync_token();
+    if ($token === '') {
+        return '';
+    }
+
+    return strtoupper(substr(hash('sha256', $token), 0, 12));
+}
+
 function secureit_workflow_sync_authorized(): bool {
     $configuredToken = secureit_workflow_sync_token();
     if ($configuredToken === '') {

@@ -119,6 +119,18 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
     }
 
     $effectiveTenantDomain = $tenantDomain !== '' ? $tenantDomain : $resolvedTenantDomain;
+    $tenantDomainSource = 'not available';
+    $tenantDomainLookupStatus = 'not attempted';
+    if ($tenantDomain !== '') {
+        $tenantDomainSource = 'stored in tenant registry';
+        $tenantDomainLookupStatus = 'not needed';
+    } elseif ($resolvedTenantDomain !== '') {
+        $tenantDomainSource = 'resolved from Microsoft Graph';
+        $tenantDomainLookupStatus = 'succeeded';
+    } elseif ($tenantId !== '') {
+        $tenantDomainSource = 'lookup attempted';
+        $tenantDomainLookupStatus = 'failed';
+    }
 
     $emailTo = trim((string) ($tenant['emailTo'] ?? ''));
     $recommendedMissing = [];
@@ -148,6 +160,8 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
         'tenantDomain' => $tenantDomain,
         'resolvedTenantDomain' => $resolvedTenantDomain,
         'effectiveTenantDomain' => $effectiveTenantDomain,
+        'tenantDomainSource' => $tenantDomainSource,
+        'tenantDomainLookupStatus' => $tenantDomainLookupStatus,
         'resolvedTenantDomainMessage' => $resolvedTenantDomainMessage,
         'reportBaseUrl' => trim((string) ($tenant['reportBaseUrl'] ?? '')),
         'emailTo' => $emailTo,
@@ -391,6 +405,8 @@ foreach ($registryStatuses as $status) {
     $rawLines[] = '  Stored tenant domain: ' . ($status['tenantDomain'] !== '' ? $status['tenantDomain'] : '[not set]');
     $rawLines[] = '  Resolved tenant domain: ' . ($status['resolvedTenantDomain'] !== '' ? $status['resolvedTenantDomain'] : '[not set]');
     $rawLines[] = '  Effective tenant domain: ' . ($status['effectiveTenantDomain'] !== '' ? $status['effectiveTenantDomain'] : '[not set]');
+    $rawLines[] = '  Tenant domain source: ' . ($status['tenantDomainSource'] !== '' ? $status['tenantDomainSource'] : '[not available]');
+    $rawLines[] = '  Tenant domain lookup status: ' . ($status['tenantDomainLookupStatus'] !== '' ? $status['tenantDomainLookupStatus'] : '[not available]');
     $rawLines[] = '  Domain lookup note: ' . ($status['resolvedTenantDomainMessage'] !== '' ? $status['resolvedTenantDomainMessage'] : '[not available]');
     $rawLines[] = '  Report base URL: ' . ($status['reportBaseUrl'] !== '' ? $status['reportBaseUrl'] : '[not set]');
     $rawLines[] = '  Secret reference: ' . (
@@ -532,6 +548,8 @@ ob_start();
             <div class="kv-row"><div class="kv-label">Stored tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Resolved tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedTenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Effective tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['effectiveTenantDomain'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Tenant domain source</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomainSource'] ?: '[not available]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Lookup status</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomainLookupStatus'] ?: '[not available]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Domain lookup note</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedTenantDomainMessage'] ?: '[not available]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Auth mode</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Secret reference</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] === 'client-secret' ? ($registryCheckStatus['clientSecretName'] ?: '[not set]') : ($registryCheckStatus['authMode'] === 'certificate' ? ($registryCheckStatus['certificateSecretName'] ?: '[not set]') : '[not set]')); ?></div></div>

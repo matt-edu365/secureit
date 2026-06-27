@@ -37,6 +37,9 @@ jobs:
           SECUREIT_WORKFLOW_SYNC_TOKEN: ${{ secrets.SECUREIT_WORKFLOW_SYNC_TOKEN }}
         run: |
           $baseUrl = $env:SECUREIT_BASE_URL.TrimEnd('/')
+          if ([string]::IsNullOrWhiteSpace($baseUrl) -or $baseUrl -notmatch '^https?://') {
+            throw "SECUREIT_BASE_URL is not configured correctly: '$baseUrl'"
+          }
           if ([string]::IsNullOrWhiteSpace($env:SECUREIT_WORKFLOW_SYNC_TOKEN)) {
             throw 'SECUREIT_WORKFLOW_SYNC_TOKEN is not configured in GitHub.'
           }
@@ -55,20 +58,52 @@ jobs:
           }
 
           $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
-          $response = Invoke-RestMethod -Uri $uri -Method Get -Headers @{
+          $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
             Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
             Accept = 'application/json'
+          } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
+
+          $statusCode = [int] $response.StatusCode
+          $responseText = [string] $response.Content
+          if ($statusCode -ne 200) {
+            $details = $responseText
+            try {
+              $errorPayload = $responseText | ConvertFrom-Json -ErrorAction Stop
+              if ($errorPayload.message) {
+                $details = [string] $errorPayload.message
+              }
+            }
+            catch {
+            }
+
+            switch ($statusCode) {
+              401 { throw "SecureIT rejected the workflow sync token. Check that the GitHub secret matches the live container value. Details: $details" }
+              403 { throw "SecureIT denied the workflow sync request. Check the token and live host permissions. Details: $details" }
+              404 { throw "SecureIT workflow sync endpoint was not found. Check that the deployed container includes app/workflow-sync.php. Details: $details" }
+              default { throw "SecureIT workflow sync endpoint returned HTTP $statusCode. Details: $details" }
+            }
           }
 
-          $tenants = @($response.tenants)
-          $clientSecretTenants = @($tenants | Where-Object { $_.authMode -eq 'client-secret' })
-          if (-not $clientSecretTenants) {
-            throw 'SecureIT did not return any client-secret tenants for this run.'
+          try {
+            $responseBody = $responseText | ConvertFrom-Json -ErrorAction Stop
+          }
+          catch {
+            throw "SecureIT workflow sync endpoint returned invalid JSON: $($_.Exception.Message)"
           }
 
-          $matrixJson = $clientSecretTenants | ConvertTo-Json -Depth 20 -Compress
+          if (-not $responseBody.ok) {
+            $syncMessage = [string] ($responseBody.message ?? 'Unknown error')
+            throw "SecureIT workflow sync endpoint reported failure: $syncMessage"
+          }
+
+          $tenants = @($responseBody.tenants)
+          if (-not $tenants) {
+            throw 'SecureIT did not return any tenants for this run.'
+          }
+
+          $matrixJson = $tenants | ConvertTo-Json -Depth 20 -Compress
           "tenant_matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "tenant_count=$($clientSecretTenants.Count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tenant_count=$($tenants.Count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
   run-assessment:
     needs: discover-tenants
@@ -99,6 +134,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path (Split-Path -Parent $env:CONFIG_PATH) | Out-Null
+          $authMode = "${{ matrix.tenant.authMode }}"
           $tenant = [ordered]@{
             tenants = @(
               [ordered]@{
@@ -107,8 +143,10 @@ jobs:
                 tenantId = "${{ matrix.tenant.tenantId }}"
                 tenantDomain = "${{ matrix.tenant.tenantDomain }}"
                 clientId = "${{ matrix.tenant.clientId }}"
-                authMode = "${{ matrix.tenant.authMode }}"
+                authMode = $authMode
                 clientSecretName = "${{ matrix.tenant.clientSecretName }}"
+                certificateSecretName = "${{ matrix.tenant.certificateSecretName }}"
+                certificatePasswordSecretName = "${{ matrix.tenant.certificatePasswordSecretName }}"
                 reportBaseUrl = "${{ matrix.tenant.reportBaseUrl }}"
                 emailTo = "${{ matrix.tenant.emailTo }}"
               }
@@ -127,19 +165,80 @@ jobs:
           "AZURE_CLIENT_ID_TARGET=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CERTIFICATE_SECRET_NAME=$($tenant.certificateSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CERTIFICATE_PASSWORD_SECRET_NAME=$($tenant.certificatePasswordSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Fetch client secret from Azure Key Vault
-        if: ${{ env.MAESTER_AUTH_MODE == 'client-secret' }}
-        shell: bash
+      - name: Validate tenant payload
+        shell: pwsh
         run: |
-          set -euo pipefail
-          SECRET_VALUE=$(az keyvault secret show --vault-name secureit --name "$CLIENT_SECRET_NAME" --query value -o tsv)
-          if [ -z "$SECRET_VALUE" ]; then
-            echo "Secret '$CLIENT_SECRET_NAME' was not retrieved from Key Vault." >&2
-            exit 1
-          fi
-          echo "CLIENT_SECRET=$SECRET_VALUE" >> "$GITHUB_ENV"
+          $missing = @()
+          foreach ($field in @(
+            'TENANT_KEY',
+            'TENANT_NAME',
+            'AZURE_TENANT_ID_TARGET',
+            'AZURE_CLIENT_ID_TARGET',
+            'MAESTER_AUTH_MODE',
+            'REPORT_BASE_URL'
+          )) {
+            $value = [System.Environment]::GetEnvironmentVariable($field)
+            if ([string]::IsNullOrWhiteSpace($value)) {
+              $missing += $field
+            }
+          }
+
+          switch ($env:MAESTER_AUTH_MODE) {
+            'client-secret' {
+              if ([string]::IsNullOrWhiteSpace($env:CLIENT_SECRET_NAME)) {
+                $missing += 'CLIENT_SECRET_NAME'
+              }
+            }
+            'certificate' {
+              if ([string]::IsNullOrWhiteSpace($env:CERTIFICATE_SECRET_NAME)) {
+                $missing += 'CERTIFICATE_SECRET_NAME'
+              }
+              if ([string]::IsNullOrWhiteSpace($env:CERTIFICATE_PASSWORD_SECRET_NAME)) {
+                $missing += 'CERTIFICATE_PASSWORD_SECRET_NAME'
+              }
+            }
+            default {
+              $missing += 'unsupported auth mode: ' + $env:MAESTER_AUTH_MODE
+            }
+          }
+
+          if ($missing.Count -gt 0) {
+            throw ('SecureIT returned incomplete tenant data: ' + ($missing -join ', '))
+          }
+
+      - name: Fetch tenant auth material from Azure Key Vault
+        shell: pwsh
+        run: |
+          switch ($env:MAESTER_AUTH_MODE) {
+            'client-secret' {
+              $secretValue = az keyvault secret show --vault-name secureit --name $env:CLIENT_SECRET_NAME --query value -o tsv
+              if ([string]::IsNullOrWhiteSpace($secretValue)) {
+                throw "Secret '$($env:CLIENT_SECRET_NAME)' was not retrieved from Key Vault."
+              }
+              "CLIENT_SECRET=$secretValue" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+            'certificate' {
+              $certificateBase64 = az keyvault secret show --vault-name secureit --name $env:CERTIFICATE_SECRET_NAME --query value -o tsv
+              if ([string]::IsNullOrWhiteSpace($certificateBase64)) {
+                throw "Secret '$($env:CERTIFICATE_SECRET_NAME)' was not retrieved from Key Vault."
+              }
+
+              $certificatePassword = az keyvault secret show --vault-name secureit --name $env:CERTIFICATE_PASSWORD_SECRET_NAME --query value -o tsv
+              if ([string]::IsNullOrWhiteSpace($certificatePassword)) {
+                throw "Secret '$($env:CERTIFICATE_PASSWORD_SECRET_NAME)' was not retrieved from Key Vault."
+              }
+
+              "CERTIFICATE_BASE64=$certificateBase64" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+              "CERTIFICATE_PASSWORD=$certificatePassword" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+            default {
+              throw "Unsupported authentication mode: $($env:MAESTER_AUTH_MODE)"
+            }
+          }
 
       - name: Setup isolated PowerShell module path
         shell: pwsh

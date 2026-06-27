@@ -1,0 +1,215 @@
+<?php
+require __DIR__ . '/lib.php';
+
+function secureit_report_import_json_response(int $status, array $payload): void {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
+
+function secureit_report_import_remove_tree(string $path): void {
+    if (!file_exists($path)) {
+        return;
+    }
+
+    if (is_file($path) || is_link($path)) {
+        @unlink($path);
+        return;
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        if ($item->isDir()) {
+            @rmdir($item->getPathname());
+        } else {
+            @unlink($item->getPathname());
+        }
+    }
+
+    @rmdir($path);
+}
+
+function secureit_report_import_copy_tree(string $source, string $destination): void {
+    if (!is_dir($source)) {
+        return;
+    }
+
+    if (!is_dir($destination)) {
+        mkdir($destination, 0775, true);
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        $target = $destination . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
+        if ($item->isDir()) {
+            if (!is_dir($target)) {
+                mkdir($target, 0775, true);
+            }
+            continue;
+        }
+
+        $targetDir = dirname($target);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0775, true);
+        }
+
+        copy($item->getPathname(), $target);
+    }
+}
+
+function secureit_report_import_validate_zip_entries(ZipArchive $zip): void {
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $entryName = (string) $zip->getNameIndex($i);
+        if ($entryName === '') {
+            throw new RuntimeException('The uploaded archive contains an empty entry name.');
+        }
+        if (str_starts_with($entryName, '/') || str_starts_with($entryName, '\\') || preg_match('#^[A-Za-z]:[\\\\/]#', $entryName)) {
+            throw new RuntimeException('The uploaded archive contains an invalid absolute path entry.');
+        }
+        if (str_contains($entryName, '../') || str_contains($entryName, '..\\')) {
+            throw new RuntimeException('The uploaded archive contains a path traversal entry.');
+        }
+    }
+}
+
+function secureit_report_import_detect_root(string $extractDir): string {
+    $entries = array_values(array_filter(scandir($extractDir) ?: [], static fn (string $entry): bool => $entry !== '.' && $entry !== '..'));
+    if (count($entries) === 1) {
+        $candidate = $extractDir . DIRECTORY_SEPARATOR . $entries[0];
+        if (is_dir($candidate) && file_exists($candidate . '/latest/summary.json')) {
+            return $candidate;
+        }
+    }
+
+    return $extractDir;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    secureit_report_import_json_response(405, [
+        'ok' => false,
+        'message' => 'Method not allowed.',
+    ]);
+    exit;
+}
+
+if (!secureit_workflow_sync_authorized()) {
+    secureit_report_import_json_response(401, [
+        'ok' => false,
+        'message' => 'Unauthorized.',
+    ]);
+    exit;
+}
+
+$tenantKey = trim(strtolower((string) ($_POST['tenant_key'] ?? $_POST['tenant'] ?? '')));
+if ($tenantKey === '' || !secureit_valid_tenant_key($tenantKey)) {
+    secureit_report_import_json_response(400, [
+        'ok' => false,
+        'message' => 'A valid tenant_key is required.',
+    ]);
+    exit;
+}
+
+if (!secureit_find_tenant($tenantKey)) {
+    secureit_report_import_json_response(404, [
+        'ok' => false,
+        'message' => 'The requested tenant is not configured in SecureIT.',
+    ]);
+    exit;
+}
+
+if (!isset($_FILES['bundle_zip'])) {
+    secureit_report_import_json_response(400, [
+        'ok' => false,
+        'message' => 'No bundle_zip file was uploaded.',
+    ]);
+    exit;
+}
+
+$upload = $_FILES['bundle_zip'];
+if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+    secureit_report_import_json_response(400, [
+        'ok' => false,
+        'message' => 'The bundle_zip upload failed.',
+    ]);
+    exit;
+}
+
+$uploadedPath = (string) ($upload['tmp_name'] ?? '');
+if ($uploadedPath === '' || !is_uploaded_file($uploadedPath)) {
+    secureit_report_import_json_response(400, [
+        'ok' => false,
+        'message' => 'The uploaded bundle could not be verified.',
+    ]);
+    exit;
+}
+
+$extractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'secureit-import-' . bin2hex(random_bytes(8));
+if (!mkdir($extractDir, 0775, true) && !is_dir($extractDir)) {
+    secureit_report_import_json_response(500, [
+        'ok' => false,
+        'message' => 'Unable to create a temporary import directory.',
+    ]);
+    exit;
+}
+
+try {
+    $zip = new ZipArchive();
+    if ($zip->open($uploadedPath) !== true) {
+        throw new RuntimeException('The uploaded file is not a valid ZIP archive.');
+    }
+
+    secureit_report_import_validate_zip_entries($zip);
+    if (!$zip->extractTo($extractDir)) {
+        $zip->close();
+        throw new RuntimeException('The uploaded archive could not be extracted.');
+    }
+    $zip->close();
+
+    $bundleRoot = secureit_report_import_detect_root($extractDir);
+    $latestSummary = $bundleRoot . '/latest/summary.json';
+    if (!file_exists($latestSummary)) {
+        throw new RuntimeException('The imported bundle does not contain latest/summary.json.');
+    }
+
+    $destinationRoot = secureit_reports_root();
+    $tenantDestination = $destinationRoot . '/' . $tenantKey;
+    if (!is_dir($tenantDestination) && !mkdir($tenantDestination, 0775, true) && !is_dir($tenantDestination)) {
+        throw new RuntimeException('Unable to create the tenant report directory.');
+    }
+
+    $latestSource = $bundleRoot . '/latest';
+    $historySource = $bundleRoot . '/history';
+    $latestDestination = $tenantDestination . '/latest';
+    $historyDestination = $tenantDestination . '/history';
+
+    secureit_report_import_remove_tree($latestDestination);
+    secureit_report_import_copy_tree($latestSource, $latestDestination);
+    secureit_report_import_copy_tree($historySource, $historyDestination);
+
+    secureit_report_import_json_response(200, [
+        'ok' => true,
+        'tenantKey' => $tenantKey,
+        'importedAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+        'reportRoot' => $tenantDestination,
+        'latestSummary' => 'latest/summary.json',
+        'latestReport' => 'latest/index.html',
+        'historyImported' => is_dir($historySource),
+    ]);
+}
+catch (Throwable $exception) {
+    secureit_report_import_json_response(400, [
+        'ok' => false,
+        'message' => $exception->getMessage(),
+    ]);
+}
+finally {
+    secureit_report_import_remove_tree($extractDir);
+}

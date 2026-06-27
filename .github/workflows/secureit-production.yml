@@ -322,6 +322,50 @@ jobs:
           name: secureit-production-${{ matrix.tenantKey }}-${{ github.run_number }}
           path: output/${{ matrix.tenantKey }}/
 
+      - name: Publish report bundle to SecureIT portal
+        if: always()
+        shell: bash
+        env:
+          SECUREIT_BASE_URL: ${{ vars.SECUREIT_BASE_URL_DEV || vars.SECUREIT_BASE_URL_LIVE || 'https://secureit.ict365.ky' }}
+          SECUREIT_WORKFLOW_SYNC_TOKEN: ${{ secrets.SECUREIT_WORKFLOW_SYNC_TOKEN }}
+          TENANT_KEY: ${{ matrix.tenantKey }}
+        run: |
+          set -euo pipefail
+
+          baseUrl="${SECUREIT_BASE_URL%/}"
+          if [ -z "$baseUrl" ]; then
+            echo "SECUREIT_BASE_URL is not configured." >&2
+            exit 1
+          fi
+          if [ -z "${SECUREIT_WORKFLOW_SYNC_TOKEN:-}" ]; then
+            echo "SECUREIT_WORKFLOW_SYNC_TOKEN is not configured." >&2
+            exit 1
+          fi
+          if [ ! -d "output/${TENANT_KEY}" ]; then
+            echo "No output bundle found for ${TENANT_KEY}; skipping portal publish." >&2
+            exit 0
+          fi
+
+          zipPath="$RUNNER_TEMP/secureit-report-${TENANT_KEY}.zip"
+          rm -f "$zipPath"
+          (cd "output/${TENANT_KEY}" && zip -qr "$zipPath" .)
+
+          response="$(curl --silent --show-error --fail-with-body -X POST \
+            -H "Authorization: Bearer ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
+            -H "X-SecureIT-Workflow-Token: ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
+            -F "tenant_key=${TENANT_KEY}" \
+            -F "bundle_zip=@${zipPath};type=application/zip" \
+            "${baseUrl}/report-import.php")"
+
+          echo "Portal import response:"
+          echo "$response"
+          {
+            echo ""
+            echo "## Portal import"
+            echo "- Tenant key: ${TENANT_KEY}"
+            echo "- Status: published to SecureIT portal"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Fail workflow if the assessment step truly failed without fallback outputs
         if: always()
         shell: bash

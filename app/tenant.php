@@ -176,6 +176,8 @@ if (is_dir($historyRoot)) {
         return strcmp($b['summary']['generatedAt'] ?? '', $a['summary']['generatedAt'] ?? '');
     });
 }
+$historyStoredCount = count($history);
+$history = array_slice($history, 0, 5);
 
 ob_start();
 ?>
@@ -362,9 +364,9 @@ ob_start();
   <div class="section-header">
     <div>
       <h2 class="section-title">Run history</h2>
-      <div class="muted">Historical published reports for trend review and quick drill-down.</div>
+      <div class="muted">Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.</div>
     </div>
-    <div class="muted"><?php echo htmlspecialchars((string) count($history)); ?> historical run<?php echo count($history) === 1 ? '' : 's'; ?></div>
+    <div class="muted"><?php echo htmlspecialchars((string) min(5, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
   </div>
 
   <article class="card panel">

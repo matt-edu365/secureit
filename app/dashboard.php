@@ -135,6 +135,7 @@ secureit_render_shell('SecureIT Admin Dashboard', $content, [
     'headerMenu' => [
         ['href' => 'admin.php', 'label' => 'Admin actions'],
         ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
+        ['href' => 'diagnostics.php', 'label' => 'Live diagnostics'],
     ],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],
@@ -144,6 +145,7 @@ secureit_render_shell('SecureIT Admin Dashboard', $content, [
         ['href' => 'dashboard.php', 'label' => 'Admin dashboard'],
         ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
         ['href' => 'admin.php', 'label' => 'Admin actions'],
+        ['href' => 'diagnostics.php', 'label' => 'Live diagnostics'],
     ],
     'footerContact' => [
         ['href' => 'mailto:Sales@ict365.ky', 'label' => 'Sales@ict365.ky'],

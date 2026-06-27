@@ -100,27 +100,33 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
     }
 
     $tenantDomain = trim((string) ($tenant['tenantDomain'] ?? ''));
+    $officialTenantName = trim((string) ($tenant['m365TenantName'] ?? ''));
     $resolvedTenantDomain = '';
     $resolvedTenantDomainMessage = '';
-    if ($tenantDomain === '') {
+    $resolvedOfficialTenantName = '';
+    $resolvedOfficialTenantNameMessage = '';
+    if ($tenantDomain === '' || $officialTenantName === '') {
         $tenantId = trim((string) ($tenant['tenantId'] ?? ''));
         if ($tenantId !== '') {
-            $tenantDomainLookup = secureit_entra_resolve_tenant_domain($tenantId);
-            if (!empty($tenantDomainLookup['ok'])) {
-                $resolvedTenantDomain = trim((string) ($tenantDomainLookup['domain'] ?? ''));
-                $resolvedTenantDomainMessage = trim((string) ($tenantDomainLookup['message'] ?? ''));
-            } else {
-                $resolvedTenantDomainMessage = trim((string) ($tenantDomainLookup['message'] ?? ''));
-            }
+            $tenantIdentityLookup = secureit_entra_resolve_tenant_identity($tenantId);
+            $resolvedTenantDomain = trim((string) ($tenantIdentityLookup['domain'] ?? ''));
+            $resolvedOfficialTenantName = trim((string) ($tenantIdentityLookup['displayName'] ?? ''));
+            $resolvedTenantDomainMessage = trim((string) ($tenantIdentityLookup['message'] ?? ''));
+            $resolvedOfficialTenantNameMessage = trim((string) ($tenantIdentityLookup['message'] ?? ''));
         }
     } else {
         $resolvedTenantDomain = $tenantDomain;
         $resolvedTenantDomainMessage = 'Loaded from the tenant registry.';
+        $resolvedOfficialTenantName = $officialTenantName;
+        $resolvedOfficialTenantNameMessage = 'Loaded from the tenant registry.';
     }
 
     $effectiveTenantDomain = $tenantDomain !== '' ? $tenantDomain : $resolvedTenantDomain;
+    $effectiveOfficialTenantName = $officialTenantName !== '' ? $officialTenantName : $resolvedOfficialTenantName;
     $tenantDomainSource = 'not available';
     $tenantDomainLookupStatus = 'not attempted';
+    $officialTenantNameSource = 'not available';
+    $officialTenantNameLookupStatus = 'not attempted';
     if ($tenantDomain !== '') {
         $tenantDomainSource = 'stored in tenant registry';
         $tenantDomainLookupStatus = 'not needed';
@@ -131,6 +137,16 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
         $tenantDomainSource = 'lookup attempted';
         $tenantDomainLookupStatus = 'failed';
     }
+    if ($officialTenantName !== '') {
+        $officialTenantNameSource = 'stored in tenant registry';
+        $officialTenantNameLookupStatus = 'not needed';
+    } elseif ($resolvedOfficialTenantName !== '') {
+        $officialTenantNameSource = 'resolved from Microsoft Graph';
+        $officialTenantNameLookupStatus = 'succeeded';
+    } elseif ($tenantId !== '') {
+        $officialTenantNameSource = 'lookup attempted';
+        $officialTenantNameLookupStatus = 'failed';
+    }
 
     $emailTo = trim((string) ($tenant['emailTo'] ?? ''));
     $recommendedMissing = [];
@@ -139,6 +155,9 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
     }
     if ($effectiveTenantDomain === '') {
         $recommendedMissing[] = 'tenant domain (optional, but useful for Exchange-specific runs)';
+    }
+    if ($effectiveOfficialTenantName === '') {
+        $recommendedMissing[] = 'official Microsoft 365 tenant name (optional but useful for onboarding records)';
     }
 
     $tenantName = trim((string) ($tenant['name'] ?? ''));
@@ -149,6 +168,7 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
     return [
         'tenantKey' => trim((string) ($tenant['id'] ?? '')),
         'tenantName' => $tenantName,
+        'officialTenantName' => $officialTenantName,
         'authMode' => $authMode,
         'ready' => $missing === [],
         'missing' => array_values(array_unique($missing)),
@@ -160,9 +180,14 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
         'tenantDomain' => $tenantDomain,
         'resolvedTenantDomain' => $resolvedTenantDomain,
         'effectiveTenantDomain' => $effectiveTenantDomain,
+        'resolvedOfficialTenantName' => $resolvedOfficialTenantName,
+        'effectiveOfficialTenantName' => $effectiveOfficialTenantName,
         'tenantDomainSource' => $tenantDomainSource,
         'tenantDomainLookupStatus' => $tenantDomainLookupStatus,
+        'officialTenantNameSource' => $officialTenantNameSource,
+        'officialTenantNameLookupStatus' => $officialTenantNameLookupStatus,
         'resolvedTenantDomainMessage' => $resolvedTenantDomainMessage,
+        'resolvedOfficialTenantNameMessage' => $resolvedOfficialTenantNameMessage,
         'reportBaseUrl' => trim((string) ($tenant['reportBaseUrl'] ?? '')),
         'emailTo' => $emailTo,
     ];
@@ -401,13 +426,19 @@ $rawLines[] = 'Weekly workflow not ready tenants: ' . $registryMissingCount;
 foreach ($registryStatuses as $status) {
     $rawLines[] = 'Tenant ' . ($status['tenantKey'] !== '' ? $status['tenantKey'] : '[unnamed]') . ': ready=' . secureit_diag_yes_no((bool) $status['ready']);
     $rawLines[] = '  Dashboard label: ' . ($status['tenantName'] !== '' ? $status['tenantName'] : '[not set]');
+    $rawLines[] = '  Stored official Microsoft 365 tenant name: ' . ($status['officialTenantName'] !== '' ? $status['officialTenantName'] : '[not set]');
+    $rawLines[] = '  Resolved official Microsoft 365 tenant name: ' . ($status['resolvedOfficialTenantName'] !== '' ? $status['resolvedOfficialTenantName'] : '[not set]');
+    $rawLines[] = '  Effective official Microsoft 365 tenant name: ' . ($status['effectiveOfficialTenantName'] !== '' ? $status['effectiveOfficialTenantName'] : '[not set]');
     $rawLines[] = '  Auth mode: ' . ($status['authMode'] !== '' ? $status['authMode'] : '[not set]');
     $rawLines[] = '  Stored tenant domain: ' . ($status['tenantDomain'] !== '' ? $status['tenantDomain'] : '[not set]');
     $rawLines[] = '  Resolved tenant domain: ' . ($status['resolvedTenantDomain'] !== '' ? $status['resolvedTenantDomain'] : '[not set]');
     $rawLines[] = '  Effective tenant domain: ' . ($status['effectiveTenantDomain'] !== '' ? $status['effectiveTenantDomain'] : '[not set]');
     $rawLines[] = '  Tenant domain source: ' . ($status['tenantDomainSource'] !== '' ? $status['tenantDomainSource'] : '[not available]');
     $rawLines[] = '  Tenant domain lookup status: ' . ($status['tenantDomainLookupStatus'] !== '' ? $status['tenantDomainLookupStatus'] : '[not available]');
+    $rawLines[] = '  Official tenant name source: ' . ($status['officialTenantNameSource'] !== '' ? $status['officialTenantNameSource'] : '[not available]');
+    $rawLines[] = '  Official tenant name lookup status: ' . ($status['officialTenantNameLookupStatus'] !== '' ? $status['officialTenantNameLookupStatus'] : '[not available]');
     $rawLines[] = '  Domain lookup note: ' . ($status['resolvedTenantDomainMessage'] !== '' ? $status['resolvedTenantDomainMessage'] : '[not available]');
+    $rawLines[] = '  Official tenant name lookup note: ' . ($status['resolvedOfficialTenantNameMessage'] !== '' ? $status['resolvedOfficialTenantNameMessage'] : '[not available]');
     $rawLines[] = '  Report base URL: ' . ($status['reportBaseUrl'] !== '' ? $status['reportBaseUrl'] : '[not set]');
     $rawLines[] = '  Secret reference: ' . (
         $status['authMode'] === 'client-secret'
@@ -545,12 +576,18 @@ ob_start();
           <div class="kv" style="margin-top:14px;">
             <div class="kv-row"><div class="kv-label">Tenant key</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantKey'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Dashboard label</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantName'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Official Microsoft 365 tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['officialTenantName'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Resolved official tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedOfficialTenantName'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Effective official tenant name</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['effectiveOfficialTenantName'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Stored tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Resolved tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedTenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Effective tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['effectiveTenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Tenant domain source</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomainSource'] ?: '[not available]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Lookup status</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomainLookupStatus'] ?: '[not available]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Official tenant name source</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['officialTenantNameSource'] ?: '[not available]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Official name lookup status</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['officialTenantNameLookupStatus'] ?: '[not available]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Domain lookup note</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedTenantDomainMessage'] ?: '[not available]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Official name lookup note</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['resolvedOfficialTenantNameMessage'] ?: '[not available]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Auth mode</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Secret reference</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] === 'client-secret' ? ($registryCheckStatus['clientSecretName'] ?: '[not set]') : ($registryCheckStatus['authMode'] === 'certificate' ? ($registryCheckStatus['certificateSecretName'] ?: '[not set]') : '[not set]')); ?></div></div>
             <div class="kv-row"><div class="kv-label">Missing required fields</div><div class="kv-value"><?php echo htmlspecialchars(empty($registryCheckStatus['missing']) ? '[none]' : implode(', ', $registryCheckStatus['missing'])); ?></div></div>

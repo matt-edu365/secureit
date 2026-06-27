@@ -7,6 +7,8 @@
       "clientId": "11111111-1111-1111-1111-111111111111",
       "authMode": "client-secret",
       "clientSecretName": "AZURE-CLIENT-SECRET-CONTOSO-PROD",
+      "m365TenantName": "",
+      "tenantDomain": "",
       "reportBaseUrl": "https://reports.example.com/secureit/contoso-prod",
       "emailTo": "security@example.com"
     },
@@ -17,6 +19,8 @@
       "clientId": "33333333-3333-3333-3333-333333333333",
       "authMode": "client-secret",
       "clientSecretName": "AZURE-CLIENT-SECRET-FABRIKAM-PROD",
+      "m365TenantName": "",
+      "tenantDomain": "",
       "reportBaseUrl": "https://reports.example.com/secureit/fabrikam-prod",
       "emailTo": "security@example.com"
     }

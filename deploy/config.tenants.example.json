@@ -7,6 +7,8 @@
       "clientId": "11111111-1111-1111-1111-111111111111",
       "authMode": "client-secret",
       "clientSecretName": "AZURE-CLIENT-SECRET-EXAMPLE-TENANT",
+      "m365TenantName": "",
+      "tenantDomain": "",
       "reportBaseUrl": "https://secureit.ict365.ky/example-tenant",
       "emailTo": "security@example.com"
     }

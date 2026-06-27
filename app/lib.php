@@ -527,11 +527,12 @@ function secureit_entra_graph_get_json_for_tenant(string $tenantId, string $path
     return secureit_http_get_json_with_bearer('https://graph.microsoft.com/v1.0' . $path, $token);
 }
 
-function secureit_entra_resolve_tenant_domain(string $tenantId): array {
+function secureit_entra_resolve_tenant_identity(string $tenantId): array {
     $tenantId = trim($tenantId);
     if ($tenantId === '') {
         return [
             'ok' => false,
+            'displayName' => '',
             'domain' => '',
             'message' => 'Tenant ID was not provided.',
         ];
@@ -542,6 +543,7 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
     } catch (Throwable $exception) {
         return [
             'ok' => false,
+            'displayName' => '',
             'domain' => '',
             'message' => $exception->getMessage(),
         ];
@@ -551,15 +553,18 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
     if (!is_array($items) || $items === []) {
         return [
             'ok' => false,
+            'displayName' => '',
             'domain' => '',
             'message' => 'Microsoft Graph did not return an organization record.',
         ];
     }
 
+    $displayName = trim((string) ($items[0]['displayName'] ?? ''));
     $verifiedDomains = $items[0]['verifiedDomains'] ?? [];
     if (!is_array($verifiedDomains) || $verifiedDomains === []) {
         return [
             'ok' => false,
+            'displayName' => $displayName,
             'domain' => '',
             'message' => 'Microsoft Graph did not return any verified domains.',
         ];
@@ -586,6 +591,7 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
     if ($candidates === []) {
         return [
             'ok' => false,
+            'displayName' => $displayName,
             'domain' => '',
             'message' => 'Microsoft Graph returned verified domains without usable names.',
         ];
@@ -595,6 +601,7 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
         if ($candidate['isDefault']) {
             return [
                 'ok' => true,
+                'displayName' => $displayName,
                 'domain' => $candidate['name'],
                 'message' => 'Resolved from the tenant default verified domain.',
             ];
@@ -605,6 +612,7 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
         if ($candidate['isInitial']) {
             return [
                 'ok' => true,
+                'displayName' => $displayName,
                 'domain' => $candidate['name'],
                 'message' => 'Resolved from the tenant initial verified domain.',
             ];
@@ -613,9 +621,14 @@ function secureit_entra_resolve_tenant_domain(string $tenantId): array {
 
     return [
         'ok' => true,
+        'displayName' => $displayName,
         'domain' => $candidates[0]['name'],
         'message' => 'Resolved from the first verified domain returned by Microsoft Graph.',
     ];
+}
+
+function secureit_entra_resolve_tenant_domain(string $tenantId): array {
+    return secureit_entra_resolve_tenant_identity($tenantId);
 }
 
 function secureit_entra_finalize_login(array $claims): array {

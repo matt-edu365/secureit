@@ -60,6 +60,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'That tenant key already exists.';
     }
 
+    $resolvedTenantIdentity = [
+        'ok' => false,
+        'displayName' => '',
+        'domain' => '',
+        'message' => '',
+    ];
+    if (!$errors) {
+        try {
+            $resolvedTenantIdentity = secureit_entra_resolve_tenant_identity($tenantId);
+        } catch (Throwable $exception) {
+            $resolvedTenantIdentity = [
+                'ok' => false,
+                'displayName' => '',
+                'domain' => '',
+                'message' => $exception->getMessage(),
+            ];
+        }
+    }
+    $m365TenantName = trim((string) ($resolvedTenantIdentity['displayName'] ?? ''));
+    $resolvedTenantDomain = trim((string) ($resolvedTenantIdentity['domain'] ?? ''));
+
     if (!$errors) {
         if (!secureit_keyvault_enabled()) {
             $errors[] = 'Azure Key Vault settings are not configured, so the client secret cannot be stored yet.';
@@ -78,7 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tenant = [
             'id' => $tenantKey,
             'name' => $tenantName,
+            'm365TenantName' => $m365TenantName,
             'tenantId' => $tenantId,
+            'tenantDomain' => $resolvedTenantDomain,
             'clientId' => $clientId,
             'authMode' => $authMode,
             'clientSecretName' => $clientSecretName,
@@ -95,6 +118,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $messages[] = 'Tenant saved into the container app successfully.';
         $messages[] = 'Client secret written to Azure Key Vault using the configured secret name.';
+        if ($m365TenantName !== '' || $resolvedTenantDomain !== '') {
+            $lookupBits = [];
+            if ($m365TenantName !== '') {
+                $lookupBits[] = 'official Microsoft 365 tenant name: ' . $m365TenantName;
+            }
+            if ($resolvedTenantDomain !== '') {
+                $lookupBits[] = 'tenant domain: ' . $resolvedTenantDomain;
+            }
+            $messages[] = 'Microsoft Graph lookup stored ' . implode(', ', $lookupBits) . '.';
+            if (!empty($resolvedTenantIdentity['message'] ?? '')) {
+                $messages[] = 'Lookup note: ' . (string) $resolvedTenantIdentity['message'];
+            }
+        } else {
+            $lookupFailure = trim((string) ($resolvedTenantIdentity['message'] ?? ''));
+            $messages[] = 'Microsoft Graph lookup did not return tenant identity details' . ($lookupFailure !== '' ? ': ' . $lookupFailure : '.') . ' Only the dashboard label was stored.';
+        }
         $messages[] = 'Report Base URL was generated automatically from the tenant key.';
         $messages[] = 'Suggested tenant JSON block:';
         $messages[] = json_encode($tenant, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

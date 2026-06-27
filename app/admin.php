@@ -73,21 +73,23 @@ ob_start();
     <form method="post">
       <h3 class="section-title">Azure and secret storage</h3>
 
-      <label for="key_vault_name">Azure Key Vault name</label>
-      <input id="key_vault_name" name="key_vault_name" placeholder="secureit-prod-kv" value="<?php echo htmlspecialchars($config['azure']['keyVaultName'] ?? ''); ?>">
-      <p class="field-note">Shared Key Vault name used to store tenant authentication secrets and related values.</p>
+      <div style="opacity:0.7;">
+        <label for="key_vault_name">Azure Key Vault name</label>
+        <input id="key_vault_name" name="key_vault_name" placeholder="secureit-prod-kv" value="<?php echo htmlspecialchars($config['azure']['keyVaultName'] ?? ''); ?>">
+        <p class="field-note">Optional metadata for future Key Vault migration or reference only.</p>
 
-      <label for="key_vault_uri">Azure Key Vault URI</label>
-      <input id="key_vault_uri" name="key_vault_uri" placeholder="https://secureit-prod-kv.vault.azure.net/" value="<?php echo htmlspecialchars($config['azure']['keyVaultUri'] ?? ''); ?>">
-      <p class="field-note">Base URI for the shared Azure Key Vault used by SecureIT.</p>
+        <label for="key_vault_uri">Azure Key Vault URI</label>
+        <input id="key_vault_uri" name="key_vault_uri" placeholder="https://secureit-prod-kv.vault.azure.net/" value="<?php echo htmlspecialchars($config['azure']['keyVaultUri'] ?? ''); ?>">
+        <p class="field-note">Optional metadata for future Key Vault migration or reference only.</p>
 
-      <label for="certificate_storage_mode">Certificate storage mode</label>
-      <select id="certificate_storage_mode" name="certificate_storage_mode">
-        <?php $mode = $config['azure']['certificateStorageMode'] ?? 'key-vault'; ?>
-        <option value="key-vault"<?php echo $mode === 'key-vault' ? ' selected' : ''; ?>>Azure Key Vault</option>
-        <option value="local"<?php echo $mode === 'local' ? ' selected' : ''; ?>>Local / manual storage</option>
-      </select>
-      <p class="field-note">Defines where tenant authentication secrets are expected to be managed by default.</p>
+        <label for="certificate_storage_mode">Certificate storage mode</label>
+        <select id="certificate_storage_mode" name="certificate_storage_mode">
+          <?php $mode = $config['azure']['certificateStorageMode'] ?? 'key-vault'; ?>
+          <option value="key-vault"<?php echo $mode === 'key-vault' ? ' selected' : ''; ?>>Azure Key Vault</option>
+          <option value="local"<?php echo $mode === 'local' ? ' selected' : ''; ?>>Local / manual storage</option>
+        </select>
+        <p class="field-note">Optional metadata for future Key Vault migration or reference only.</p>
+      </div>
 
       <h3 class="section-title">Notification defaults</h3>
 

@@ -54,18 +54,90 @@ function secureit_diag_json_line(string $label, mixed $value): string {
 }
 
 $config = secureit_config();
-$tenantsConfig = secureit_load_tenants();
-$tenants = $tenantsConfig['tenants'] ?? [];
 $dataRoot = dirname((string) ($config['tenants_file'] ?? '/var/www/data/tenants.json'));
+$tenantsPath = (string) ($config['tenants_file'] ?? ($dataRoot . '/tenants.json'));
 $adminConfigPath = $dataRoot . '/admin-config.json';
-$adminConfig = file_exists($adminConfigPath) ? json_decode((string) file_get_contents($adminConfigPath), true) : [];
-$adminConfig = is_array($adminConfig) ? $adminConfig : [];
+$canonicalControlsPath = (string) ($config['canonical_controls_file'] ?? ($dataRoot . '/canonical-controls.json'));
 
 $phpExtensions = [
     'curl' => extension_loaded('curl'),
     'json' => extension_loaded('json'),
     'openssl' => extension_loaded('openssl'),
 ];
+
+$seedMessages = [];
+$seedErrors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_runtime_files'])) {
+    $createdFiles = [];
+
+    if (!file_exists($tenantsPath)) {
+        $dir = dirname($tenantsPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($tenantsPath, json_encode(['tenants' => []], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+        $createdFiles[] = 'tenants.json';
+    }
+
+    if (!file_exists($adminConfigPath)) {
+        $adminPayload = [
+            'azure' => [
+                'keyVaultName' => trim((string) ($config['key_vault_name'] ?? '')),
+                'keyVaultUri' => trim((string) ($config['key_vault_uri'] ?? '')),
+                'certificateStorageMode' => 'key-vault',
+            ],
+            'notifications' => [
+                'defaultFromName' => 'ICT365 SecureIT Reporting',
+                'defaultReplyTo' => '',
+            ],
+            'reports' => [
+                'baseSiteUrl' => trim((string) ($config['base_url'] ?? '')),
+            ],
+        ];
+        $dir = dirname($adminConfigPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($adminConfigPath, json_encode($adminPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+        $createdFiles[] = 'admin-config.json';
+    }
+
+    if (!file_exists($canonicalControlsPath)) {
+        $canonicalControlsSeed = '';
+        foreach ([
+            '/usr/local/share/secureit/canonical-controls.json',
+            (string) ($config['canonical_controls_example_file'] ?? ''),
+        ] as $sourcePath) {
+            if (!$sourcePath || !file_exists($sourcePath)) {
+                continue;
+            }
+            $canonicalControlsSeed = (string) file_get_contents($sourcePath);
+            break;
+        }
+
+        if (trim($canonicalControlsSeed) !== '') {
+            $dir = dirname($canonicalControlsPath);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+            file_put_contents($canonicalControlsPath, rtrim($canonicalControlsSeed) . PHP_EOL);
+            $createdFiles[] = 'canonical-controls.json';
+        } else {
+            $seedErrors[] = 'canonical-controls.json could not be seeded because no source template was available.';
+        }
+    }
+
+    if ($createdFiles !== []) {
+        $seedMessages[] = 'Seeded runtime files successfully: ' . implode(', ', $createdFiles) . '.';
+    } elseif ($seedErrors === []) {
+        $seedMessages[] = 'No files needed seeding. All runtime files already exist.';
+    }
+}
+
+$tenantsConfig = secureit_load_tenants();
+$tenants = $tenantsConfig['tenants'] ?? [];
+$adminConfig = file_exists($adminConfigPath) ? json_decode((string) file_get_contents($adminConfigPath), true) : [];
+$adminConfig = is_array($adminConfig) ? $adminConfig : [];
 
 $keyVaultEnabled = secureit_keyvault_enabled();
 $keyVaultBaseUri = '[not configured]';
@@ -143,6 +215,28 @@ ob_start();
       <a class="textlink" href="diagnostics.php?format=raw">Open raw text</a>
     </div>
     <pre style="white-space:pre-wrap; margin:0;"><?php echo htmlspecialchars($rawOutput); ?></pre>
+  </div>
+
+  <div class="card panel" style="margin-bottom:18px;">
+    <div class="section-header" style="margin-bottom:12px;">
+      <div>
+        <h3 class="section-title" style="font-size:1.35rem;">Seed runtime files</h3>
+        <div class="muted">Create the mounted JSON files only if they are missing.</div>
+      </div>
+    </div>
+
+    <?php foreach ($seedErrors as $error): ?>
+      <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
+    <?php endforeach; ?>
+
+    <?php foreach ($seedMessages as $message): ?>
+      <div class="success" style="margin-bottom:12px;"><?php echo htmlspecialchars($message); ?></div>
+    <?php endforeach; ?>
+
+    <form method="post">
+      <button type="submit" name="seed_runtime_files" value="1">Create missing files</button>
+      <p class="field-note" style="margin-top:10px;">This creates `tenants.json`, `admin-config.json`, and `canonical-controls.json` if they do not already exist. Re-run the diagnostics view afterwards to confirm the result.</p>
+    </form>
   </div>
 
   <div class="card panel">

@@ -62,6 +62,7 @@ jobs:
           $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
           $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
             Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
+            'X-SecureIT-Workflow-Token' = $env:SECUREIT_WORKFLOW_SYNC_TOKEN
             Accept = 'application/json'
           } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
 

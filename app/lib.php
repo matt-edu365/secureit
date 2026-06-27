@@ -48,8 +48,23 @@ function secureit_auth_request_base_url(): string {
     return $scheme . '://' . $authority;
 }
 
+function secureit_request_header_value(array $names): string {
+    foreach ($names as $name) {
+        $value = trim((string) ($_SERVER[$name] ?? ''));
+        if ($value !== '') {
+            return $value;
+        }
+    }
+
+    return '';
+}
+
 function secureit_request_bearer_token(): string {
-    $authorization = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['Authorization'] ?? ''));
+    $authorization = secureit_request_header_value([
+        'HTTP_AUTHORIZATION',
+        'REDIRECT_HTTP_AUTHORIZATION',
+        'Authorization',
+    ]);
     if ($authorization === '') {
         return '';
     }
@@ -97,7 +112,13 @@ function secureit_workflow_sync_authorized(): bool {
         return false;
     }
 
-    $requestToken = secureit_request_bearer_token();
+    $requestToken = secureit_request_header_value([
+        'HTTP_X_SECUREIT_WORKFLOW_TOKEN',
+        'X-SecureIT-Workflow-Token',
+    ]);
+    if ($requestToken === '') {
+        $requestToken = secureit_request_bearer_token();
+    }
     if ($requestToken === '') {
         return false;
     }

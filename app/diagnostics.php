@@ -566,6 +566,9 @@ $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_REDIRECT_URI', (string) ($
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI', (string) ($config['entra_post_logout_redirect_uri'] ?? ''));
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS', (string) ($config['entra_admin_email_domains'] ?? ''));
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_ALLOWED_TENANT_IDS', trim((string) ($config['entra_allowed_tenant_ids'] ?? '')) !== '' ? 'set' : 'not set');
+$rawLines[] = '';
+$rawLines[] = '[Workflow sync]';
+$rawLines[] = secureit_diag_env_line('SECUREIT_WORKFLOW_SYNC_TOKEN', (string) ($config['workflow_sync_token'] ?? ''), true);
 
 $rawOutput = implode("\n", $rawLines) . "\n";
 $rawMode = in_array(strtolower((string) ($_GET['format'] ?? '')), ['raw', 'text', 'plain'], true) || isset($_GET['raw']);

@@ -21,4 +21,5 @@ return [
     'key_vault_client_secret' => getenv('SECUREIT_KEY_VAULT_CLIENT_SECRET') ?: '',
     'key_vault_name' => getenv('SECUREIT_KEY_VAULT_NAME') ?: '',
     'key_vault_uri' => getenv('SECUREIT_KEY_VAULT_URI') ?: '',
+    'workflow_sync_token' => getenv('SECUREIT_WORKFLOW_SYNC_TOKEN') ?: '',
 ];

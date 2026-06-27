@@ -48,6 +48,19 @@ function secureit_auth_request_base_url(): string {
     return $scheme . '://' . $authority;
 }
 
+function secureit_request_bearer_token(): string {
+    $authorization = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['Authorization'] ?? ''));
+    if ($authorization === '') {
+        return '';
+    }
+
+    if (stripos($authorization, 'Bearer ') === 0) {
+        return trim(substr($authorization, 7));
+    }
+
+    return '';
+}
+
 function secureit_entra_config(): array {
     $config = secureit_config();
     $allowedTenantIds = secureit_parse_comma_list((string) ($config['entra_allowed_tenant_ids'] ?? ''));
@@ -62,6 +75,25 @@ function secureit_entra_config(): array {
         'adminEmailDomains' => secureit_parse_comma_list((string) ($config['entra_admin_email_domains'] ?? 'ict365.ky')),
         'adminAppRole' => trim((string) ($config['entra_admin_app_role'] ?? 'SecureIT.Admin')),
     ];
+}
+
+function secureit_workflow_sync_token(): string {
+    $config = secureit_config();
+    return trim((string) ($config['workflow_sync_token'] ?? ''));
+}
+
+function secureit_workflow_sync_authorized(): bool {
+    $configuredToken = secureit_workflow_sync_token();
+    if ($configuredToken === '') {
+        return false;
+    }
+
+    $requestToken = secureit_request_bearer_token();
+    if ($requestToken === '') {
+        return false;
+    }
+
+    return hash_equals($configuredToken, $requestToken);
 }
 
 function secureit_entra_is_enabled(): bool {

@@ -1,0 +1,206 @@
+name: SecureIT Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_key:
+        description: Optional tenant key to run
+        required: false
+        default: ""
+      test_profile:
+        description: Test profile to run
+        required: true
+        default: client-secret-full
+        type: choice
+        options:
+          - client-secret-baseline
+          - client-secret-full
+          - graph-baseline
+          - light
+          - exchange-online
+          - full
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  discover-tenants:
+    runs-on: ubuntu-latest
+    outputs:
+      tenant_matrix: ${{ steps.collect.outputs.tenant_matrix }}
+      tenant_count: ${{ steps.collect.outputs.tenant_count }}
+    steps:
+      - name: Collect tenant payload from SecureIT
+        id: collect
+        shell: pwsh
+        env:
+          SECUREIT_BASE_URL: ${{ vars.SECUREIT_BASE_URL_DEV || vars.SECUREIT_BASE_URL_LIVE || 'https://secureit.ict365.ky' }}
+          SECUREIT_WORKFLOW_SYNC_TOKEN: ${{ secrets.SECUREIT_WORKFLOW_SYNC_TOKEN }}
+        run: |
+          $baseUrl = $env:SECUREIT_BASE_URL.TrimEnd('/')
+          if ([string]::IsNullOrWhiteSpace($env:SECUREIT_WORKFLOW_SYNC_TOKEN)) {
+            throw 'SECUREIT_WORKFLOW_SYNC_TOKEN is not configured in GitHub.'
+          }
+
+          $tenantKey = ''
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $tenantKey = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_key }}') ? '' : '${{ github.event.inputs.tenant_key }}'
+          }
+
+          $query = @()
+          if ($tenantKey -ne '') {
+            $query += 'tenant_key=' + [uri]::EscapeDataString($tenantKey)
+          }
+          else {
+            $query += 'ready=1'
+          }
+
+          $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
+          $response = Invoke-RestMethod -Uri $uri -Method Get -Headers @{
+            Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
+            Accept = 'application/json'
+          }
+
+          $tenants = @($response.tenants)
+          $clientSecretTenants = @($tenants | Where-Object { $_.authMode -eq 'client-secret' })
+          if (-not $clientSecretTenants) {
+            throw 'SecureIT did not return any client-secret tenants for this run.'
+          }
+
+          $matrixJson = $clientSecretTenants | ConvertTo-Json -Depth 20 -Compress
+          "tenant_matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tenant_count=$($clientSecretTenants.Count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+  run-assessment:
+    needs: discover-tenants
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tenant: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
+    env:
+      CONFIG_PATH: config/tenants.json
+      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'client-secret-full' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login via OIDC (tenant scope)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Create runtime tenant config
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $env:CONFIG_PATH) | Out-Null
+          $tenant = [ordered]@{
+            tenants = @(
+              [ordered]@{
+                id = "${{ matrix.tenant.tenantKey }}"
+                name = "${{ matrix.tenant.tenantName }}"
+                tenantId = "${{ matrix.tenant.tenantId }}"
+                tenantDomain = "${{ matrix.tenant.tenantDomain }}"
+                clientId = "${{ matrix.tenant.clientId }}"
+                authMode = "${{ matrix.tenant.authMode }}"
+                clientSecretName = "${{ matrix.tenant.clientSecretName }}"
+                reportBaseUrl = "${{ matrix.tenant.reportBaseUrl }}"
+                emailTo = "${{ matrix.tenant.emailTo }}"
+              }
+            )
+          }
+          $tenant | ConvertTo-Json -Depth 10 | Set-Content -Path $env:CONFIG_PATH -Encoding UTF8
+
+      - name: Resolve tenant configuration
+        shell: pwsh
+        run: |
+          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey "${{ matrix.tenant.tenantKey }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
+          "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_TENANT_ID_TARGET=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_TENANT_DOMAIN_TARGET=$($tenant.tenantDomain)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AZURE_CLIENT_ID_TARGET=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Fetch client secret from Azure Key Vault
+        if: ${{ env.MAESTER_AUTH_MODE == 'client-secret' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SECRET_VALUE=$(az keyvault secret show --vault-name secureit --name "$CLIENT_SECRET_NAME" --query value -o tsv)
+          if [ -z "$SECRET_VALUE" ]; then
+            echo "Secret '$CLIENT_SECRET_NAME' was not retrieved from Key Vault." >&2
+            exit 1
+          fi
+          echo "CLIENT_SECRET=$SECRET_VALUE" >> "$GITHUB_ENV"
+
+      - name: Setup isolated PowerShell module path
+        shell: pwsh
+        run: |
+          $moduleRoot = Join-Path $HOME 'secureit-psmodules'
+          New-Item -ItemType Directory -Force -Path $moduleRoot | Out-Null
+          "PSMODULEPATH_ROOT=$moduleRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+          if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
+            Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
+          }
+          if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
+            Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
+          }
+          if (-not (Get-Module -ListAvailable -Name Maester)) {
+            if (Get-PSResourceRepository -ErrorAction SilentlyContinue) {
+              Install-PSResource Maester -TrustRepository -Scope CurrentUser
+            }
+            else {
+              Install-Module Maester -Scope CurrentUser -Force -AllowClobber
+            }
+          }
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          Import-Module ExchangeOnlineManagement -Force
+          Import-Module Maester -Force
+          $env:CI = 'true'
+          $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+          $moduleRoot = Split-Path -Parent $maesterModule.Path
+          $testsRoot = Join-Path $moduleRoot 'maester-tests'
+          if (-not (Test-Path -LiteralPath $testsRoot)) {
+            'y' | Install-MaesterTests
+          }
+
+      - name: Run SecureIT assessment engine
+        id: maester
+        continue-on-error: true
+        shell: pwsh
+        env:
+          PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
+        run: |
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID_TARGET" -TenantDomain "$env:AZURE_TENANT_DOMAIN_TARGET" -ClientId "$env:AZURE_CLIENT_ID_TARGET" -AuthMode "$env:MAESTER_AUTH_MODE" -ClientSecret "$env:CLIENT_SECRET" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "$env:TEST_PROFILE"
+
+      - name: Upload workflow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secureit-production-${{ matrix.tenant.tenantKey }}-${{ github.run_number }}
+          path: output/${{ matrix.tenant.tenantKey }}/
+
+      - name: Fail workflow if the assessment step truly failed without fallback outputs
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.maester.outcome }}" != "success" ] && [ ! -f "output/${{ matrix.tenant.tenantKey }}/latest/summary.json" ]; then
+            echo "Assessment step failed and no fallback summary was produced." >&2
+            exit 1
+          fi

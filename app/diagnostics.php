@@ -56,7 +56,6 @@ function secureit_diag_json_line(string $label, mixed $value): string {
 function secureit_diag_tenant_registry_status(array $tenant): array {
     $requiredFields = [
         'id' => 'tenant key',
-        'name' => 'tenant name',
         'tenantId' => 'Microsoft 365 tenant ID',
         'clientId' => 'Microsoft 365 application ID',
         'tenantDomain' => 'tenant domain',
@@ -107,9 +106,14 @@ function secureit_diag_tenant_registry_status(array $tenant): array {
         $recommendedMissing[] = 'report recipient email';
     }
 
+    $tenantName = trim((string) ($tenant['name'] ?? ''));
+    if ($tenantName === '') {
+        $recommendedMissing[] = 'dashboard label';
+    }
+
     return [
         'tenantKey' => trim((string) ($tenant['id'] ?? '')),
-        'tenantName' => trim((string) ($tenant['name'] ?? '')),
+        'tenantName' => $tenantName,
         'authMode' => $authMode,
         'ready' => $missing === [],
         'missing' => array_values(array_unique($missing)),
@@ -356,7 +360,7 @@ $rawLines[] = 'Weekly workflow ready tenants: ' . $registryReadyCount;
 $rawLines[] = 'Weekly workflow not ready tenants: ' . $registryMissingCount;
 foreach ($registryStatuses as $status) {
     $rawLines[] = 'Tenant ' . ($status['tenantKey'] !== '' ? $status['tenantKey'] : '[unnamed]') . ': ready=' . secureit_diag_yes_no((bool) $status['ready']);
-    $rawLines[] = '  Name: ' . ($status['tenantName'] !== '' ? $status['tenantName'] : '[not set]');
+    $rawLines[] = '  Dashboard label: ' . ($status['tenantName'] !== '' ? $status['tenantName'] : '[not set]');
     $rawLines[] = '  Auth mode: ' . ($status['authMode'] !== '' ? $status['authMode'] : '[not set]');
     $rawLines[] = '  Tenant domain: ' . ($status['tenantDomain'] !== '' ? $status['tenantDomain'] : '[not set]');
     $rawLines[] = '  Report base URL: ' . ($status['reportBaseUrl'] !== '' ? $status['reportBaseUrl'] : '[not set]');
@@ -495,6 +499,7 @@ ob_start();
           </p>
           <div class="kv" style="margin-top:14px;">
             <div class="kv-row"><div class="kv-label">Tenant key</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantKey'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Dashboard label</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantName'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomain'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Auth mode</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] ?: '[not set]'); ?></div></div>
             <div class="kv-row"><div class="kv-label">Secret reference</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] === 'client-secret' ? ($registryCheckStatus['clientSecretName'] ?: '[not set]') : ($registryCheckStatus['authMode'] === 'certificate' ? ($registryCheckStatus['certificateSecretName'] ?: '[not set]') : '[not set]')); ?></div></div>

@@ -94,6 +94,8 @@ Typical flow:
 4. `scripts/Import-AppReportBundle.ps1` imports that into runtime storage
 5. the app reads the imported bundle from `data/reports/<tenant-key>/...`
 
+The onboarding flow also writes the customer application secret into Azure Key Vault so the live tenant setup stays aligned with the workflow and diagnostics paths.
+
 ## Functional-area scoring
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.

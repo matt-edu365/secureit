@@ -28,6 +28,8 @@ Important architecture rule:
 
 The live container is not expected to run Maester locally.
 
+NCVO has now been onboarded live, the tenant survives a container redeploy, and the onboarding flow writes the client secret into Key Vault.
+
 ## What the live container must do
 
 The live container must be able to:
@@ -35,6 +37,7 @@ The live container must be able to:
 - execute the PHP application in `app/`
 - serve static imported report files
 - read and write mounted runtime data under `/var/www/data`
+- preserve tenant records, admin config, and canonical controls across container recreation
 
 ## What the live container does not need to do
 
@@ -94,6 +97,8 @@ Likely later:
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
+The app also persists optional Key Vault metadata in `/var/www/data/admin-config.json` for display and future portability, but the runtime secret write path uses the Key Vault environment variables above.
+
 ## Permission requirements
 
 The mounted `/var/www/data` path must be writable by the web process inside the container.
@@ -115,6 +120,8 @@ Before first meaningful validation:
 4. ensure `summary.json` exists for that tenant
 
 Without this, the app may still load, but there will be little useful content to verify.
+
+The diagnostics page includes a temporary secret-write tool for existing tenants. Use it as a repair path, not as the normal onboarding flow.
 
 ## Workflow-to-runtime integration gap
 

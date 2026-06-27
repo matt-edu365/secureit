@@ -16,6 +16,7 @@ The target deployment track is now the only intended path for active delivery:
 - image published to GHCR
 - runtime backed by mounted external data
 - public hostname `https://secureit.ict365.ky`
+- NCVO has already been onboarded on the live path and survives a container redeploy
 
 ## Image
 
@@ -34,6 +35,8 @@ The target runtime model is:
 - report bundles are stored outside the image in mounted storage
 - reverse proxy terminates TLS and exposes the final hostname
 - customer-facing branding remains SecureIT even though Maester remains the backend assessment engine
+- onboarding writes the tenant client secret to Key Vault
+- the diagnostics page contains a temporary repair path for writing an existing tenant secret into Key Vault
 
 ## Required mounted storage
 
@@ -83,12 +86,15 @@ docker compose up -d
 - `SECUREIT_KEY_VAULT_CLIENT_ID=<secureit-app-client-id>`
 - `SECUREIT_KEY_VAULT_CLIENT_SECRET=<secureit-app-client-secret>`
 - `SECUREIT_KEY_VAULT_NAME=<key-vault-name>`
+- `SECUREIT_KEY_VAULT_URI=<key-vault-uri>`
 - `SECUREIT_ENTRA_TENANT_ID=<ict365-or-common-authority>`
 - `SECUREIT_ENTRA_CLIENT_ID=<secureit-login-app-client-id>`
 - `SECUREIT_ENTRA_CLIENT_SECRET=<secureit-login-app-client-secret>`
 - `SECUREIT_ENTRA_REDIRECT_URI=https://secureit.ict365.ky/auth/callback`
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
+
+Optional Key Vault metadata can be persisted in the admin config, but the runtime source of truth is the Key Vault environment set on the container or host.
 
 ## Recommended deployment validation
 

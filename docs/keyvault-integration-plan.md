@@ -15,6 +15,8 @@ This repo already includes:
 - Azure OIDC diagnostic workflow
 - Azure Key Vault smoke-test workflow
 - manual Maester workflow support for Key Vault retrieval in client-secret mode
+- onboarding now writes the tenant client secret into Key Vault
+- a temporary diagnostics-page repair path can write a secret for an existing tenant
 
 So this is not just a future idea anymore. It is partly implemented and still needs consolidation.
 
@@ -30,6 +32,8 @@ The app currently supports these environment variables:
 Use either:
 - `SECUREIT_KEY_VAULT_URI`, or
 - `SECUREIT_KEY_VAULT_NAME`
+
+The admin page can also store optional metadata such as vault name, vault URI, and certificate storage mode for reference and future migration support, but the live write path is driven by the runtime Key Vault settings above.
 
 ## Intended SecureIT onboarding model
 
@@ -68,7 +72,7 @@ Should typically have:
 
 ## Current workflow reality
 
-The modern manual workflow already supports Key Vault retrieval for client-secret mode.
+The modern manual workflow already supports Key Vault retrieval for client-secret mode, and the app now writes the client secret during onboarding.
 
 Relevant path:
 - `.github/workflows/maester-manual-run.yml`

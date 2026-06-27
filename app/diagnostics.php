@@ -283,6 +283,9 @@ $registryCheckErrors = [];
 $registryCheckTenantKey = '';
 $registryCheckTargetTenant = null;
 $registryCheckStatus = null;
+$registryUpdateMessages = [];
+$registryUpdateErrors = [];
+$registryUpdateStatus = null;
 
 if ($tenants !== []) {
     $registryCheckTenantKey = (string) ($tenants[0]['id'] ?? '');
@@ -299,6 +302,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inspect_registry_tena
         $registryCheckMessages[] = $registryCheckStatus['ready']
             ? 'This tenant already has the data needed for a weekly workflow.'
             : 'This tenant still needs additional registry data before a weekly workflow can be automated.';
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_registry_tenant_identity'])) {
+    $registryCheckTenantKey = trim(strtolower((string) ($_POST['registry_tenant_key'] ?? '')));
+    $registryCheckTargetTenant = $registryCheckTenantKey !== '' ? secureit_find_tenant($registryCheckTenantKey) : null;
+
+    if (!$registryCheckTargetTenant) {
+        $registryUpdateErrors[] = 'Select a valid tenant before updating tenant identity values.';
+    } else {
+        $tenantId = trim((string) ($registryCheckTargetTenant['tenantId'] ?? ''));
+        if ($tenantId === '') {
+            $registryUpdateErrors[] = 'The selected tenant does not have a tenant ID yet, so Graph lookup cannot run.';
+        } else {
+            try {
+                $tenantIdentityLookup = secureit_entra_resolve_tenant_identity($tenantId);
+                $resolvedTenantDomain = trim((string) ($tenantIdentityLookup['domain'] ?? ''));
+                $resolvedOfficialTenantName = trim((string) ($tenantIdentityLookup['displayName'] ?? ''));
+
+                $tenantConfig = secureit_load_tenants();
+                $tenantUpdated = false;
+                $newOfficialTenantName = '';
+                $newTenantDomain = '';
+
+                foreach (($tenantConfig['tenants'] ?? []) as &$tenantItem) {
+                    if (($tenantItem['id'] ?? '') !== $registryCheckTenantKey) {
+                        continue;
+                    }
+
+                    if ($resolvedOfficialTenantName !== '' && ($tenantItem['m365TenantName'] ?? '') !== $resolvedOfficialTenantName) {
+                        $tenantItem['m365TenantName'] = $resolvedOfficialTenantName;
+                        $newOfficialTenantName = $resolvedOfficialTenantName;
+                        $tenantUpdated = true;
+                    } elseif (trim((string) ($tenantItem['m365TenantName'] ?? '')) !== '') {
+                        $newOfficialTenantName = trim((string) ($tenantItem['m365TenantName'] ?? ''));
+                    }
+
+                    if ($resolvedTenantDomain !== '' && ($tenantItem['tenantDomain'] ?? '') !== $resolvedTenantDomain) {
+                        $tenantItem['tenantDomain'] = $resolvedTenantDomain;
+                        $newTenantDomain = $resolvedTenantDomain;
+                        $tenantUpdated = true;
+                    } elseif (trim((string) ($tenantItem['tenantDomain'] ?? '')) !== '') {
+                        $newTenantDomain = trim((string) ($tenantItem['tenantDomain'] ?? ''));
+                    }
+                    break;
+                }
+                unset($tenantItem);
+
+                if ($tenantUpdated) {
+                    secureit_save_tenants($tenantConfig);
+                    $registryUpdateMessages[] = 'Updated the selected tenant record with Graph-derived identity values.';
+                } else {
+                    $registryUpdateMessages[] = 'The selected tenant record already contained the latest Graph-derived identity values, or Graph did not return new values.';
+                }
+
+                $registryUpdateStatus = [
+                    'tenantKey' => $registryCheckTenantKey,
+                    'tenantName' => (string) ($registryCheckTargetTenant['name'] ?? ''),
+                    'officialTenantName' => $newOfficialTenantName,
+                    'tenantDomain' => $newTenantDomain,
+                    'lookupMessage' => trim((string) ($tenantIdentityLookup['message'] ?? '')),
+                ];
+
+                if ($registryUpdateStatus['officialTenantName'] === '' && $registryUpdateStatus['tenantDomain'] === '') {
+                    $registryUpdateMessages[] = 'Microsoft Graph lookup did not return values to store.';
+                } else {
+                    $storedBits = [];
+                    if ($registryUpdateStatus['officialTenantName'] !== '') {
+                        $storedBits[] = 'official tenant name: ' . $registryUpdateStatus['officialTenantName'];
+                    }
+                    if ($registryUpdateStatus['tenantDomain'] !== '') {
+                        $storedBits[] = 'tenant domain: ' . $registryUpdateStatus['tenantDomain'];
+                    }
+                    $registryUpdateMessages[] = 'Stored ' . implode(', ', $storedBits) . '.';
+                }
+
+                if ($registryUpdateStatus['lookupMessage'] !== '') {
+                    $registryUpdateMessages[] = 'Lookup note: ' . $registryUpdateStatus['lookupMessage'];
+                }
+
+                $registryCheckTargetTenant = secureit_find_tenant($registryCheckTenantKey);
+                $registryCheckStatus = $registryCheckTargetTenant ? secureit_diag_tenant_registry_status($registryCheckTargetTenant) : null;
+            } catch (Throwable $exception) {
+                $registryUpdateErrors[] = 'The tenant identity values could not be refreshed from Microsoft Graph: ' . $exception->getMessage();
+            }
+        }
     }
 }
 
@@ -546,6 +635,14 @@ ob_start();
       <div class="success" style="margin-bottom:12px;"><?php echo htmlspecialchars($message); ?></div>
     <?php endforeach; ?>
 
+    <?php foreach ($registryUpdateErrors as $error): ?>
+      <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
+    <?php endforeach; ?>
+
+    <?php foreach ($registryUpdateMessages as $message): ?>
+      <div class="success" style="margin-bottom:12px;"><?php echo htmlspecialchars($message); ?></div>
+    <?php endforeach; ?>
+
     <?php if ($tenants === []): ?>
       <div class="empty-state">
         <strong>No tenants are available yet.</strong>
@@ -564,7 +661,10 @@ ob_start();
         </select>
         <p class="field-note">Use this to confirm whether the live registry already contains the fields needed for a weekly GitHub workflow.</p>
 
-        <button type="submit" name="inspect_registry_tenant" value="1">Check registry readiness</button>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button type="submit" name="inspect_registry_tenant" value="1">Check registry readiness</button>
+          <button type="submit" name="update_registry_tenant_identity" value="1">Refresh tenant identity from Graph</button>
+        </div>
       </form>
 
       <?php if ($registryCheckStatus): ?>

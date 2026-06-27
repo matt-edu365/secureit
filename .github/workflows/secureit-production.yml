@@ -102,8 +102,24 @@ jobs:
           }
 
           $matrixJson = $tenants | ConvertTo-Json -Depth 20 -Compress
+          $summaryLines = @(
+            "SecureIT Production discovery",
+            "",
+            "Base URL: $baseUrl",
+            "Requested tenant key: " + ($(if ($tenantKey -ne '') { $tenantKey } else { '[all ready tenants]' })),
+            "Discovered tenants: $($tenants.Count)"
+          )
+          foreach ($tenant in $tenants) {
+            $summaryLines += "- $($tenant.tenantKey) | $($tenant.tenantName) | auth=$($tenant.authMode) | ready=$($tenant.ready)"
+          }
+          $summaryLines | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
           "tenant_matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "tenant_count=$($tenants.Count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $summaryText = $summaryLines -join [Environment]::NewLine
+          "tenant_summary<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $summaryText | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
   run-assessment:
     needs: discover-tenants
@@ -209,6 +225,8 @@ jobs:
           if ($missing.Count -gt 0) {
             throw ('SecureIT returned incomplete tenant data: ' + ($missing -join ', '))
           }
+
+          "## Tenant ready for run`n- Tenant key: $($env:TENANT_KEY)`n- Auth mode: $($env:MAESTER_AUTH_MODE)`n- Report base URL: $($env:REPORT_BASE_URL)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Fetch tenant auth material from Azure Key Vault
         shell: pwsh

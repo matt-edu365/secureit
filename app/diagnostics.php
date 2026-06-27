@@ -53,6 +53,77 @@ function secureit_diag_json_line(string $label, mixed $value): string {
     return sprintf('%s: %s', $label, json_encode($value, JSON_UNESCAPED_SLASHES));
 }
 
+function secureit_diag_tenant_registry_status(array $tenant): array {
+    $requiredFields = [
+        'id' => 'tenant key',
+        'name' => 'tenant name',
+        'tenantId' => 'Microsoft 365 tenant ID',
+        'clientId' => 'Microsoft 365 application ID',
+        'tenantDomain' => 'tenant domain',
+        'authMode' => 'authentication mode',
+        'reportBaseUrl' => 'report base URL',
+    ];
+
+    $present = [];
+    $missing = [];
+    foreach ($requiredFields as $field => $label) {
+        $value = trim((string) ($tenant[$field] ?? ''));
+        if ($value === '') {
+            $missing[] = $label;
+        } else {
+            $present[] = $label;
+        }
+    }
+
+    $authMode = strtolower(trim((string) ($tenant['authMode'] ?? '')));
+    $secretFields = [];
+    if ($authMode === 'client-secret') {
+        $secretFields = [
+            'clientSecretName' => 'client secret name',
+        ];
+    } elseif ($authMode === 'certificate') {
+        $secretFields = [
+            'certificateSecretName' => 'certificate secret name',
+            'certificatePasswordSecretName' => 'certificate password secret name',
+        ];
+    } elseif ($authMode === '') {
+        $missing[] = 'authentication mode';
+    } else {
+        $missing[] = 'authentication mode (unsupported: ' . $authMode . ')';
+    }
+
+    foreach ($secretFields as $field => $label) {
+        $value = trim((string) ($tenant[$field] ?? ''));
+        if ($value === '') {
+            $missing[] = $label;
+        } else {
+            $present[] = $label;
+        }
+    }
+
+    $emailTo = trim((string) ($tenant['emailTo'] ?? ''));
+    $recommendedMissing = [];
+    if ($emailTo === '') {
+        $recommendedMissing[] = 'report recipient email';
+    }
+
+    return [
+        'tenantKey' => trim((string) ($tenant['id'] ?? '')),
+        'tenantName' => trim((string) ($tenant['name'] ?? '')),
+        'authMode' => $authMode,
+        'ready' => $missing === [],
+        'missing' => array_values(array_unique($missing)),
+        'present' => array_values(array_unique($present)),
+        'recommendedMissing' => array_values(array_unique($recommendedMissing)),
+        'clientSecretName' => trim((string) ($tenant['clientSecretName'] ?? '')),
+        'certificateSecretName' => trim((string) ($tenant['certificateSecretName'] ?? '')),
+        'certificatePasswordSecretName' => trim((string) ($tenant['certificatePasswordSecretName'] ?? '')),
+        'tenantDomain' => trim((string) ($tenant['tenantDomain'] ?? '')),
+        'reportBaseUrl' => trim((string) ($tenant['reportBaseUrl'] ?? '')),
+        'emailTo' => $emailTo,
+    ];
+}
+
 $config = secureit_config();
 $dataRoot = dirname((string) ($config['tenants_file'] ?? '/var/www/data/tenants.json'));
 $tenantsPath = (string) ($config['tenants_file'] ?? ($dataRoot . '/tenants.json'));
@@ -138,6 +209,41 @@ $tenantsConfig = secureit_load_tenants();
 $tenants = $tenantsConfig['tenants'] ?? [];
 $adminConfig = file_exists($adminConfigPath) ? json_decode((string) file_get_contents($adminConfigPath), true) : [];
 $adminConfig = is_array($adminConfig) ? $adminConfig : [];
+$registryCheckMessages = [];
+$registryCheckErrors = [];
+$registryCheckTenantKey = '';
+$registryCheckTargetTenant = null;
+$registryCheckStatus = null;
+
+if ($tenants !== []) {
+    $registryCheckTenantKey = (string) ($tenants[0]['id'] ?? '');
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inspect_registry_tenant'])) {
+    $registryCheckTenantKey = trim(strtolower((string) ($_POST['registry_tenant_key'] ?? '')));
+    $registryCheckTargetTenant = $registryCheckTenantKey !== '' ? secureit_find_tenant($registryCheckTenantKey) : null;
+
+    if (!$registryCheckTargetTenant) {
+        $registryCheckErrors[] = 'Select a valid tenant before checking registry readiness.';
+    } else {
+        $registryCheckStatus = secureit_diag_tenant_registry_status($registryCheckTargetTenant);
+        $registryCheckMessages[] = $registryCheckStatus['ready']
+            ? 'This tenant already has the data needed for a weekly workflow.'
+            : 'This tenant still needs additional registry data before a weekly workflow can be automated.';
+    }
+}
+
+$registryStatuses = [];
+foreach ($tenants as $tenantItem) {
+    if (!is_array($tenantItem)) {
+        continue;
+    }
+    $registryStatuses[] = secureit_diag_tenant_registry_status($tenantItem);
+}
+
+$registryReadyCount = count(array_filter($registryStatuses, static fn(array $status): bool => !empty($status['ready'])));
+$registryMissingCount = count($registryStatuses) - $registryReadyCount;
+
 $secretWriteMessages = [];
 $secretWriteErrors = [];
 $secretWriteTenantKey = '';
@@ -243,6 +349,30 @@ $rawLines[] = secureit_diag_path_line('Admin config', $adminConfigPath);
 $rawLines[] = secureit_diag_path_line('Canonical controls', (string) $config['canonical_controls_file']);
 $rawLines[] = secureit_diag_path_line('Local identity seeds', (string) ($config['identity_seeds_file'] ?? ''));
 $rawLines[] = '';
+$rawLines[] = '[Application registry]';
+$rawLines[] = 'Registry source: mounted tenants.json';
+$rawLines[] = 'Registry tenant count: ' . count($tenants);
+$rawLines[] = 'Weekly workflow ready tenants: ' . $registryReadyCount;
+$rawLines[] = 'Weekly workflow not ready tenants: ' . $registryMissingCount;
+foreach ($registryStatuses as $status) {
+    $rawLines[] = 'Tenant ' . ($status['tenantKey'] !== '' ? $status['tenantKey'] : '[unnamed]') . ': ready=' . secureit_diag_yes_no((bool) $status['ready']);
+    $rawLines[] = '  Name: ' . ($status['tenantName'] !== '' ? $status['tenantName'] : '[not set]');
+    $rawLines[] = '  Auth mode: ' . ($status['authMode'] !== '' ? $status['authMode'] : '[not set]');
+    $rawLines[] = '  Tenant domain: ' . ($status['tenantDomain'] !== '' ? $status['tenantDomain'] : '[not set]');
+    $rawLines[] = '  Report base URL: ' . ($status['reportBaseUrl'] !== '' ? $status['reportBaseUrl'] : '[not set]');
+    $rawLines[] = '  Secret reference: ' . (
+        $status['authMode'] === 'client-secret'
+            ? ($status['clientSecretName'] !== '' ? $status['clientSecretName'] : '[not set]')
+            : ($status['authMode'] === 'certificate'
+                ? (
+                    $status['certificateSecretName'] !== '' ? $status['certificateSecretName'] : '[not set]'
+                )
+                : '[not set]')
+    );
+    $rawLines[] = '  Missing required fields: ' . (empty($status['missing']) ? '[none]' : implode(', ', $status['missing']));
+    $rawLines[] = '  Recommended follow-up: ' . (empty($status['recommendedMissing']) ? '[none]' : implode(', ', $status['recommendedMissing']));
+}
+$rawLines[] = '';
 $rawLines[] = '[Shared component / Key Vault]';
 $rawLines[] = secureit_diag_env_line('SECUREIT_KEY_VAULT_TENANT_ID', (string) ($config['key_vault_tenant_id'] ?? ''), true);
 $rawLines[] = secureit_diag_env_line('SECUREIT_KEY_VAULT_CLIENT_ID', (string) ($config['key_vault_client_id'] ?? ''), true);
@@ -312,6 +442,68 @@ ob_start();
       <button type="submit" name="seed_runtime_files" value="1">Create missing files</button>
       <p class="field-note" style="margin-top:10px;">This creates `tenants.json`, `admin-config.json`, and `canonical-controls.json` if they do not already exist. Re-run the diagnostics view afterwards to confirm the result.</p>
     </form>
+  </div>
+
+  <div class="card panel" style="margin-bottom:18px;">
+    <div class="section-header" style="margin-bottom:12px;">
+      <div>
+        <h3 class="section-title" style="font-size:1.35rem;">Application registry readiness</h3>
+        <div class="muted">Checks the live `tenants.json` registry for the fields needed to automate a weekly tenant workflow.</div>
+      </div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:14px;">
+      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($registryStatuses)); ?></strong><span>Total</span></div>
+      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $registryReadyCount); ?></strong><span>Ready</span></div>
+      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $registryMissingCount); ?></strong><span>Not ready</span></div>
+    </div>
+
+    <?php foreach ($registryCheckErrors as $error): ?>
+      <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
+    <?php endforeach; ?>
+
+    <?php foreach ($registryCheckMessages as $message): ?>
+      <div class="success" style="margin-bottom:12px;"><?php echo htmlspecialchars($message); ?></div>
+    <?php endforeach; ?>
+
+    <?php if ($tenants === []): ?>
+      <div class="empty-state">
+        <strong>No tenants are available yet.</strong>
+        <p class="muted" style="margin:8px 0 0;">Onboard at least one tenant before checking registry readiness.</p>
+      </div>
+    <?php else: ?>
+      <form method="post" style="margin-bottom:16px;">
+        <label for="registry_tenant_key">Tenant to inspect</label>
+        <select id="registry_tenant_key" name="registry_tenant_key">
+          <?php foreach ($tenants as $tenantItem): ?>
+            <?php $tenantId = (string) ($tenantItem['id'] ?? ''); ?>
+            <option value="<?php echo htmlspecialchars($tenantId); ?>"<?php echo $registryCheckTenantKey === $tenantId ? ' selected' : ''; ?>>
+              <?php echo htmlspecialchars((string) ($tenantItem['name'] ?? $tenantId)); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <p class="field-note">Use this to confirm whether the live registry already contains the fields needed for a weekly GitHub workflow.</p>
+
+        <button type="submit" name="inspect_registry_tenant" value="1">Check registry readiness</button>
+      </form>
+
+      <?php if ($registryCheckStatus): ?>
+        <div class="empty-state" style="margin-bottom:0;">
+          <strong><?php echo htmlspecialchars(($registryCheckStatus['tenantName'] !== '' ? $registryCheckStatus['tenantName'] : $registryCheckStatus['tenantKey']) . ' readiness: ' . ($registryCheckStatus['ready'] ? 'ready' : 'not ready')); ?></strong>
+          <p class="muted" style="margin:8px 0 0;">
+            <?php echo htmlspecialchars($registryCheckStatus['ready'] ? 'The selected tenant already has the fields needed for a scheduled run.' : 'The selected tenant still needs registry updates before the workflow can be scheduled cleanly.'); ?>
+          </p>
+          <div class="kv" style="margin-top:14px;">
+            <div class="kv-row"><div class="kv-label">Tenant key</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantKey'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Tenant domain</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['tenantDomain'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Auth mode</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] ?: '[not set]'); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Secret reference</div><div class="kv-value"><?php echo htmlspecialchars($registryCheckStatus['authMode'] === 'client-secret' ? ($registryCheckStatus['clientSecretName'] ?: '[not set]') : ($registryCheckStatus['authMode'] === 'certificate' ? ($registryCheckStatus['certificateSecretName'] ?: '[not set]') : '[not set]')); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Missing required fields</div><div class="kv-value"><?php echo htmlspecialchars(empty($registryCheckStatus['missing']) ? '[none]' : implode(', ', $registryCheckStatus['missing'])); ?></div></div>
+            <div class="kv-row"><div class="kv-label">Recommended follow-up</div><div class="kv-value"><?php echo htmlspecialchars(empty($registryCheckStatus['recommendedMissing']) ? '[none]' : implode(', ', $registryCheckStatus['recommendedMissing'])); ?></div></div>
+          </div>
+        </div>
+      <?php endif; ?>
+    <?php endif; ?>
   </div>
 
   <div class="card panel" style="margin-bottom:18px;">

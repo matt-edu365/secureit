@@ -24,7 +24,7 @@ on:
         required: true
         default: 68cddeaf-29f7-4d60-b04c-12ce7663079e
       client_secret_name:
-        description: Azure Key Vault secret name for the tenant app secret
+        description: Azure Key Vault secret name for the tenant app secret (must already exist)
         required: false
         default: AZURE-CLIENT-SECRET-ICT365
       auth_mode:
@@ -44,9 +44,9 @@ on:
         required: false
         default: matt.fletcher@ict365.ky
       test_profile:
-        description: Test profile to run
+        description: Test profile to run (client-secret-full is the 83-check run)
         required: true
-        default: client-secret-baseline
+        default: client-secret-full
         type: choice
         options:
           - client-secret-baseline

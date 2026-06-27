@@ -138,6 +138,81 @@ $tenantsConfig = secureit_load_tenants();
 $tenants = $tenantsConfig['tenants'] ?? [];
 $adminConfig = file_exists($adminConfigPath) ? json_decode((string) file_get_contents($adminConfigPath), true) : [];
 $adminConfig = is_array($adminConfig) ? $adminConfig : [];
+$secretWriteMessages = [];
+$secretWriteErrors = [];
+$secretWriteTenantKey = '';
+$secretWriteSecretName = '';
+$secretWriteValue = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['write_tenant_secret'])) {
+    $secretWriteTenantKey = trim(strtolower((string) ($_POST['secret_tenant_key'] ?? '')));
+    $secretWriteSecretName = trim((string) ($_POST['secret_client_secret_name'] ?? ''));
+    $secretWriteValue = (string) ($_POST['secret_value'] ?? '');
+    $targetTenant = $secretWriteTenantKey !== '' ? secureit_find_tenant($secretWriteTenantKey) : null;
+
+    if (!$targetTenant) {
+        $secretWriteErrors[] = 'Select a valid tenant before writing a secret to Key Vault.';
+    }
+
+    if ($secretWriteSecretName === '' && is_array($targetTenant)) {
+        $secretWriteSecretName = trim((string) ($targetTenant['clientSecretName'] ?? ''));
+    }
+
+    if ($secretWriteSecretName === '' && $secretWriteTenantKey !== '') {
+        $secretWriteSecretName = 'AZURE-CLIENT-SECRET-' . strtoupper(preg_replace('/[^A-Za-z0-9-]/', '-', $secretWriteTenantKey));
+    }
+
+    if (trim($secretWriteValue) === '') {
+        $secretWriteErrors[] = 'A client secret value is required to write to Azure Key Vault.';
+    }
+
+    if ($secretWriteErrors === []) {
+        if (!secureit_keyvault_enabled()) {
+            $secretWriteErrors[] = 'Azure Key Vault settings are not configured for this environment.';
+        } else {
+            try {
+                secureit_keyvault_set_secret($secretWriteSecretName, $secretWriteValue);
+                $tenantConfig = secureit_load_tenants();
+                $tenantUpdated = false;
+                foreach (($tenantConfig['tenants'] ?? []) as &$tenantItem) {
+                    if (($tenantItem['id'] ?? '') !== $secretWriteTenantKey) {
+                        continue;
+                    }
+
+                    if (($tenantItem['clientSecretName'] ?? '') !== $secretWriteSecretName) {
+                        $tenantItem['clientSecretName'] = $secretWriteSecretName;
+                        $tenantUpdated = true;
+                    }
+                    break;
+                }
+                unset($tenantItem);
+                if ($tenantUpdated) {
+                    secureit_save_tenants($tenantConfig);
+                }
+                $tenantLabel = (string) ($targetTenant['name'] ?? $secretWriteTenantKey);
+                $secretWriteMessages[] = 'Stored the client secret for ' . $tenantLabel . ' in Azure Key Vault as ' . $secretWriteSecretName . '.';
+                if ($tenantUpdated) {
+                    $secretWriteMessages[] = 'Tenant metadata was updated to match the secret name.';
+                }
+                $secretWriteMessages[] = 'This updated the secret value only. The tenant record was not recreated.';
+            } catch (Throwable $exception) {
+                $secretWriteErrors[] = 'The secret could not be written to Azure Key Vault: ' . $exception->getMessage();
+            }
+        }
+    }
+}
+
+if ($secretWriteTenantKey === '' && $tenants !== []) {
+    $secretWriteTenantKey = (string) ($tenants[0]['id'] ?? '');
+}
+
+$secretWriteTargetTenant = $secretWriteTenantKey !== '' ? secureit_find_tenant($secretWriteTenantKey) : null;
+if ($secretWriteSecretName === '' && is_array($secretWriteTargetTenant)) {
+    $secretWriteSecretName = trim((string) ($secretWriteTargetTenant['clientSecretName'] ?? ''));
+}
+if ($secretWriteSecretName === '' && $secretWriteTenantKey !== '') {
+    $secretWriteSecretName = 'AZURE-CLIENT-SECRET-' . strtoupper(preg_replace('/[^A-Za-z0-9-]/', '-', $secretWriteTenantKey));
+}
 
 $keyVaultEnabled = secureit_keyvault_enabled();
 $keyVaultBaseUri = '[not configured]';
@@ -237,6 +312,53 @@ ob_start();
       <button type="submit" name="seed_runtime_files" value="1">Create missing files</button>
       <p class="field-note" style="margin-top:10px;">This creates `tenants.json`, `admin-config.json`, and `canonical-controls.json` if they do not already exist. Re-run the diagnostics view afterwards to confirm the result.</p>
     </form>
+  </div>
+
+  <div class="card panel" style="margin-bottom:18px;">
+    <div class="section-header" style="margin-bottom:12px;">
+      <div>
+        <h3 class="section-title" style="font-size:1.35rem;">Write tenant secret</h3>
+        <div class="muted">Temporary admin tool for updating an existing tenant's Key Vault secret without deleting or recreating the tenant.</div>
+      </div>
+    </div>
+
+    <?php foreach ($secretWriteErrors as $error): ?>
+      <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
+    <?php endforeach; ?>
+
+    <?php foreach ($secretWriteMessages as $message): ?>
+      <div class="success" style="margin-bottom:12px;"><?php echo htmlspecialchars($message); ?></div>
+    <?php endforeach; ?>
+
+    <?php if ($tenants === []): ?>
+      <div class="empty-state" style="margin-bottom:12px;">
+        <strong>No tenants are available yet.</strong>
+        <p class="muted" style="margin:8px 0 0;">Onboard at least one tenant before using this temporary Key Vault write tool.</p>
+      </div>
+    <?php else: ?>
+      <form method="post">
+        <label for="secret_tenant_key">Tenant</label>
+        <select id="secret_tenant_key" name="secret_tenant_key">
+          <?php foreach ($tenants as $tenantItem): ?>
+            <?php $tenantId = (string) ($tenantItem['id'] ?? ''); ?>
+            <option value="<?php echo htmlspecialchars($tenantId); ?>"<?php echo $secretWriteTenantKey === $tenantId ? ' selected' : ''; ?>>
+              <?php echo htmlspecialchars((string) ($tenantItem['name'] ?? $tenantId)); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <p class="field-note">Select the tenant whose Key Vault secret you want to update.</p>
+
+        <label for="secret_client_secret_name">Key Vault secret name</label>
+        <input id="secret_client_secret_name" name="secret_client_secret_name" value="<?php echo htmlspecialchars($secretWriteSecretName); ?>" placeholder="AZURE-CLIENT-SECRET-NCVO">
+        <p class="field-note">This should match the tenant's stored client secret name.</p>
+
+        <label for="secret_value">Client secret value</label>
+        <input id="secret_value" name="secret_value" type="password" autocomplete="new-password" placeholder="Paste the secret to store in Key Vault">
+        <p class="field-note">The value is written to Azure Key Vault and is not saved in the app.</p>
+
+        <button type="submit" name="write_tenant_secret" value="1">Write secret to Key Vault</button>
+      </form>
+    <?php endif; ?>
   </div>
 
   <div class="card panel">

@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/lib.php';
+require_once __DIR__ . '/keyvault.php';
 $authRole = secureit_current_user_role();
 if ($authRole !== 'admin') {
     header('Location: login.php?denied=1', true, 302);
@@ -29,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clientId = trim($_POST['client_id'] ?? '');
     $authMode = 'client-secret';
     $clientSecretName = trim($_POST['client_secret_name'] ?? '');
+    $clientSecretValue = (string) ($_POST['client_secret_value'] ?? '');
     $emailTo = trim($_POST['email_to'] ?? '');
     $reportBaseUrl = secureit_build_report_base_url($tenantKey);
 
@@ -51,8 +53,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$clientSecretName) {
         $errors[] = 'Client secret name is required for client secret authentication.';
     }
+    if (trim($clientSecretValue) === '') {
+        $errors[] = 'Client secret value is required so SecureIT can write it to Azure Key Vault.';
+    }
     if (secureit_tenant_exists($config['tenants'], $tenantKey)) {
         $errors[] = 'That tenant key already exists.';
+    }
+
+    if (!$errors) {
+        if (!secureit_keyvault_enabled()) {
+            $errors[] = 'Azure Key Vault settings are not configured, so the client secret cannot be stored yet.';
+        }
+        else {
+            try {
+                secureit_keyvault_set_secret($clientSecretName, $clientSecretValue);
+            }
+            catch (Throwable $exception) {
+                $errors[] = 'The client secret could not be written to Azure Key Vault: ' . $exception->getMessage();
+            }
+        }
     }
 
     if (!$errors) {
@@ -75,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @mkdir($tenantDir . '/history', 0775, true);
 
         $messages[] = 'Tenant saved into the container app successfully.';
+        $messages[] = 'Client secret written to Azure Key Vault using the configured secret name.';
         $messages[] = 'Report Base URL was generated automatically from the tenant key.';
         $messages[] = 'Suggested tenant JSON block:';
         $messages[] = json_encode($tenant, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -126,6 +146,10 @@ ob_start();
       <label for="client_secret_name">Key Vault client secret name</label>
       <input id="client_secret_name" name="client_secret_name" placeholder="AZURE-CLIENT-SECRET-EXAMPLE-TENANT" value="<?php echo htmlspecialchars($_POST['client_secret_name'] ?? ''); ?>">
       <p class="field-note">Derived automatically from the tenant key unless manually overridden.</p>
+
+      <label for="client_secret_value">Client secret value</label>
+      <input id="client_secret_value" name="client_secret_value" type="password" autocomplete="new-password" placeholder="Paste the client secret to store in Key Vault" value="">
+      <p class="field-note">SecureIT writes this value to Azure Key Vault under the secret name above and does not store the value in the tenant JSON.</p>
 
       <label for="email_to">Report email recipient</label>
       <input id="email_to" name="email_to" placeholder="security@example.com" value="<?php echo htmlspecialchars($_POST['email_to'] ?? ''); ?>">

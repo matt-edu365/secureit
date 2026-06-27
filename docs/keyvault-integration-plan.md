@@ -42,10 +42,10 @@ Preferred direction:
 
 ## Secret naming pattern
 
-Suggested naming remains:
-- `secureit-<tenant-key>-pfx`
-- `secureit-<tenant-key>-pfx-password`
-- `secureit-<tenant-key>-client-secret` where client-secret mode is used
+Current naming convention is uppercase and hyphen-separated:
+- `SECUREIT-<TENANTKEY>-PFX`
+- `SECUREIT-<TENANTKEY>-PFX-PASSWORD`
+- `AZURE-CLIENT-SECRET-<TENANTKEY>` where client-secret mode is used
 
 If a different naming convention is chosen later, update workflow and onboarding docs together.
 

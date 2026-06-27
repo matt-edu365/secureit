@@ -138,7 +138,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tenant: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
+        include: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
     env:
       CONFIG_PATH: config/tenants.json
       TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'client-secret-full' }}
@@ -157,21 +157,21 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path (Split-Path -Parent $env:CONFIG_PATH) | Out-Null
-          $authMode = "${{ matrix.tenant.authMode }}"
+          $authMode = "${{ matrix.authMode }}"
           $tenant = [ordered]@{
             tenants = @(
               [ordered]@{
-                id = "${{ matrix.tenant.tenantKey }}"
-                name = "${{ matrix.tenant.tenantName }}"
-                tenantId = "${{ matrix.tenant.tenantId }}"
-                tenantDomain = "${{ matrix.tenant.tenantDomain }}"
-                clientId = "${{ matrix.tenant.clientId }}"
+                id = "${{ matrix.tenantKey }}"
+                name = "${{ matrix.tenantName }}"
+                tenantId = "${{ matrix.tenantId }}"
+                tenantDomain = "${{ matrix.tenantDomain }}"
+                clientId = "${{ matrix.clientId }}"
                 authMode = $authMode
-                clientSecretName = "${{ matrix.tenant.clientSecretName }}"
-                certificateSecretName = "${{ matrix.tenant.certificateSecretName }}"
-                certificatePasswordSecretName = "${{ matrix.tenant.certificatePasswordSecretName }}"
-                reportBaseUrl = "${{ matrix.tenant.reportBaseUrl }}"
-                emailTo = "${{ matrix.tenant.emailTo }}"
+                clientSecretName = "${{ matrix.clientSecretName }}"
+                certificateSecretName = "${{ matrix.certificateSecretName }}"
+                certificatePasswordSecretName = "${{ matrix.certificatePasswordSecretName }}"
+                reportBaseUrl = "${{ matrix.reportBaseUrl }}"
+                emailTo = "${{ matrix.emailTo }}"
               }
             )
           }
@@ -180,7 +180,7 @@ jobs:
       - name: Resolve tenant configuration
         shell: pwsh
         run: |
-          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey "${{ matrix.tenant.tenantKey }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
+          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey "${{ matrix.tenantKey }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
           "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "AZURE_TENANT_ID_TARGET=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
@@ -317,14 +317,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: secureit-production-${{ matrix.tenant.tenantKey }}-${{ github.run_number }}
-          path: output/${{ matrix.tenant.tenantKey }}/
+          name: secureit-production-${{ matrix.tenantKey }}-${{ github.run_number }}
+          path: output/${{ matrix.tenantKey }}/
 
       - name: Fail workflow if the assessment step truly failed without fallback outputs
         if: always()
         shell: bash
         run: |
-          if [ "${{ steps.maester.outcome }}" != "success" ] && [ ! -f "output/${{ matrix.tenant.tenantKey }}/latest/summary.json" ]; then
+          if [ "${{ steps.maester.outcome }}" != "success" ] && [ ! -f "output/${{ matrix.tenantKey }}/latest/summary.json" ]; then
             echo "Assessment step failed and no fallback summary was produced." >&2
             exit 1
           fi

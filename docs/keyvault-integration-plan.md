@@ -18,12 +18,12 @@ This repo already includes:
 
 So this is not just a future idea anymore. It is partly implemented and still needs consolidation.
 
-## App-side Azure settings
+## App-side Key Vault settings
 
 The app currently supports these environment variables:
-- `SECUREIT_AZURE_TENANT_ID`
-- `SECUREIT_AZURE_CLIENT_ID`
-- `SECUREIT_AZURE_CLIENT_SECRET`
+- `SECUREIT_KEY_VAULT_TENANT_ID`
+- `SECUREIT_KEY_VAULT_CLIENT_ID`
+- `SECUREIT_KEY_VAULT_CLIENT_SECRET`
 - `SECUREIT_KEY_VAULT_NAME`
 - `SECUREIT_KEY_VAULT_URI`
 

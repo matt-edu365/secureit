@@ -79,9 +79,9 @@ docker compose up -d
 - `SECUREIT_TENANTS_FILE=/var/www/data/tenants.json`
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
 - `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` if you want to override the default runtime path
-- `SECUREIT_AZURE_TENANT_ID=<app-tenant-id>`
-- `SECUREIT_AZURE_CLIENT_ID=<secureit-app-client-id>`
-- `SECUREIT_AZURE_CLIENT_SECRET=<secureit-app-client-secret>`
+- `SECUREIT_KEY_VAULT_TENANT_ID=<app-tenant-id>`
+- `SECUREIT_KEY_VAULT_CLIENT_ID=<secureit-app-client-id>`
+- `SECUREIT_KEY_VAULT_CLIENT_SECRET=<secureit-app-client-secret>`
 - `SECUREIT_KEY_VAULT_NAME=<key-vault-name>`
 - `SECUREIT_ENTRA_TENANT_ID=<ict365-or-common-authority>`
 - `SECUREIT_ENTRA_CLIENT_ID=<secureit-login-app-client-id>`

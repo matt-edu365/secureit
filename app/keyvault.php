@@ -3,7 +3,7 @@ require_once __DIR__ . '/lib.php';
 
 function secureit_keyvault_enabled(): bool {
     $config = secureit_config();
-    return (bool) ($config['azure_tenant_id'] && $config['azure_client_id'] && $config['azure_client_secret'] && ($config['key_vault_name'] || $config['key_vault_uri']));
+    return (bool) ($config['key_vault_tenant_id'] && $config['key_vault_client_id'] && $config['key_vault_client_secret'] && ($config['key_vault_name'] || $config['key_vault_uri']));
 }
 
 function secureit_keyvault_base_uri(): string {
@@ -23,11 +23,11 @@ function secureit_keyvault_access_token(): string {
         throw new RuntimeException('Azure Key Vault settings are incomplete.');
     }
 
-    $url = 'https://login.microsoftonline.com/' . rawurlencode($config['azure_tenant_id']) . '/oauth2/v2.0/token';
+    $url = 'https://login.microsoftonline.com/' . rawurlencode($config['key_vault_tenant_id']) . '/oauth2/v2.0/token';
     $postFields = http_build_query([
         'grant_type' => 'client_credentials',
-        'client_id' => $config['azure_client_id'],
-        'client_secret' => $config['azure_client_secret'],
+        'client_id' => $config['key_vault_client_id'],
+        'client_secret' => $config['key_vault_client_secret'],
         'scope' => 'https://vault.azure.net/.default',
     ]);
 

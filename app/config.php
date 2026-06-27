@@ -16,9 +16,9 @@ return [
     'entra_allowed_tenant_ids' => getenv('SECUREIT_ENTRA_ALLOWED_TENANT_IDS') ?: '',
     'entra_admin_email_domains' => getenv('SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS') ?: 'ict365.ky',
     'entra_admin_app_role' => getenv('SECUREIT_ENTRA_ADMIN_APP_ROLE') ?: 'SecureIT.Admin',
-    'azure_tenant_id' => getenv('SECUREIT_AZURE_TENANT_ID') ?: '',
-    'azure_client_id' => getenv('SECUREIT_AZURE_CLIENT_ID') ?: '',
-    'azure_client_secret' => getenv('SECUREIT_AZURE_CLIENT_SECRET') ?: '',
+    'key_vault_tenant_id' => getenv('SECUREIT_KEY_VAULT_TENANT_ID') ?: '',
+    'key_vault_client_id' => getenv('SECUREIT_KEY_VAULT_CLIENT_ID') ?: '',
+    'key_vault_client_secret' => getenv('SECUREIT_KEY_VAULT_CLIENT_SECRET') ?: '',
     'key_vault_name' => getenv('SECUREIT_KEY_VAULT_NAME') ?: '',
     'key_vault_uri' => getenv('SECUREIT_KEY_VAULT_URI') ?: '',
 ];

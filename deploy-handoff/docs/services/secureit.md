@@ -20,6 +20,12 @@
 - Report bundle root: `/var/www/data/reports`
 - Canonical controls file: `/var/www/data/canonical-controls.json` (optional override via `SECUREIT_CANONICAL_CONTROLS_FILE`; Previous behaviour was to fall back to the bundled image copy if the runtime file was missing or stale)
 - Entra runtime variables must be supplied by the Portainer stack or host environment
+- Key Vault runtime variables for shared component storage:
+  - `SECUREIT_KEY_VAULT_TENANT_ID`
+  - `SECUREIT_KEY_VAULT_CLIENT_ID`
+  - `SECUREIT_KEY_VAULT_CLIENT_SECRET`
+  - `SECUREIT_KEY_VAULT_NAME`
+  - `SECUREIT_KEY_VAULT_URI`
 - Required Entra stack variables:
   - `SECUREIT_ENTRA_CLIENT_ID`
   - `SECUREIT_ENTRA_CLIENT_SECRET`

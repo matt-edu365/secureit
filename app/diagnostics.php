@@ -221,7 +221,7 @@ ob_start();
     <div class="section-header" style="margin-bottom:12px;">
       <div>
         <h3 class="section-title" style="font-size:1.35rem;">Seed runtime files</h3>
-        <div class="muted">Create the mounted JSON files only if they are missing.</div>
+        <div class="muted">Create the mounted JSON files only if they are missing, then re-check after a redeploy.</div>
       </div>
     </div>
 

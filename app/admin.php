@@ -135,6 +135,7 @@ secureit_render_shell('Admin Actions - SecureIT', $content, [
     'heroTextAlign' => 'center',
     'navLinks' => [],
     'headerMenu' => [
+        ['href' => 'dashboard.php', 'label' => 'Tenant overview dashboard'],
         ['href' => 'admin.php', 'label' => 'Admin actions'],
         ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
         ['href' => 'diagnostics.php', 'label' => 'Live diagnostics'],

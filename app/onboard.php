@@ -254,6 +254,7 @@ secureit_render_shell('Customer Onboarding - ' . secureit_config()['app_name'], 
     'heroTextAlign' => 'center',
     'navLinks' => [],
     'headerMenu' => [
+        ['href' => 'dashboard.php', 'label' => 'Tenant overview dashboard'],
         ['href' => 'admin.php', 'label' => 'Admin actions'],
         ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
     ],

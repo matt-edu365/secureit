@@ -93,33 +93,6 @@ ob_start();
         </article>
       <?php endforeach; ?>
 
-      <article class="card panel" data-tenant-card data-tenant-search="placeholder tenant finance school coming soon" style="height:100%; display:flex; flex-direction:column;">
-        <div class="section-header" style="margin-bottom:18px;">
-          <div>
-            <h3 class="section-title" style="font-size:1.35rem;">Placeholder tenant 02</h3>
-          </div>
-          <div class="badge tone-neutral">Pending</div>
-        </div>
-        <div class="empty-state">
-          <strong>Awaiting tenant onboarding.</strong>
-          <p class="muted">This placeholder card reserves space for another customer environment once onboarding details are available.</p>
-        </div>
-        <div class="inline-links" style="margin-top:auto;"><a class="textlink" href="onboard.php">Start onboarding</a></div>
-      </article>
-
-      <article class="card panel" data-tenant-card data-tenant-search="placeholder tenant legal hospitality coming soon" style="height:100%; display:flex; flex-direction:column;">
-        <div class="section-header" style="margin-bottom:18px;">
-          <div>
-            <h3 class="section-title" style="font-size:1.35rem;">Placeholder tenant 03</h3>
-          </div>
-          <div class="badge tone-neutral">Pending</div>
-        </div>
-        <div class="empty-state">
-          <strong>Awaiting tenant onboarding.</strong>
-          <p class="muted">Use this slot as a visual placeholder for another managed customer as the SecureIT portfolio grows.</p>
-        </div>
-        <div class="inline-links" style="margin-top:auto;"><a class="textlink" href="onboard.php">Start onboarding</a></div>
-      </article>
     </div>
   <?php endif; ?>
 </section>

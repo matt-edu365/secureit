@@ -421,7 +421,7 @@ secureit_render_shell(($tenant['name'] ?? $tenantKey) . ' - ' . $app['app_name']
     'heroActions' => [],
     'navLinks' => [],
     'headerMenu' => $authRole === 'admin' ? [
-        ['href' => 'dashboard.php', 'label' => 'ICT365 admin dashboard'],
+        ['href' => 'dashboard.php', 'label' => 'Tenant overview dashboard'],
         ['href' => 'onboard.php', 'label' => 'Customer onboarding'],
         ['href' => 'admin.php', 'label' => 'Admin actions'],
     ] : [],

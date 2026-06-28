@@ -77,6 +77,25 @@ function secureit_report_import_detect_root(string $extractDir): string {
     return $extractDir;
 }
 
+function secureit_report_import_load_archive_bytes(string $path): string {
+    $bytes = file_get_contents($path);
+    if (!is_string($bytes) || $bytes === '') {
+        throw new RuntimeException('The uploaded bundle was empty.');
+    }
+
+    $maybeGzip = strlen($bytes) >= 2 && substr($bytes, 0, 2) === "\x1f\x8b";
+    if ($maybeGzip) {
+        $decoded = gzdecode($bytes);
+        if ($decoded === false) {
+            throw new RuntimeException('The uploaded gzip bundle could not be decompressed.');
+        }
+
+        return $decoded;
+    }
+
+    return $bytes;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     secureit_report_import_json_response(405, [
         'ok' => false,
@@ -129,6 +148,7 @@ if (!mkdir($extractDir, 0775, true) && !is_dir($extractDir)) {
 try {
     $uploadedPath = '';
     $cleanupUpload = '';
+    $decompressedPath = '';
 
     if (isset($_FILES['bundle_tar'])) {
         $upload = $_FILES['bundle_tar'];
@@ -150,7 +170,7 @@ try {
         if ($cleanupUpload === false) {
             throw new RuntimeException('Unable to create a temporary bundle file.');
         }
-        $tarPath = $cleanupUpload . '.tar';
+        $tarPath = $cleanupUpload . '.tar.gz';
         if (!rename($cleanupUpload, $tarPath)) {
             @unlink($cleanupUpload);
             throw new RuntimeException('Unable to prepare a temporary tar file.');
@@ -165,9 +185,15 @@ try {
     }
 
     try {
-        $archive = new PharData($uploadedPath);
+        $archiveBytes = secureit_report_import_load_archive_bytes($uploadedPath);
+        $tarPath = preg_replace('/\.gz$/i', '', $uploadedPath) ?: ($uploadedPath . '.tar');
+        if (file_put_contents($tarPath, $archiveBytes) === false) {
+            throw new RuntimeException('Unable to materialise the tar archive on disk.');
+        }
+        $decompressedPath = $tarPath;
+        $archive = new PharData($tarPath);
     } catch (Throwable $archiveException) {
-        throw new RuntimeException('The uploaded file is not a valid TAR archive. ' . $archiveException->getMessage());
+        throw new RuntimeException('The uploaded file is not a valid archive. ' . $archiveException->getMessage());
     }
 
     if (!$archive->extractTo($extractDir, null, true)) {
@@ -215,5 +241,8 @@ finally {
     secureit_report_import_remove_tree($extractDir);
     if (!empty($cleanupUpload) && file_exists($cleanupUpload)) {
         @unlink($cleanupUpload);
+    }
+    if (!empty($decompressedPath) && file_exists($decompressedPath)) {
+        @unlink($decompressedPath);
     }
 }

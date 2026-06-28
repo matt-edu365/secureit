@@ -220,6 +220,7 @@ try {
     secureit_report_import_remove_tree($latestDestination);
     secureit_report_import_copy_tree($latestSource, $latestDestination);
     secureit_report_import_copy_tree($historySource, $historyDestination);
+    secureit_ensure_tenant_report_web_link($tenantKey);
 
     secureit_report_import_json_response(200, [
         'ok' => true,

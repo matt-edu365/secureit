@@ -852,6 +852,36 @@ function secureit_reports_root(): string {
     return $root;
 }
 
+function secureit_tenant_report_web_root(string $tenantKey): string {
+    return dirname(__DIR__) . '/' . trim(strtolower($tenantKey));
+}
+
+function secureit_ensure_tenant_report_web_link(string $tenantKey): void {
+    $tenantKey = trim(strtolower($tenantKey));
+    if (!secureit_valid_tenant_key($tenantKey)) {
+        return;
+    }
+
+    $linkPath = secureit_tenant_report_web_root($tenantKey);
+    $targetPath = secureit_reports_root() . '/' . $tenantKey;
+
+    if (is_link($linkPath)) {
+        $linkedTarget = readlink($linkPath);
+        if ($linkedTarget === $targetPath) {
+            return;
+        }
+        @unlink($linkPath);
+    } elseif (file_exists($linkPath)) {
+        return;
+    }
+
+    if (!is_dir($targetPath)) {
+        mkdir($targetPath, 0775, true);
+    }
+
+    @symlink($targetPath, $linkPath);
+}
+
 function secureit_build_report_base_url(string $tenantKey): string {
     $config = secureit_config();
     return $config['base_url'] . '/' . rawurlencode(trim(strtolower($tenantKey)));
@@ -1239,6 +1269,67 @@ function secureit_extract_test_ids_from_embedded_summary(?array $embedded): arra
     return array_values(array_unique($ids));
 }
 
+function secureit_normalize_match_tokens(string $value): array {
+    $value = strtolower($value);
+    $value = preg_replace('/[^a-z0-9]+/', ' ', $value) ?? $value;
+    $tokens = preg_split('/\s+/', trim((string) $value)) ?: [];
+    $stopWords = [
+        'a', 'an', 'and', 'are', 'be', 'baseline', 'check', 'checks', 'control', 'controls',
+        'ensure', 'for', 'from', 'have', 'in', 'is', 'it', 'its', 'microsoft', 'not', 'of',
+        'on', 'or', 'policy', 'policies', 'review', 'security', 'set', 'should', 'that', 'the',
+        'to', 'with', 'without',
+    ];
+
+    return array_values(array_filter($tokens, static fn (string $token): bool => $token !== '' && !in_array($token, $stopWords, true)));
+}
+
+function secureit_score_control_test_match(array $control, array $test): float {
+    $controlTokens = secureit_normalize_match_tokens(
+        trim((string) ($control['id'] ?? '')) . ' ' .
+        trim((string) ($control['title'] ?? '')) . ' ' .
+        trim((string) ($control['description'] ?? ''))
+    );
+    $testTokens = secureit_normalize_match_tokens(
+        trim((string) ($test['id'] ?? '')) . ' ' .
+        trim((string) ($test['title'] ?? ''))
+    );
+
+    if (!$controlTokens || !$testTokens) {
+        return 0.0;
+    }
+
+    $controlSet = array_fill_keys($controlTokens, true);
+    $testSet = array_fill_keys($testTokens, true);
+    $sharedTokens = array_intersect_key($controlSet, $testSet);
+
+    $idTokens = secureit_normalize_match_tokens(trim((string) ($control['id'] ?? '')));
+    $testIdTokens = secureit_normalize_match_tokens(trim((string) ($test['id'] ?? '')));
+    $sharedIdTokens = array_intersect($idTokens, $testIdTokens);
+
+    return count($sharedTokens) + (count($sharedIdTokens) * 0.5);
+}
+
+function secureit_fallback_block_for_control(array $control): ?string {
+    $controlKey = strtolower(trim((string) ($control['id'] ?? '')) . ' ' . trim((string) ($control['title'] ?? '')));
+    if ($controlKey === '') {
+        return null;
+    }
+
+    if (str_contains($controlKey, 'eidsca') || str_contains($controlKey, 'baseline review')) {
+        return 'EIDSCA';
+    }
+
+    if (str_contains($controlKey, 'defender') || str_contains($controlKey, 'antivirus')) {
+        return 'Maester/Defender';
+    }
+
+    if (str_contains($controlKey, 'recommendations')) {
+        return 'Maester/Entra';
+    }
+
+    return null;
+}
+
 function secureit_evaluate_control_status(array $matchedTests, string $passLogic): string {
     if (!$matchedTests) {
         return 'unmapped';
@@ -1362,6 +1453,35 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
                 foreach (($testsById[$lookupId] ?? []) as $test) {
                     $matchedTests[] = $test;
                 }
+            }
+        }
+
+        if (!$matchedTests) {
+            $bestMatch = null;
+            $bestScore = 0.0;
+            foreach ($tests as $test) {
+                $score = secureit_score_control_test_match($control, $test);
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestMatch = $test;
+                }
+            }
+
+            if ($bestMatch !== null && $bestScore >= 1.0) {
+                $matchedTests[] = $bestMatch;
+            }
+        }
+
+        if (!$matchedTests) {
+            $fallbackBlock = secureit_fallback_block_for_control($control);
+            if ($fallbackBlock !== null && isset($groupResults[$fallbackBlock])) {
+                $matchedTests[] = [
+                    'id' => 'BLOCK::' . $fallbackBlock,
+                    'result' => strtolower((string) ($groupResults[$fallbackBlock]['result'] ?? 'unknown')),
+                    'title' => $fallbackBlock,
+                    'severity' => '',
+                    'tags' => $groupResults[$fallbackBlock]['tag'] ?? [],
+                ];
             }
         }
 

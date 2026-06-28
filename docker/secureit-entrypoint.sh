@@ -34,4 +34,39 @@ if [ "$should_seed" -eq 1 ]; then
     chmod 0644 "$target_file" || true
 fi
 
+php -r '
+$tenantsPath = getenv("SECUREIT_TENANTS_FILE") ?: "/var/www/data/tenants.json";
+$reportsRoot = getenv("SECUREIT_REPORTS_ROOT") ?: "/var/www/data/reports";
+$webRoot = "/var/www/html";
+$data = @json_decode(@file_get_contents($tenantsPath), true);
+if (!is_array($data)) {
+    exit(0);
+}
+foreach (($data["tenants"] ?? []) as $tenant) {
+    if (!is_array($tenant)) {
+        continue;
+    }
+    $tenantKey = strtolower(trim((string) ($tenant["id"] ?? "")));
+    if (!preg_match("/^[a-z0-9-]+$/", $tenantKey)) {
+        continue;
+    }
+    $linkPath = $webRoot . "/" . $tenantKey;
+    $targetPath = $reportsRoot . "/" . $tenantKey;
+    if (is_link($linkPath)) {
+        $linkedTarget = readlink($linkPath);
+        if ($linkedTarget !== $targetPath) {
+            @unlink($linkPath);
+        } else {
+            continue;
+        }
+    } elseif (file_exists($linkPath)) {
+        continue;
+    }
+    if (!is_dir($targetPath)) {
+        @mkdir($targetPath, 0775, true);
+    }
+    @symlink($targetPath, $linkPath);
+}
+'
+
 exec docker-php-entrypoint "$@"

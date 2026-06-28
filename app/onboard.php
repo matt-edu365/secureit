@@ -115,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tenantDir = secureit_reports_root() . '/' . $tenantKey;
         @mkdir($tenantDir . '/latest', 0775, true);
         @mkdir($tenantDir . '/history', 0775, true);
+        secureit_ensure_tenant_report_web_link($tenantKey);
 
         $messages[] = 'Tenant saved into the container app successfully.';
         $messages[] = 'Client secret written to Azure Key Vault using the configured secret name.';

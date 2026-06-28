@@ -479,6 +479,10 @@ function Set-SecureItReportBranding {
     }
 
     $html = Get-Content -Raw -LiteralPath $HtmlPath -ErrorAction Stop
+    $html = $html.Replace('aria-label:`Home`', 'aria-label:`Open tenant overview`')
+    $html = $html.Replace('children:`SecureIT Logo (go home)`', 'children:`ICT365 SecureIT`')
+    $html = $html.Replace('children:`SecureIT`}),!e&&(0,z.jsxs)(`div`,{className:`flex flex-col overflow-hidden`,children:[(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,children:`SecureIT`}),(0,z.jsx)(`span`,{className:`truncate text-xs tracking-tight text-gray-500 dark:text-gray-400`,children:l})]})', 'children:`ICT365`}),!e&&(0,z.jsxs)(`div`,{className:`flex flex-col overflow-hidden`,children:[(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,children:`ICT365`}),(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,style:{color:`#2b6e6b`},children:`SecureIT`})]})')
+    $html = $html.Replace('(0,z.jsx)(`span`,{className:`truncate text-xs tracking-tight text-gray-500 dark:text-gray-400`,children:l})', '(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,style:{color:`#2b6e6b`},children:`SecureIT`})')
 
     $brandCss = @"
 <style id="secureit-branding-overrides">
@@ -497,7 +501,7 @@ function Set-SecureItReportBranding {
 "@
 
     $brandScript = @"
-<script id="secureit-branding-script">
+<script id="secureit-branding-script-v2">
 (function () {
   const tenantUrl = '/tenant.php?tenant=$TenantKey';
 
@@ -510,20 +514,39 @@ function Set-SecureItReportBranding {
     return text === '|' || text === '•' || text === '·' || text === '/';
   }
 
+  function isBrandLink(anchor) {
+    if (!anchor) {
+      return false;
+    }
+
+    const label = (anchor.getAttribute('aria-label') || '').trim().toLowerCase();
+    const href = (anchor.getAttribute('href') || '').trim();
+    const text = (anchor.textContent || '').trim().toLowerCase();
+
+    if (label.includes('logo') || label.includes('home') || label.includes('go home')) {
+      return true;
+    }
+
+    if (href === '/' && (anchor.querySelector('svg, img') || text.includes('secureit') || text.includes('ict365'))) {
+      return true;
+    }
+
+    return false;
+  }
+
   function applyBranding() {
     const anchors = Array.from(document.querySelectorAll('a'));
 
-    const brandLink = anchors.find((anchor) => {
-      const label = (anchor.getAttribute('aria-label') || '').toLowerCase();
-      return label.includes('logo') || label.includes('go home');
-    });
+    const brandLink = anchors.find(isBrandLink);
 
     if (brandLink) {
       brandLink.setAttribute('href', tenantUrl);
+      brandLink.setAttribute('aria-label', 'Open tenant overview');
       brandLink.style.display = 'inline-flex';
       brandLink.style.alignItems = 'center';
       brandLink.style.gap = '10px';
       brandLink.style.textDecoration = 'none';
+      brandLink.style.color = 'inherit';
 
       const icon = brandLink.querySelector('svg, img');
       const preservedIcon = icon ? icon.cloneNode(true) : null;
@@ -543,7 +566,7 @@ function Set-SecureItReportBranding {
       brandLink.appendChild(wordmark);
     }
 
-    for (const homeLink of anchors.filter((anchor) => (anchor.textContent || '').trim() === 'Home')) {
+    for (const homeLink of anchors.filter((anchor) => anchor !== brandLink && (((anchor.textContent || '').trim() === 'Home') || ((anchor.getAttribute('aria-label') || '').trim().toLowerCase() === 'home')))) {
       const nextSibling = homeLink.nextSibling;
       const previousSibling = homeLink.previousSibling;
       homeLink.remove();

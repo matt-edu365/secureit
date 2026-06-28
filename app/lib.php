@@ -1820,7 +1820,7 @@ SVG;
 function secureit_report_branding_script(string $tenantKey): string {
     $tenantUrl = json_encode('/tenant.php?tenant=' . rawurlencode(trim(strtolower($tenantKey))), JSON_UNESCAPED_SLASHES);
     return <<<HTML
-<script id="secureit-branding-script">
+<script id="secureit-branding-script-v2">
 (function () {
   const tenantUrl = {$tenantUrl};
 
@@ -1833,9 +1833,29 @@ function secureit_report_branding_script(string $tenantKey): string {
     return text === '|' || text === '•' || text === '·' || text === '/';
   }
 
-  function removeHomeLink() {
+  function isBrandLink(anchor) {
+    if (!anchor) {
+      return false;
+    }
+
+    const label = (anchor.getAttribute('aria-label') || '').trim().toLowerCase();
+    const href = (anchor.getAttribute('href') || '').trim();
+    const text = (anchor.textContent || '').trim().toLowerCase();
+
+    if (label.includes('logo') || label.includes('home') || label.includes('go home')) {
+      return true;
+    }
+
+    if (href === '/' && (anchor.querySelector('svg, img') || text.includes('secureit') || text.includes('ict365'))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function removeHomeLink(brandLink) {
     const anchors = Array.from(document.querySelectorAll('a'));
-    for (const homeLink of anchors.filter((anchor) => (anchor.textContent || '').trim() === 'Home')) {
+    for (const homeLink of anchors.filter((anchor) => anchor !== brandLink && ((anchor.textContent || '').trim() === 'Home' || (anchor.getAttribute('aria-label') || '').trim().toLowerCase() === 'home'))) {
       const nextSibling = homeLink.nextSibling;
       const previousSibling = homeLink.previousSibling;
       homeLink.remove();
@@ -1849,17 +1869,16 @@ function secureit_report_branding_script(string $tenantKey): string {
 
   function applyBranding() {
     const anchors = Array.from(document.querySelectorAll('a'));
-    const brandLink = anchors.find((anchor) => {
-      const label = (anchor.getAttribute('aria-label') || '').toLowerCase();
-      return label.includes('logo') || label.includes('go home');
-    });
+    const brandLink = anchors.find(isBrandLink);
 
     if (brandLink) {
       brandLink.setAttribute('href', tenantUrl);
+      brandLink.setAttribute('aria-label', 'Open tenant overview');
       brandLink.style.display = 'inline-flex';
       brandLink.style.alignItems = 'center';
       brandLink.style.gap = '10px';
       brandLink.style.textDecoration = 'none';
+      brandLink.style.color = 'inherit';
 
       const icon = brandLink.querySelector('svg, img');
       const preservedIcon = icon ? icon.cloneNode(true) : null;
@@ -1879,7 +1898,7 @@ function secureit_report_branding_script(string $tenantKey): string {
       brandLink.appendChild(wordmark);
     }
 
-    removeHomeLink();
+    removeHomeLink(brandLink);
   }
 
   if (document.readyState === 'loading') {
@@ -1899,11 +1918,34 @@ HTML;
 }
 
 function secureit_brand_report_html_contents(string $html, string $tenantKey): string {
-    if (str_contains($html, 'secureit-branding-script')) {
+    $brandScript = secureit_report_branding_script($tenantKey);
+    $html = str_replace(
+        [
+            'aria-label:`Home`',
+            'children:`SecureIT Logo (go home)`',
+            'children:`SecureIT`}),!e&&(0,z.jsxs)(`div`,{className:`flex flex-col overflow-hidden`,children:[(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,children:`SecureIT`}),(0,z.jsx)(`span`,{className:`truncate text-xs tracking-tight text-gray-500 dark:text-gray-400`,children:l})]})',
+            '(0,z.jsx)(`span`,{className:`truncate text-xs tracking-tight text-gray-500 dark:text-gray-400`,children:l})'
+        ],
+        [
+            'aria-label:`Open tenant overview`',
+            'children:`ICT365 SecureIT`',
+            'children:`ICT365`}),!e&&(0,z.jsxs)(`div`,{className:`flex flex-col overflow-hidden`,children:[(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,children:`ICT365`}),(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,style:{color:`#2b6e6b`},children:`SecureIT`})]})',
+            '(0,z.jsx)(`span`,{className:`text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-100`,style:{color:`#2b6e6b`},children:`SecureIT`})'
+        ],
+        $html
+    );
+
+    if (str_contains($html, 'secureit-branding-script-v2')) {
         return $html;
     }
 
-    $brandScript = secureit_report_branding_script($tenantKey);
+    if (str_contains($html, 'secureit-branding-script')) {
+        $updated = preg_replace('#<script id="secureit-branding-script">.*?</script>#s', $brandScript, $html, 1);
+        if (is_string($updated) && $updated !== '') {
+            return $updated;
+        }
+    }
+
     if (str_contains($html, '</body>')) {
         return str_replace('</body>', $brandScript . "\n</body>", $html);
     }

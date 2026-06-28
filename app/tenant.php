@@ -14,8 +14,8 @@ if (!$tenant) {
 secureit_require_tenant_access($tenantKey);
 
 $summary = secureit_tenant_summary($tenantKey);
-$counts = secureit_summary_counts($summary);
 $areaData = secureit_resolve_canonical_area_scores($tenantKey);
+$counts = secureit_check_summary_counts($areaData);
 $functionalAreas = $areaData['areas'] ?? [];
 $analysisText = secureit_tenant_analysis_text($summary, $areaData);
 $selectedAreaName = trim((string) ($_GET['area'] ?? ''));
@@ -79,7 +79,7 @@ function secureit_functional_area_analysis_text(array $area): string {
         $controlsTotal
     );
     $summary[] = sprintf(
-        '%d checks passed, %d were partially passed, %d failed, and %d are unmapped.',
+        '%d checks passed, %d were partially met, %d failed, and %d are not mapped.',
         $controlsPassing,
         $controlsPartial,
         $controlsFailing,
@@ -88,7 +88,7 @@ function secureit_functional_area_analysis_text(array $area): string {
 
     if ($testsTotal > 0) {
         $summary[] = sprintf(
-            'The matched checks behind this area include %d tests with %d passed, %d failed, and %d skipped.',
+            'Those checks are backed by %d underlying assessment items with %d passed, %d failed, and %d skipped.',
             $testsTotal,
             $testsPassed,
             $testsFailed,
@@ -166,9 +166,11 @@ if (is_dir($historyRoot)) {
     foreach ($iterator as $file) {
         if ($file->getFilename() === 'summary.json') {
             $relative = str_replace(secureit_reports_root() . '/', '', $file->getPathname());
+            $embeddedPath = dirname($file->getPathname()) . '/embedded-summary.json';
             $history[] = [
                 'reportPath' => dirname($relative) . '/index.html',
-                'summary' => json_decode(file_get_contents($file->getPathname()), true)
+                'summary' => json_decode(file_get_contents($file->getPathname()), true),
+                'embedded' => file_exists($embeddedPath) ? json_decode(file_get_contents($embeddedPath), true) : null,
             ];
         }
     }
@@ -220,20 +222,21 @@ ob_start();
 
     <?php if ($summary): ?>
       <div class="stats-row" style="margin-bottom:14px;">
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Total</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsPassed'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsFailed'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['testsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Checks</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsUnmapped'] ?? 0) : $counts['unmapped'])); ?></strong><span>Not mapped</span></div>
       </div>
       <?php if ($selectedArea): ?>
         <?php $partialTests = secureit_functional_area_partial_test_count($selectedArea); ?>
         <?php if ($partialTests > 0): ?>
-          <div class="muted" style="margin-bottom:10px;">** <?php echo htmlspecialchars((string) $partialTests); ?> tests were partially passed.</div>
+          <div class="muted" style="margin-bottom:10px;">** <?php echo htmlspecialchars((string) $partialTests); ?> checks were partially met.</div>
         <?php endif; ?>
       <?php endif; ?>
       <div class="muted" style="margin-bottom:8px;"><?php echo $selectedArea ? 'Area pass rate' : 'Pass rate'; ?></div>
-      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['testsTotal'] ?? 0) > 0) ? round((($selectedArea['testsPassed'] ?? 0) / max(1, (int) ($selectedArea['testsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
-      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['testsTotal'] ?? 0) > 0) ? round((($selectedArea['testsPassed'] ?? 0) / max(1, (int) ($selectedArea['testsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>% tests passed<?php echo $selectedArea ? ' in this area' : ''; ?>, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
+      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
+      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>% checks passed<?php echo $selectedArea ? ' in this area' : ''; ?>, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
     <?php else: ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No published report yet.</strong>
@@ -348,11 +351,11 @@ ob_start();
           </div>
           <h3><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
           <div class="kv" style="gap:6px; margin-top:12px;">
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Total tests</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['testsTotal'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['testsPassed'] ?? 0)); ?></div></div>
+            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Checks</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?></div></div>
+            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?></div></div>
             <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Partially met</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['testsFailed'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Skipped</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['testsSkipped'] ?? 0)); ?></div></div>
+            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsFailing'] ?? 0)); ?></div></div>
+            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Not mapped</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsUnmapped'] ?? 0)); ?></div></div>
           </div>
         </a>
       <?php endforeach; ?>
@@ -381,10 +384,11 @@ ob_start();
           <thead>
             <tr>
               <th>Generated</th>
-              <th>Total</th>
+              <th>Checks</th>
               <th>Passed</th>
+              <th>Partially met</th>
               <th>Failed</th>
-              <th>Skipped</th>
+              <th>Not mapped</th>
               <th>Status</th>
               <th>Report</th>
             </tr>
@@ -393,15 +397,17 @@ ob_start();
             <?php foreach ($history as $item): ?>
               <?php
                 $s = $item['summary'] ?? [];
-                $rowCounts = secureit_summary_counts($s);
+                $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, is_array($s) ? $s : null);
+                $rowCounts = secureit_check_summary_counts($rowAreaData);
                 $rowToneClass = 'tone-' . strtolower($rowCounts['riskTone']);
               ?>
               <tr>
                 <td><?php echo htmlspecialchars(secureit_format_datetime($s['generatedAt'] ?? null)); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowCounts['total']); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowCounts['passed']); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['partial']); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowCounts['failed']); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['skipped']); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowCounts['unmapped']); ?></td>
                 <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowCounts['riskLevel']); ?></span></td>
                 <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>
               </tr>

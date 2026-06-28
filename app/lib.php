@@ -1384,10 +1384,8 @@ function secureit_evaluate_control_status(array $matchedTests, string $passLogic
     }
 }
 
-function secureit_resolve_canonical_area_scores(string $tenantKey): array {
+function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, ?array $summary): array {
     $mapping = secureit_load_canonical_controls();
-    $embedded = secureit_tenant_embedded_summary($tenantKey);
-    $summary = secureit_tenant_summary($tenantKey);
 
     $functionalAreas = $mapping['functionalAreas'] ?? [];
     $controls = $mapping['controls'] ?? [];
@@ -1587,6 +1585,13 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
     ];
 }
 
+function secureit_resolve_canonical_area_scores(string $tenantKey): array {
+    return secureit_resolve_canonical_area_scores_from_artifact(
+        secureit_tenant_embedded_summary($tenantKey),
+        secureit_tenant_summary($tenantKey)
+    );
+}
+
 function secureit_secret_name(string $tenantKey, string $suffix): string {
     return 'secureit-' . trim(strtolower($tenantKey)) . '-' . $suffix;
 }
@@ -1630,12 +1635,60 @@ function secureit_summary_counts(?array $summary): array {
     ];
 }
 
+function secureit_check_summary_counts(array $areaData): array {
+    $areas = $areaData['areas'] ?? [];
+
+    $total = 0;
+    $passed = 0;
+    $partial = 0;
+    $failed = 0;
+    $unmapped = 0;
+
+    foreach ($areas as $area) {
+        $total += (int) ($area['controlsTotal'] ?? 0);
+        $passed += (int) ($area['controlsPassing'] ?? 0);
+        $partial += (int) ($area['controlsPartial'] ?? 0);
+        $failed += (int) ($area['controlsFailing'] ?? 0);
+        $unmapped += (int) ($area['controlsUnmapped'] ?? 0);
+    }
+
+    $completed = max(0, $passed + $partial + $failed);
+    $passRate = $total > 0 ? (int) round(($passed / $total) * 100) : 0;
+    $riskLevel = 'No data';
+    $riskTone = 'neutral';
+
+    if ($total > 0) {
+        if ($failed === 0) {
+            $riskLevel = 'Healthy';
+            $riskTone = 'good';
+        } elseif ($failed <= 3) {
+            $riskLevel = 'Watch';
+            $riskTone = 'warn';
+        } else {
+            $riskLevel = 'Needs attention';
+            $riskTone = 'bad';
+        }
+    }
+
+    return [
+        'total' => $total,
+        'passed' => $passed,
+        'partial' => $partial,
+        'failed' => $failed,
+        'unmapped' => $unmapped,
+        'completed' => $completed,
+        'passRate' => $passRate,
+        'riskLevel' => $riskLevel,
+        'riskTone' => $riskTone,
+    ];
+}
+
 function secureit_tenant_analysis_text(?array $summary, array $areaData): string {
     if (!$summary) {
         return 'No report summary is available yet for this tenant.';
     }
 
-    $counts = secureit_summary_counts($summary);
+    $counts = secureit_check_summary_counts($areaData);
     $runDate = secureit_format_date_only($summary['generatedAt'] ?? null);
     $areas = $areaData['areas'] ?? [];
 
@@ -1679,8 +1732,9 @@ function secureit_tenant_analysis_text(?array $summary, array $areaData): string
     }
 
     return sprintf(
-        'The latest run on %s indicates the overall posture %s. The lowest-scoring area is currently %s at %s%%. The strongest area is %s at %s%%.',
+        'The latest run on %s covers %d SecureIT checks. The overall posture %s. The lowest-scoring area is currently %s at %s%%. The strongest area is %s at %s%%.',
         $runDate,
+        $counts['total'],
         $posture,
         $worstAreaName,
         $worstAreaScore,

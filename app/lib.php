@@ -1803,6 +1803,20 @@ SVG;
     return "linear-gradient(135deg, rgba(10,61,50,0.98) 0%, rgba(0,99,95,0.94) 48%, rgba(51,153,151,0.88) 100%), url('data:image/svg+xml;charset=UTF-8," . rawurlencode($heroSvg) . "') center/cover no-repeat";
 }
 
+function secureit_favicon_data_uri(): string {
+    $svg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <path d="M20 30v-6c0-6.627 5.373-12 12-12s12 5.373 12 12v6" fill="none" stroke="#8a6a12" stroke-width="5" stroke-linecap="round"/>
+  <rect x="14" y="28" width="36" height="24" rx="6" fill="#d4af37"/>
+  <circle cx="32" cy="40" r="4" fill="#ffffff"/>
+  <path d="M32 40v6" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>
+SVG;
+
+    return "data:image/svg+xml;charset=UTF-8," . rawurlencode($svg);
+}
+
 function secureit_dashboard_stats(array $tenants): array {
     $stats = [
         'tenantCount' => count($tenants),
@@ -1871,6 +1885,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?php echo htmlspecialchars($title); ?></title>
+  <link rel="icon" type="image/svg+xml" href="<?php echo htmlspecialchars(secureit_favicon_data_uri()); ?>">
   <style>
     :root {
       color-scheme: light;

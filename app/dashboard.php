@@ -73,7 +73,6 @@ ob_start();
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['passed']); ?></strong><span>Passed</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['partial']); ?></strong><span>Partially met</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
-              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['unmapped']); ?></strong><span>Not mapped</span></div>
             </div>
             <div class="muted" style="margin-bottom:8px;">Pass rate</div>
             <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>

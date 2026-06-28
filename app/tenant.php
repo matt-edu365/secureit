@@ -66,7 +66,6 @@ function secureit_functional_area_analysis_text(array $area): string {
     $controlsPassing = (int) ($area['controlsPassing'] ?? 0);
     $controlsPartial = (int) ($area['controlsPartial'] ?? 0);
     $controlsFailing = (int) ($area['controlsFailing'] ?? 0);
-    $controlsUnmapped = (int) ($area['controlsUnmapped'] ?? 0);
     $testsTotal = (int) ($area['testsTotal'] ?? 0);
     $testsPassed = (int) ($area['testsPassed'] ?? 0);
     $testsFailed = (int) ($area['testsFailed'] ?? 0);
@@ -79,11 +78,10 @@ function secureit_functional_area_analysis_text(array $area): string {
         $controlsTotal
     );
     $summary[] = sprintf(
-        '%d checks passed, %d were partially met, %d failed, and %d are not mapped.',
+        '%d checks passed, %d were partially met, and %d failed.',
         $controlsPassing,
         $controlsPartial,
-        $controlsFailing,
-        $controlsUnmapped
+        $controlsFailing
     );
 
     if ($testsTotal > 0) {
@@ -226,7 +224,6 @@ ob_start();
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsUnmapped'] ?? 0) : $counts['unmapped'])); ?></strong><span>Not mapped</span></div>
       </div>
       <?php if ($selectedArea): ?>
         <?php $partialTests = secureit_functional_area_partial_test_count($selectedArea); ?>
@@ -349,13 +346,12 @@ ob_start();
             </span>
             <span class="badge <?php echo htmlspecialchars($scoreTone); ?>"><?php echo htmlspecialchars($scoreLabel); ?></span>
           </div>
-          <h3><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
+          <h3 style="min-height:2.8em;"><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
           <div class="kv" style="gap:6px; margin-top:12px;">
             <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Checks</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?></div></div>
             <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?></div></div>
             <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Partially met</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?></div></div>
             <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsFailing'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Not mapped</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsUnmapped'] ?? 0)); ?></div></div>
           </div>
         </a>
       <?php endforeach; ?>
@@ -388,7 +384,6 @@ ob_start();
               <th>Passed</th>
               <th>Partially met</th>
               <th>Failed</th>
-              <th>Not mapped</th>
               <th>Status</th>
               <th>Report</th>
             </tr>
@@ -407,7 +402,6 @@ ob_start();
                 <td><?php echo htmlspecialchars((string) $rowCounts['passed']); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowCounts['partial']); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowCounts['failed']); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['unmapped']); ?></td>
                 <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowCounts['riskLevel']); ?></span></td>
                 <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>
               </tr>

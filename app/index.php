@@ -40,7 +40,7 @@ ob_start();
     <article class="card feature-card">
       <div class="feature-icon">🛡️</div>
       <h3>See your current posture clearly</h3>
-      <p>SecureIT reviews key Microsoft 365 controls against recognised security best practices, so IT teams and business leaders can quickly see where the tenant is strong, where gaps exist, and what to improve next.</p>
+      <p>SecureIT reviews key Microsoft 365 checks against recognised security best practices, so IT teams and business leaders can quickly see where the tenant is strong, where gaps exist, and what to improve next.</p>
     </article>
     <article class="card feature-card">
       <div class="feature-icon">📈</div>

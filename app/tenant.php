@@ -36,7 +36,7 @@ function secureit_functional_area_description(string $areaName): string {
         }
     }
 
-    return 'SecureIT reviews the Microsoft 365 services, policies, controls, and checks that map to this area.';
+    return 'SecureIT reviews the Microsoft 365 services, policies, checks, and related settings that map to this area.';
 }
 
 function secureit_functional_area_partial_test_count(array $area): int {
@@ -59,7 +59,7 @@ function secureit_functional_area_partial_test_count(array $area): int {
 function secureit_functional_area_analysis_text(array $area): string {
     $controlsTotal = (int) ($area['controlsTotal'] ?? 0);
     if ($controlsTotal === 0) {
-        return 'No canonical controls are currently mapped to this functional area, so SecureIT cannot calculate an area score yet.';
+        return 'No canonical checks are currently mapped to this functional area, so SecureIT cannot calculate an area score yet.';
     }
 
     $score = $area['score'];
@@ -74,12 +74,12 @@ function secureit_functional_area_analysis_text(array $area): string {
 
     $summary = [];
     $summary[] = sprintf(
-        'This area scores %s across %d controls.',
+        'This area scores %s across %d checks.',
         $score !== null ? (string) $score . '%' : 'unavailable',
         $controlsTotal
     );
     $summary[] = sprintf(
-        '%d controls passed, %d were partially passed, %d failed, and %d are unmapped.',
+        '%d checks passed, %d were partially passed, %d failed, and %d are unmapped.',
         $controlsPassing,
         $controlsPartial,
         $controlsFailing,
@@ -213,7 +213,7 @@ ob_start();
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
     <div class="section-header" style="margin-bottom:18px;">
       <div>
-        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
+          <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
         <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Operational snapshot of the latest report.'; ?></div>
       </div>
     </div>
@@ -263,7 +263,7 @@ ob_start();
           <table>
             <thead>
               <tr>
-                <th>Control</th>
+                <th>Check</th>
                 <th>Status</th>
                 <th>Weight</th>
                 <th>Matched checks</th>
@@ -284,7 +284,7 @@ ob_start();
                 ?>
                 <tr>
                   <td>
-                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Control'); ?></strong><br>
+                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong><br>
                     <span class="muted"><?php echo htmlspecialchars($control['description'] ?? ''); ?></span>
                   </td>
                   <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars(ucfirst($controlStatus)); ?></span></td>
@@ -314,8 +314,8 @@ ob_start();
         </div>
       <?php else: ?>
         <div class="empty-state" style="box-shadow:none;">
-          <strong>No controls mapped to this area.</strong>
-          <p class="muted">This area currently has no canonical controls in the seeded data.</p>
+          <strong>No checks mapped to this area.</strong>
+          <p class="muted">This area currently has no canonical checks in the seeded data.</p>
         </div>
       <?php endif; ?>
     </article>
@@ -324,7 +324,7 @@ ob_start();
     <?php if (!$functionalAreas): ?>
       <article class="card feature-card">
         <h3>No functional area data yet</h3>
-        <p>Run a tenant assessment with embedded summary persistence to populate canonical SecureIT controls and area scoring.</p>
+        <p>Run a tenant assessment with embedded summary persistence to populate canonical SecureIT checks and area scoring.</p>
       </article>
     <?php else: ?>
       <?php foreach ($functionalAreas as $area): ?>

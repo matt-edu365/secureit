@@ -47,7 +47,8 @@ ob_start();
         <?php
           $tenantKey = $tenant['id'] ?? 'unknown';
           $summary = secureit_tenant_summary($tenantKey);
-          $counts = secureit_summary_counts($summary);
+          $areaData = secureit_resolve_canonical_area_scores($tenantKey);
+          $counts = secureit_check_summary_counts($areaData);
           $toneClass = 'tone-' . strtolower($counts['riskTone']);
           $riskLabel = $counts['riskLevel'] === 'Needs attention' ? 'Review' : $counts['riskLevel'];
           $searchValue = implode(' ', [
@@ -68,10 +69,11 @@ ob_start();
 
           <?php if ($summary): ?>
             <div class="stats-row" style="margin-bottom:14px;">
-              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['total']); ?></strong><span>Total checks</span></div>
+              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['total']); ?></strong><span>Checks</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['passed']); ?></strong><span>Passed</span></div>
+              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['partial']); ?></strong><span>Partially met</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
-              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['skipped']); ?></strong><span>Skipped</span></div>
+              <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['unmapped']); ?></strong><span>Not mapped</span></div>
             </div>
             <div class="muted" style="margin-bottom:8px;">Pass rate</div>
             <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>

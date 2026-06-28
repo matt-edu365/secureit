@@ -35,6 +35,11 @@ if [ "$should_seed" -eq 1 ]; then
 fi
 
 php -r '
+$appRoot = "/var/www/html";
+$lib = $appRoot . "/lib.php";
+if (file_exists($lib)) {
+    require_once $lib;
+}
 $tenantsPath = getenv("SECUREIT_TENANTS_FILE") ?: "/var/www/data/tenants.json";
 $reportsRoot = getenv("SECUREIT_REPORTS_ROOT") ?: "/var/www/data/reports";
 $webRoot = "/var/www/html";
@@ -52,20 +57,26 @@ foreach (($data["tenants"] ?? []) as $tenant) {
     }
     $linkPath = $webRoot . "/" . $tenantKey;
     $targetPath = $reportsRoot . "/" . $tenantKey;
+    $linkOk = false;
     if (is_link($linkPath)) {
         $linkedTarget = readlink($linkPath);
         if ($linkedTarget !== $targetPath) {
             @unlink($linkPath);
         } else {
-            continue;
+            $linkOk = true;
         }
     } elseif (file_exists($linkPath)) {
         continue;
     }
-    if (!is_dir($targetPath)) {
+    if (!$linkOk && !is_dir($targetPath)) {
         @mkdir($targetPath, 0775, true);
     }
-    @symlink($targetPath, $linkPath);
+    if (!$linkOk) {
+        @symlink($targetPath, $linkPath);
+    }
+    if (function_exists("secureit_brand_report_html_tree")) {
+        secureit_brand_report_html_tree($targetPath, $tenantKey);
+    }
 }
 '
 

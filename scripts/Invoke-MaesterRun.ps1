@@ -520,6 +520,27 @@ function Set-SecureItReportBranding {
 
     if (brandLink) {
       brandLink.setAttribute('href', tenantUrl);
+      brandLink.style.display = 'inline-flex';
+      brandLink.style.alignItems = 'center';
+      brandLink.style.gap = '10px';
+      brandLink.style.textDecoration = 'none';
+
+      const icon = brandLink.querySelector('svg, img');
+      const preservedIcon = icon ? icon.cloneNode(true) : null;
+      brandLink.replaceChildren();
+      if (preservedIcon) {
+        brandLink.appendChild(preservedIcon);
+      }
+
+      const wordmark = document.createElement('span');
+      wordmark.className = 'secureit-report-wordmark';
+      wordmark.innerHTML = '<span>ICT365</span><span>SecureIT</span>';
+      wordmark.style.display = 'inline-flex';
+      wordmark.style.flexDirection = 'column';
+      wordmark.style.lineHeight = '1';
+      wordmark.style.fontWeight = '700';
+      wordmark.style.letterSpacing = '0.02em';
+      brandLink.appendChild(wordmark);
     }
 
     for (const homeLink of anchors.filter((anchor) => (anchor.textContent || '').trim() === 'Home')) {

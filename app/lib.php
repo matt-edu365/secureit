@@ -1817,6 +1817,131 @@ SVG;
     return "data:image/svg+xml;charset=UTF-8," . rawurlencode($svg);
 }
 
+function secureit_report_branding_script(string $tenantKey): string {
+    $tenantUrl = json_encode('/tenant.php?tenant=' . rawurlencode(trim(strtolower($tenantKey))), JSON_UNESCAPED_SLASHES);
+    return <<<HTML
+<script id="secureit-branding-script">
+(function () {
+  const tenantUrl = {$tenantUrl};
+
+  function isDividerNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    const text = (node.textContent || '').trim();
+    return text === '|' || text === '•' || text === '·' || text === '/';
+  }
+
+  function removeHomeLink() {
+    const anchors = Array.from(document.querySelectorAll('a'));
+    for (const homeLink of anchors.filter((anchor) => (anchor.textContent || '').trim() === 'Home')) {
+      const nextSibling = homeLink.nextSibling;
+      const previousSibling = homeLink.previousSibling;
+      homeLink.remove();
+      if (isDividerNode(nextSibling)) {
+        nextSibling.remove();
+      } else if (isDividerNode(previousSibling)) {
+        previousSibling.remove();
+      }
+    }
+  }
+
+  function applyBranding() {
+    const anchors = Array.from(document.querySelectorAll('a'));
+    const brandLink = anchors.find((anchor) => {
+      const label = (anchor.getAttribute('aria-label') || '').toLowerCase();
+      return label.includes('logo') || label.includes('go home');
+    });
+
+    if (brandLink) {
+      brandLink.setAttribute('href', tenantUrl);
+      brandLink.style.display = 'inline-flex';
+      brandLink.style.alignItems = 'center';
+      brandLink.style.gap = '10px';
+      brandLink.style.textDecoration = 'none';
+
+      const icon = brandLink.querySelector('svg, img');
+      const preservedIcon = icon ? icon.cloneNode(true) : null;
+      brandLink.replaceChildren();
+      if (preservedIcon) {
+        brandLink.appendChild(preservedIcon);
+      }
+
+      const wordmark = document.createElement('span');
+      wordmark.className = 'secureit-report-wordmark';
+      wordmark.innerHTML = '<span>ICT365</span><span>SecureIT</span>';
+      wordmark.style.display = 'inline-flex';
+      wordmark.style.flexDirection = 'column';
+      wordmark.style.lineHeight = '1';
+      wordmark.style.fontWeight = '700';
+      wordmark.style.letterSpacing = '0.02em';
+      brandLink.appendChild(wordmark);
+    }
+
+    removeHomeLink();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyBranding, { once: true });
+  } else {
+    applyBranding();
+  }
+
+  const observer = new MutationObserver(applyBranding);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.setTimeout(function () {
+    observer.disconnect();
+  }, 15000);
+})();
+</script>
+HTML;
+}
+
+function secureit_brand_report_html_contents(string $html, string $tenantKey): string {
+    if (str_contains($html, 'secureit-branding-script')) {
+        return $html;
+    }
+
+    $brandScript = secureit_report_branding_script($tenantKey);
+    if (str_contains($html, '</body>')) {
+        return str_replace('</body>', $brandScript . "\n</body>", $html);
+    }
+
+    return $html . "\n" . $brandScript;
+}
+
+function secureit_brand_report_html_file(string $path, string $tenantKey): void {
+    if (!is_file($path) || !is_readable($path) || !is_writable($path)) {
+        return;
+    }
+
+    $html = file_get_contents($path);
+    if ($html === false || $html === '') {
+        return;
+    }
+
+    $branded = secureit_brand_report_html_contents($html, $tenantKey);
+    if ($branded !== $html) {
+        file_put_contents($path, $branded);
+    }
+}
+
+function secureit_brand_report_html_tree(string $root, string $tenantKey): void {
+    if (!is_dir($root)) {
+        return;
+    }
+
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+    foreach ($iterator as $file) {
+        if (!$file->isFile() || strtolower($file->getExtension()) !== 'html') {
+            continue;
+        }
+
+        secureit_brand_report_html_file($file->getPathname(), $tenantKey);
+    }
+}
+
 function secureit_dashboard_stats(array $tenants): array {
     $stats = [
         'tenantCount' => count($tenants),

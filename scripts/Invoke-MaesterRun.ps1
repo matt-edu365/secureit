@@ -470,7 +470,8 @@ function Get-MaesterTestsPath {
 
 function Set-SecureItReportBranding {
     param(
-        [Parameter(Mandatory = $true)][string]$HtmlPath
+        [Parameter(Mandatory = $true)][string]$HtmlPath,
+        [Parameter(Mandatory = $true)][string]$TenantKey
     )
 
     if (-not (Test-Path -LiteralPath $HtmlPath)) {
@@ -495,6 +496,59 @@ function Set-SecureItReportBranding {
 </style>
 "@
 
+    $brandScript = @"
+<script id="secureit-branding-script">
+(function () {
+  const tenantUrl = '/tenant.php?tenant=$TenantKey';
+
+  function isDividerNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    const text = (node.textContent || '').trim();
+    return text === '|' || text === '•' || text === '·' || text === '/';
+  }
+
+  function applyBranding() {
+    const anchors = Array.from(document.querySelectorAll('a'));
+
+    const brandLink = anchors.find((anchor) => {
+      const label = (anchor.getAttribute('aria-label') || '').toLowerCase();
+      return label.includes('logo') || label.includes('go home');
+    });
+
+    if (brandLink) {
+      brandLink.setAttribute('href', tenantUrl);
+    }
+
+    for (const homeLink of anchors.filter((anchor) => (anchor.textContent || '').trim() === 'Home')) {
+      const nextSibling = homeLink.nextSibling;
+      const previousSibling = homeLink.previousSibling;
+      homeLink.remove();
+      if (isDividerNode(nextSibling)) {
+        nextSibling.remove();
+      } else if (isDividerNode(previousSibling)) {
+        previousSibling.remove();
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyBranding, { once: true });
+  } else {
+    applyBranding();
+  }
+
+  const observer = new MutationObserver(applyBranding);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.setTimeout(function () {
+    observer.disconnect();
+  }, 15000);
+})();
+</script>
+"@
+
     $replacements = @(
         @{ Old = '<title>Maester</title>'; New = '<title>SecureIT</title>' },
         @{ Old = '<link rel="icon" type="image/x-icon" href="https://maester.dev/img/favicon.ico" />'; New = '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%23ffffff"/%3E%3Cpath d="M20 30v-6c0-6.627 5.373-12 12-12s12 5.373 12 12v6" fill="none" stroke="%230f172a" stroke-width="5" stroke-linecap="round"/%3E%3Crect x="14" y="28" width="36" height="24" rx="6" fill="%230f172a"/%3E%3Ccircle cx="32" cy="40" r="4" fill="%23ffffff"/%3E%3Cpath d="M32 40v6" stroke="%23ffffff" stroke-width="3" stroke-linecap="round"/%3E%3C/svg%3E" />' },
@@ -512,6 +566,12 @@ function Set-SecureItReportBranding {
 
     foreach ($replacement in $replacements) {
         $html = $html.Replace($replacement.Old, $replacement.New)
+    }
+
+    if ($html.Contains('</body>')) {
+        $html = $html.Replace('</body>', $brandScript + "`n</body>")
+    } else {
+        $html += "`n" + $brandScript
     }
 
     Set-Content -LiteralPath $HtmlPath -Value $html -Encoding UTF8
@@ -625,7 +685,7 @@ $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -
 $embeddedSummaryPath = Join-Path $historyDir 'embedded-summary.json'
 if ($htmlCandidate) {
     Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
-    Set-SecureItReportBranding -HtmlPath $htmlReportPath
+    Set-SecureItReportBranding -HtmlPath $htmlReportPath -TenantKey $TenantKey
 
     try {
         $htmlContent = Get-Content -Raw -LiteralPath $htmlCandidate.FullName -ErrorAction Stop

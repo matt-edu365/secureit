@@ -108,7 +108,14 @@ if (!secureit_workflow_sync_authorized()) {
     exit;
 }
 
-$tenantKey = trim(strtolower((string) ($_POST['tenant_key'] ?? $_POST['tenant'] ?? '')));
+$tenantKey = trim(strtolower((string) (
+    $_POST['tenant_key']
+    ?? $_POST['tenant']
+    ?? $_GET['tenant_key']
+    ?? $_GET['tenant']
+    ?? secureit_request_header_value(['HTTP_X_SECUREIT_TENANT_KEY', 'X-SecureIT-Tenant-Key'])
+    ?? ''
+)));
 if ($tenantKey === '' || !secureit_valid_tenant_key($tenantKey)) {
     secureit_report_import_json_response(400, [
         'ok' => false,
@@ -125,32 +132,6 @@ if (!secureit_find_tenant($tenantKey)) {
     exit;
 }
 
-if (!isset($_FILES['bundle_zip'])) {
-    secureit_report_import_json_response(400, [
-        'ok' => false,
-        'message' => 'No bundle_zip file was uploaded.',
-    ]);
-    exit;
-}
-
-$upload = $_FILES['bundle_zip'];
-if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-    secureit_report_import_json_response(400, [
-        'ok' => false,
-        'message' => 'The bundle_zip upload failed.',
-    ]);
-    exit;
-}
-
-$uploadedPath = (string) ($upload['tmp_name'] ?? '');
-if ($uploadedPath === '' || !is_uploaded_file($uploadedPath)) {
-    secureit_report_import_json_response(400, [
-        'ok' => false,
-        'message' => 'The uploaded bundle could not be verified.',
-    ]);
-    exit;
-}
-
 $extractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'secureit-import-' . bin2hex(random_bytes(8));
 if (!mkdir($extractDir, 0775, true) && !is_dir($extractDir)) {
     secureit_report_import_json_response(500, [
@@ -161,6 +142,33 @@ if (!mkdir($extractDir, 0775, true) && !is_dir($extractDir)) {
 }
 
 try {
+    $uploadedPath = '';
+    $cleanupUpload = '';
+
+    if (isset($_FILES['bundle_zip'])) {
+        $upload = $_FILES['bundle_zip'];
+        if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('The bundle_zip upload failed.');
+        }
+
+        $uploadedPath = (string) ($upload['tmp_name'] ?? '');
+        if ($uploadedPath === '' || !is_uploaded_file($uploadedPath)) {
+            throw new RuntimeException('The uploaded bundle could not be verified.');
+        }
+    } else {
+        $rawBody = file_get_contents('php://input');
+        if (!is_string($rawBody) || $rawBody === '') {
+            throw new RuntimeException('No report bundle was received.');
+        }
+
+        $cleanupUpload = tempnam(sys_get_temp_dir(), 'secureit-bundle-');
+        if ($cleanupUpload === false) {
+            throw new RuntimeException('Unable to create a temporary bundle file.');
+        }
+        file_put_contents($cleanupUpload, $rawBody);
+        $uploadedPath = $cleanupUpload;
+    }
+
     $zip = new ZipArchive();
     if ($zip->open($uploadedPath) !== true) {
         throw new RuntimeException('The uploaded file is not a valid ZIP archive.');
@@ -212,4 +220,7 @@ catch (Throwable $exception) {
 }
 finally {
     secureit_report_import_remove_tree($extractDir);
+    if (!empty($cleanupUpload) && file_exists($cleanupUpload)) {
+        @unlink($cleanupUpload);
+    }
 }

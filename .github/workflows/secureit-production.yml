@@ -346,17 +346,17 @@ jobs:
             exit 0
           fi
 
-          zipPath="$RUNNER_TEMP/secureit-report-${TENANT_KEY}.zip"
-          rm -f "$zipPath"
-          (cd "output/${TENANT_KEY}" && zip -qr "$zipPath" .)
+          tarPath="$RUNNER_TEMP/secureit-report-${TENANT_KEY}.tar"
+          rm -f "$tarPath"
+          (cd "output/${TENANT_KEY}" && tar -cf "$tarPath" .)
 
           responseFile="$RUNNER_TEMP/secureit-report-import-response-${TENANT_KEY}.json"
           httpStatus="$(curl --silent --show-error -o "$responseFile" -w '%{http_code}' -X POST \
             -H "Authorization: Bearer ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
             -H "X-SecureIT-Workflow-Token: ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
             -H "X-SecureIT-Tenant-Key: ${TENANT_KEY}" \
-            -H "Content-Type: application/zip" \
-            --data-binary @"${zipPath}" \
+            -H "Content-Type: application/x-tar" \
+            --data-binary @"${tarPath}" \
             "${baseUrl}/report-import.php?tenant_key=${TENANT_KEY}")"
 
           echo "Portal import response:"

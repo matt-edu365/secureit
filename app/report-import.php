@@ -65,21 +65,6 @@ function secureit_report_import_copy_tree(string $source, string $destination): 
     }
 }
 
-function secureit_report_import_validate_zip_entries(ZipArchive $zip): void {
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $entryName = (string) $zip->getNameIndex($i);
-        if ($entryName === '') {
-            throw new RuntimeException('The uploaded archive contains an empty entry name.');
-        }
-        if (str_starts_with($entryName, '/') || str_starts_with($entryName, '\\') || preg_match('#^[A-Za-z]:[\\\\/]#', $entryName)) {
-            throw new RuntimeException('The uploaded archive contains an invalid absolute path entry.');
-        }
-        if (str_contains($entryName, '../') || str_contains($entryName, '..\\')) {
-            throw new RuntimeException('The uploaded archive contains a path traversal entry.');
-        }
-    }
-}
-
 function secureit_report_import_detect_root(string $extractDir): string {
     $entries = array_values(array_filter(scandir($extractDir) ?: [], static fn (string $entry): bool => $entry !== '.' && $entry !== '..'));
     if (count($entries) === 1) {
@@ -145,10 +130,10 @@ try {
     $uploadedPath = '';
     $cleanupUpload = '';
 
-    if (isset($_FILES['bundle_zip'])) {
-        $upload = $_FILES['bundle_zip'];
+    if (isset($_FILES['bundle_tar'])) {
+        $upload = $_FILES['bundle_tar'];
         if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('The bundle_zip upload failed.');
+            throw new RuntimeException('The bundle_tar upload failed.');
         }
 
         $uploadedPath = (string) ($upload['tmp_name'] ?? '');
@@ -165,21 +150,29 @@ try {
         if ($cleanupUpload === false) {
             throw new RuntimeException('Unable to create a temporary bundle file.');
         }
+        $tarPath = $cleanupUpload . '.tar';
+        if (!rename($cleanupUpload, $tarPath)) {
+            @unlink($cleanupUpload);
+            throw new RuntimeException('Unable to prepare a temporary tar file.');
+        }
+        $cleanupUpload = $tarPath;
         file_put_contents($cleanupUpload, $rawBody);
         $uploadedPath = $cleanupUpload;
     }
 
-    $zip = new ZipArchive();
-    if ($zip->open($uploadedPath) !== true) {
-        throw new RuntimeException('The uploaded file is not a valid ZIP archive.');
+    if (!class_exists('PharData')) {
+        throw new RuntimeException('PharData is not available in this PHP runtime.');
     }
 
-    secureit_report_import_validate_zip_entries($zip);
-    if (!$zip->extractTo($extractDir)) {
-        $zip->close();
+    try {
+        $archive = new PharData($uploadedPath);
+    } catch (Throwable $archiveException) {
+        throw new RuntimeException('The uploaded file is not a valid TAR archive. ' . $archiveException->getMessage());
+    }
+
+    if (!$archive->extractTo($extractDir, null, true)) {
         throw new RuntimeException('The uploaded archive could not be extracted.');
     }
-    $zip->close();
 
     $bundleRoot = secureit_report_import_detect_root($extractDir);
     $latestSummary = $bundleRoot . '/latest/summary.json';

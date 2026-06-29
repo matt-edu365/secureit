@@ -68,6 +68,37 @@ function secureit_diag_header_value(array $headers, string $name): string {
     return '';
 }
 
+function secureit_diag_html(string $value): string {
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function secureit_diag_default_email_recipient(): string {
+    return 'secureit@ict365.ky';
+}
+
+function secureit_diag_email_overview_stats(): array {
+    $checks = 84;
+    $passed = 72;
+    $partial = 9;
+    $failed = 3;
+    $passRate = $checks > 0 ? (int) round(($passed / $checks) * 100) : 0;
+    $statusLabel = 'Watch';
+    $statusTone = 'warn';
+
+    return [
+        'title' => 'Tenant overview snapshot',
+        'subtitle' => 'Dummy statistics for HTML rendering tests. These mirror the tenant overview summary cards.',
+        'summary' => 'Most controls are healthy, with a few items still needing review before the next weekly run.',
+        'statusLabel' => $statusLabel,
+        'statusTone' => $statusTone,
+        'checks' => $checks,
+        'passed' => $passed,
+        'partial' => $partial,
+        'failed' => $failed,
+        'passRate' => $passRate,
+    ];
+}
+
 function secureit_diag_build_email_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox): string {
     $lines = [
         'SecureIT diagnostics email test',
@@ -81,15 +112,127 @@ function secureit_diag_build_email_body(string $modeLabel, string $generatedAt, 
     return implode("\n", $lines) . "\n";
 }
 
-function secureit_diag_build_email_html_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox): string {
+function secureit_diag_build_email_html_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox, array $overviewStats): string {
+    $title = secureit_diag_html((string) ($overviewStats['title'] ?? 'Tenant overview snapshot'));
+    $subtitle = secureit_diag_html((string) ($overviewStats['subtitle'] ?? ''));
+    $summary = secureit_diag_html((string) ($overviewStats['summary'] ?? ''));
+    $statusLabel = secureit_diag_html((string) ($overviewStats['statusLabel'] ?? 'Healthy'));
+    $modeLabel = secureit_diag_html($modeLabel);
+    $generatedAt = secureit_diag_html($generatedAt);
+    $senderMailbox = secureit_diag_html($senderMailbox);
+    $recipientMailbox = secureit_diag_html($recipientMailbox);
+    $checks = (int) ($overviewStats['checks'] ?? 0);
+    $passed = (int) ($overviewStats['passed'] ?? 0);
+    $partial = (int) ($overviewStats['partial'] ?? 0);
+    $failed = (int) ($overviewStats['failed'] ?? 0);
+    $passRate = max(0, min(100, (int) ($overviewStats['passRate'] ?? 0)));
+    $statusTone = strtolower(trim((string) ($overviewStats['statusTone'] ?? 'good')));
+    $statusColor = match ($statusTone) {
+        'warn' => '#a1600a',
+        'bad' => '#b42318',
+        default => '#0f766e',
+    };
+    $statusBackground = match ($statusTone) {
+        'warn' => '#fff7ed',
+        'bad' => '#fff1f2',
+        default => '#edf9f5',
+    };
+    $metricCards = [
+        [
+            'label' => 'Checks',
+            'value' => $checks,
+            'background' => '#eaf6f4',
+            'border' => '#cbe7df',
+            'accent' => '#0f766e',
+            'note' => 'Across the latest assessment',
+        ],
+        [
+            'label' => 'Passed',
+            'value' => $passed,
+            'background' => '#edf9f5',
+            'border' => '#c8eadb',
+            'accent' => '#13795b',
+            'note' => 'Controls already meeting the baseline',
+        ],
+        [
+            'label' => 'Partially met',
+            'value' => $partial,
+            'background' => '#fff7e8',
+            'border' => '#f3d7a7',
+            'accent' => '#a1600a',
+            'note' => 'Controls that need a small amount of follow-up',
+        ],
+        [
+            'label' => 'Failed',
+            'value' => $failed,
+            'background' => '#fff1ef',
+            'border' => '#f1c0b7',
+            'accent' => '#b42318',
+            'note' => 'Controls still needing attention',
+        ],
+    ];
+
+    $cardRows = '';
+    foreach (array_chunk($metricCards, 2) as $rowCards) {
+        $cardRows .= '<tr>';
+        foreach ($rowCards as $card) {
+            $cardRows .= '<td width="50%" valign="top" style="padding:0 6px 12px 0;">';
+            $cardRows .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; background:' . secureit_diag_html((string) $card['background']) . '; border:1px solid ' . secureit_diag_html((string) $card['border']) . '; border-radius:18px;">';
+            $cardRows .= '<tr><td style="padding:16px 16px 14px;">';
+            $cardRows .= '<div style="font-size:12px; line-height:1.2; letter-spacing:0.12em; text-transform:uppercase; color:' . secureit_diag_html((string) $card['accent']) . '; font-weight:700;">' . secureit_diag_html((string) $card['label']) . '</div>';
+            $cardRows .= '<div style="font-size:32px; line-height:1.05; margin-top:8px; font-weight:800; color:#163a37;">' . secureit_diag_html((string) $card['value']) . '</div>';
+            $cardRows .= '<div style="font-size:12px; line-height:1.45; margin-top:8px; color:#4f645f;">' . secureit_diag_html((string) $card['note']) . '</div>';
+            $cardRows .= '</td></tr></table>';
+            $cardRows .= '</td>';
+        }
+        if (count($rowCards) === 1) {
+            $cardRows .= '<td width="50%" valign="top" style="padding:0 0 12px 6px;"></td>';
+        }
+        $cardRows .= '</tr>';
+    }
+
     return '<!doctype html>'
-        . '<html><body style="font-family:Arial,Helvetica,sans-serif; line-height:1.5; color:#163a37;">'
-        . '<h1 style="font-size:1.4rem; margin:0 0 12px;">SecureIT diagnostics email test</h1>'
-        . '<p><strong>Mode:</strong> ' . htmlspecialchars($modeLabel) . '</p>'
-        . '<p><strong>Generated at:</strong> ' . htmlspecialchars($generatedAt) . '</p>'
-        . '<p><strong>Sender mailbox:</strong> ' . htmlspecialchars($senderMailbox) . '</p>'
-        . '<p><strong>Recipient mailbox:</strong> ' . htmlspecialchars($recipientMailbox) . '</p>'
-        . '<p>This is a Graph app-only sendMail test from the SecureIT diagnostics page.</p>'
+        . '<html><body style="margin:0; padding:0; background:#edf5f2; font-family:Arial,Helvetica,sans-serif; color:#163a37;">'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; background:linear-gradient(180deg,#0f2f2c 0%, #133f3a 100%);">'
+        . '<tr><td align="center" style="padding:28px 16px;">'
+        . '<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="border-collapse:separate; max-width:640px; width:100%;">'
+        . '<tr><td style="padding:0;">'
+        . '<div style="background:#0f2f2c; color:#f3fbf9; border-radius:26px 26px 0 0; padding:28px 30px 24px; box-shadow:0 14px 30px rgba(8,36,33,0.28);">'
+        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.18em; text-transform:uppercase; opacity:0.8;">SecureIT diagnostics</div>'
+        . '<div style="margin-top:8px; font-size:26px; line-height:1.2; font-weight:800;">' . $title . '</div>'
+        . '<div style="margin-top:10px; font-size:14px; line-height:1.5; max-width:520px; color:#d5ede8;">' . $subtitle . '</div>'
+        . '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px;"><tr>'
+        . '<td style="padding:0 10px 0 0;"><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Mode: ' . $modeLabel . '</div></td>'
+        . '<td style="padding:0 10px 0 0;"><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Recipient: ' . $recipientMailbox . '</div></td>'
+        . '<td><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Generated: ' . $generatedAt . '</div></td>'
+        . '</tr></table>'
+        . '</div>'
+        . '</td></tr>'
+        . '<tr><td style="background:#ffffff; border-radius:0 0 26px 26px; padding:28px 30px 30px; box-shadow:0 18px 40px rgba(18,50,46,0.12);">'
+        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.14em; text-transform:uppercase; color:#53706a; font-weight:700;">Tenant overview</div>'
+        . '<div style="margin-top:8px; font-size:22px; line-height:1.25; font-weight:800; color:#102d2a;">Illustrative tenant overview</div>'
+        . '<div style="margin-top:8px; font-size:15px; line-height:1.6; color:#4f645f;">This is a dummy summary that mirrors the SecureIT tenant overview cards and pass-rate block so you can verify HTML rendering in the mailbox.</div>'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px; border-collapse:separate;">'
+        . $cardRows
+        . '</table>'
+        . '<div style="margin-top:6px; padding:18px 18px 16px; border-radius:18px; background:#f3fbf9; border:1px solid #cae7de;">'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>'
+        . '<td valign="middle" style="padding:0 12px 0 0;"><div style="font-size:13px; line-height:1.3; font-weight:700; color:#53706a; text-transform:uppercase; letter-spacing:0.1em;">Pass rate</div></td>'
+        . '<td valign="middle" align="right"><div style="display:inline-block; font-size:14px; line-height:1.3; font-weight:800; color:' . secureit_diag_html($statusColor) . '; background:' . secureit_diag_html($statusBackground) . '; border:1px solid rgba(0,0,0,0.05); border-radius:999px; padding:6px 12px;">' . $statusLabel . '</div></td>'
+        . '</tr></table>'
+        . '<div style="margin-top:10px; height:12px; background:#d9ebe6; border-radius:999px; overflow:hidden;"><div style="width:' . $passRate . '%; height:12px; background:linear-gradient(90deg,#0f766e 0%, #2f8f84 100%); border-radius:999px;"></div></div>'
+        . '<div style="margin-top:8px; font-size:13px; line-height:1.5; color:#4f645f;">' . $passRate . '% of the dummy checks passed in this sample overview. ' . secureit_diag_html(sprintf('%d passed, %d partially met, %d failed.', $passed, $partial, $failed)) . '</div>'
+        . '</div>'
+        . '<div style="margin-top:16px; padding:18px; border-radius:18px; background:#102d2a; color:#edf7f4;">'
+        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.12em; text-transform:uppercase; color:#9ed8cf; font-weight:700;">Summary</div>'
+        . '<div style="margin-top:8px; font-size:16px; line-height:1.6; font-weight:600;">' . $summary . '</div>'
+        . '<div style="margin-top:10px; font-size:12px; line-height:1.5; color:#c5e4de;">Sender mailbox: ' . $senderMailbox . ' | Recipient mailbox: ' . $recipientMailbox . ' | Generated at: ' . $generatedAt . '</div>'
+        . '</div>'
+        . '<div style="margin-top:16px; font-size:12px; line-height:1.5; color:#6a817b;">SecureIT diagnostics mail test. The numbers above are dummy values and are intended only to validate HTML rendering, formatting, and Graph mail delivery.</div>'
+        . '</td></tr>'
+        . '</table>'
+        . '</td></tr>'
+        . '</table>'
         . '</body></html>';
 }
 
@@ -555,6 +698,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['write_tenant_secret']
     }
 }
 
+$mailTestRecipientMailbox = trim((string) ($_POST['email_test_recipient'] ?? secureit_diag_default_email_recipient()));
+if ($mailTestRecipientMailbox === '') {
+    $mailTestRecipientMailbox = secureit_diag_default_email_recipient();
+}
+$mailTestRecipientError = '';
+if (!filter_var($mailTestRecipientMailbox, FILTER_VALIDATE_EMAIL)) {
+    $mailTestRecipientError = 'Enter a valid recipient email address before sending a test email.';
+}
+
 $mailTestTenantId = trim((string) ($config['entra_tenant_id'] ?? ''));
 $mailTestTenantIdSource = '';
 if ($mailTestTenantId !== '') {
@@ -564,7 +716,6 @@ if ($mailTestTenantId !== '') {
     $mailTestTenantIdSource = 'SECUREIT_KEY_VAULT_TENANT_ID';
 }
 $mailTestSenderMailbox = 'secureit@ict365.ky';
-$mailTestRecipientMailbox = 'secureit@ict365.ky';
 $plainMailTestReport = '';
 $plainMailTestErrors = [];
 $plainMailTestSummary = '';
@@ -579,7 +730,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_plain_test_email
     $bodyContent = secureit_diag_build_email_body($modeLabel, $generatedAt, $mailTestSenderMailbox, $mailTestRecipientMailbox);
     $plainMailTestSummary = 'Plain text email test was not sent.';
 
-    if ($mailTestTenantId === '') {
+    if ($mailTestRecipientError !== '') {
+        $plainMailTestErrors[] = $mailTestRecipientError;
+    } elseif ($mailTestTenantId === '') {
         $plainMailTestErrors[] = 'No Entra tenant ID is configured for Graph app-only mail sending. Set SECUREIT_ENTRA_TENANT_ID, or keep SECUREIT_KEY_VAULT_TENANT_ID populated as a fallback.';
     } elseif (!secureit_entra_is_enabled()) {
         $plainMailTestErrors[] = 'Entra client credentials are not configured, so SecureIT cannot request a Graph token.';
@@ -655,10 +808,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_html_test_email'
     $generatedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
     $modeLabel = 'HTML';
     $subject = 'SecureIT diagnostics email test - HTML - ' . $generatedAt;
-    $bodyContent = secureit_diag_build_email_html_body($modeLabel, $generatedAt, $mailTestSenderMailbox, $mailTestRecipientMailbox);
+    $overviewStats = secureit_diag_email_overview_stats();
+    $bodyContent = secureit_diag_build_email_html_body($modeLabel, $generatedAt, $mailTestSenderMailbox, $mailTestRecipientMailbox, $overviewStats);
     $htmlMailTestSummary = 'HTML email test was not sent.';
 
-    if ($mailTestTenantId === '') {
+    if ($mailTestRecipientError !== '') {
+        $htmlMailTestErrors[] = $mailTestRecipientError;
+    } elseif ($mailTestTenantId === '') {
         $htmlMailTestErrors[] = 'No Entra tenant ID is configured for Graph app-only mail sending. Set SECUREIT_ENTRA_TENANT_ID, or keep SECUREIT_KEY_VAULT_TENANT_ID populated as a fallback.';
     } elseif (!secureit_entra_is_enabled()) {
         $htmlMailTestErrors[] = 'Entra client credentials are not configured, so SecureIT cannot request a Graph token.';
@@ -1026,47 +1182,53 @@ ob_start();
       </div>
     </div>
 
-    <div class="split" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px;">
-      <div class="empty-state" style="margin:0; align-self:start;">
-        <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">Plain text email</h4>
-        <p class="muted" style="margin:0 0 12px;">Uses a `text/plain` message body and writes the same diagnostic block into the message body.</p>
-        <form method="post" style="margin-bottom:12px;">
-          <button type="submit" name="send_plain_test_email" value="1">Send plain text test email</button>
-        </form>
-        <?php if ($plainMailTestReport === '' && $plainMailTestErrors === []): ?>
-          <div class="empty-state" style="margin-bottom:12px;">
-            <strong>Awaiting test run</strong>
-            <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
-          </div>
-        <?php else: ?>
-          <div class="<?php echo $plainMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin-bottom:12px;">
-            <?php echo htmlspecialchars($plainMailTestErrors !== [] ? implode(' ', $plainMailTestErrors) : $plainMailTestSummary); ?>
-          </div>
-        <?php endif; ?>
-        <label for="plain_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
-        <textarea id="plain_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($plainMailTestReport !== '' ? $plainMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
-      </div>
+    <form method="post">
+      <label for="email_test_recipient">Recipient email address</label>
+      <input id="email_test_recipient" name="email_test_recipient" type="email" autocomplete="email" placeholder="name@example.com" value="<?php echo htmlspecialchars($mailTestRecipientMailbox); ?>" required>
+      <p class="field-note">The shared mailbox remains <code>secureit@ict365.ky</code>. Enter the recipient address you want to test.</p>
 
-      <div class="empty-state" style="margin:0; align-self:start;">
-        <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">HTML email</h4>
-        <p class="muted" style="margin:0 0 12px;">Uses a `text/html` message body with the same diagnostic content rendered as markup.</p>
-        <form method="post" style="margin-bottom:12px;">
+      <?php if ($mailTestRecipientError !== ''): ?>
+        <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($mailTestRecipientError); ?></div>
+      <?php endif; ?>
+
+      <div class="split" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px;">
+        <div class="empty-state" style="margin:0; align-self:start;">
+          <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">Plain text email</h4>
+          <p class="muted" style="margin:0 0 12px;">Uses a `text/plain` message body and writes the same diagnostic block into the message body.</p>
+          <button type="submit" name="send_plain_test_email" value="1">Send plain text test email</button>
+          <?php if ($plainMailTestReport === '' && $plainMailTestErrors === []): ?>
+            <div class="empty-state" style="margin:12px 0 12px;">
+              <strong>Awaiting test run</strong>
+              <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
+            </div>
+          <?php else: ?>
+            <div class="<?php echo $plainMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin:12px 0;">
+              <?php echo htmlspecialchars($plainMailTestErrors !== [] ? implode(' ', $plainMailTestErrors) : $plainMailTestSummary); ?>
+            </div>
+          <?php endif; ?>
+          <label for="plain_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
+          <textarea id="plain_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($plainMailTestReport !== '' ? $plainMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
+        </div>
+
+        <div class="empty-state" style="margin:0; align-self:start;">
+          <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">HTML email</h4>
+          <p class="muted" style="margin:0 0 12px;">Uses a `text/html` message body with a dashboard-style overview and the same diagnostic content rendered as markup.</p>
           <button type="submit" name="send_html_test_email" value="1">Send HTML test email</button>
-        </form>
-        <?php if ($htmlMailTestReport === '' && $htmlMailTestErrors === []): ?>
-          <div class="empty-state" style="margin-bottom:12px;">
-            <strong>Awaiting test run</strong>
-            <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
-          </div>
-        <?php else: ?>
-          <div class="<?php echo $htmlMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin-bottom:12px;">
-            <?php echo htmlspecialchars($htmlMailTestErrors !== [] ? implode(' ', $htmlMailTestErrors) : $htmlMailTestSummary); ?>
-          </div>
-        <?php endif; ?>
-        <label for="html_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
-        <textarea id="html_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($htmlMailTestReport !== '' ? $htmlMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
+          <?php if ($htmlMailTestReport === '' && $htmlMailTestErrors === []): ?>
+            <div class="empty-state" style="margin:12px 0 12px;">
+              <strong>Awaiting test run</strong>
+              <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
+            </div>
+          <?php else: ?>
+            <div class="<?php echo $htmlMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin:12px 0;">
+              <?php echo htmlspecialchars($htmlMailTestErrors !== [] ? implode(' ', $htmlMailTestErrors) : $htmlMailTestSummary); ?>
+            </div>
+          <?php endif; ?>
+          <label for="html_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
+          <textarea id="html_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($htmlMailTestReport !== '' ? $htmlMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
+        </div>
       </div>
-    </div>
+    </form>
   </div>
 
   <div class="card panel">

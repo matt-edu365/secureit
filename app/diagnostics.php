@@ -53,6 +53,93 @@ function secureit_diag_json_line(string $label, mixed $value): string {
     return sprintf('%s: %s', $label, json_encode($value, JSON_UNESCAPED_SLASHES));
 }
 
+function secureit_diag_header_value(array $headers, string $name): string {
+    $name = strtolower(trim($name));
+    if ($name === '') {
+        return '';
+    }
+
+    foreach ($headers as $headerName => $headerValue) {
+        if (strtolower((string) $headerName) === $name) {
+            return trim((string) $headerValue);
+        }
+    }
+
+    return '';
+}
+
+function secureit_diag_build_email_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox): string {
+    $lines = [
+        'SecureIT diagnostics email test',
+        'Mode: ' . $modeLabel,
+        'Generated at: ' . $generatedAt,
+        'Sender mailbox: ' . $senderMailbox,
+        'Recipient mailbox: ' . $recipientMailbox,
+        'This is a Graph app-only sendMail test from the SecureIT diagnostics page.',
+    ];
+
+    return implode("\n", $lines) . "\n";
+}
+
+function secureit_diag_build_email_html_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox): string {
+    return '<!doctype html>'
+        . '<html><body style="font-family:Arial,Helvetica,sans-serif; line-height:1.5; color:#163a37;">'
+        . '<h1 style="font-size:1.4rem; margin:0 0 12px;">SecureIT diagnostics email test</h1>'
+        . '<p><strong>Mode:</strong> ' . htmlspecialchars($modeLabel) . '</p>'
+        . '<p><strong>Generated at:</strong> ' . htmlspecialchars($generatedAt) . '</p>'
+        . '<p><strong>Sender mailbox:</strong> ' . htmlspecialchars($senderMailbox) . '</p>'
+        . '<p><strong>Recipient mailbox:</strong> ' . htmlspecialchars($recipientMailbox) . '</p>'
+        . '<p>This is a Graph app-only sendMail test from the SecureIT diagnostics page.</p>'
+        . '</body></html>';
+}
+
+function secureit_diag_build_email_test_report(array $state): string {
+    $lines = [];
+    $lines[] = 'SecureIT email send test';
+    $lines[] = 'Mode: ' . ($state['modeLabel'] ?? '[not set]');
+    $lines[] = 'Outcome: ' . ($state['outcomeLabel'] ?? '[not set]');
+    $lines[] = 'Attempted at: ' . ($state['attemptedAt'] ?? '[not set]');
+    $lines[] = 'Mail tenant source: ' . ($state['mailTenantSource'] ?? '[not set]');
+    $lines[] = 'Mail tenant ID: ' . ($state['mailTenantId'] !== '' ? $state['mailTenantId'] : '[not set]');
+    $lines[] = 'Sender mailbox: ' . ($state['senderMailbox'] ?? '[not set]');
+    $lines[] = 'Recipient mailbox: ' . ($state['recipientMailbox'] ?? '[not set]');
+    $lines[] = 'Graph endpoint: ' . ($state['endpoint'] ?? '[not set]');
+    $lines[] = 'Subject: ' . ($state['subject'] ?? '[not set]');
+    $lines[] = 'Body content type: ' . ($state['bodyContentType'] ?? '[not set]');
+    $lines[] = 'Save to sent items: ' . secureit_diag_yes_no((bool) ($state['saveToSentItems'] ?? false));
+    $lines[] = 'Body length: ' . strlen((string) ($state['bodyContent'] ?? ''));
+    $lines[] = '';
+    $lines[] = '[Message body]';
+    $bodyContent = trim((string) ($state['bodyContent'] ?? ''));
+    $lines[] = $bodyContent !== '' ? $bodyContent : '[not set]';
+
+    if (!empty($state['errors'])) {
+        $lines[] = '';
+        $lines[] = '[Errors]';
+        foreach ((array) $state['errors'] as $error) {
+            $lines[] = '- ' . $error;
+        }
+    }
+
+    if (!empty($state['response']) && is_array($state['response'])) {
+        $response = $state['response'];
+        $responseHeaders = is_array($response['headers'] ?? null) ? $response['headers'] : [];
+        $lines[] = '';
+        $lines[] = '[Graph response]';
+        $lines[] = 'HTTP status: ' . ($response['status'] ?? '[not set]');
+        $lines[] = 'Request ID: ' . (secureit_diag_header_value($responseHeaders, 'request-id') ?: '[not set]');
+        $lines[] = 'Client request ID: ' . (secureit_diag_header_value($responseHeaders, 'client-request-id') ?: ($response['clientRequestId'] ?? '[not set]'));
+        $lines[] = 'Date: ' . (secureit_diag_header_value($responseHeaders, 'date') ?: '[not set]');
+        $lines[] = 'Response headers:';
+        $lines[] = json_encode($responseHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '[not available]';
+        $lines[] = 'Response body:';
+        $responseBody = trim((string) ($response['body'] ?? ''));
+        $lines[] = $responseBody !== '' ? $responseBody : '[empty]';
+    }
+
+    return implode("\n", $lines) . "\n";
+}
+
 function secureit_diag_tenant_registry_status(array $tenant): array {
     $requiredFields = [
         'id' => 'tenant key',
@@ -468,6 +555,181 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['write_tenant_secret']
     }
 }
 
+$mailTestTenantId = trim((string) ($config['entra_tenant_id'] ?? ''));
+$mailTestTenantIdSource = '';
+if ($mailTestTenantId !== '') {
+    $mailTestTenantIdSource = 'SECUREIT_ENTRA_TENANT_ID';
+} elseif (trim((string) ($config['key_vault_tenant_id'] ?? '')) !== '') {
+    $mailTestTenantId = trim((string) ($config['key_vault_tenant_id'] ?? ''));
+    $mailTestTenantIdSource = 'SECUREIT_KEY_VAULT_TENANT_ID';
+}
+$mailTestSenderMailbox = 'secureit@ict365.ky';
+$mailTestRecipientMailbox = 'secureit@ict365.ky';
+$plainMailTestReport = '';
+$plainMailTestErrors = [];
+$plainMailTestSummary = '';
+$htmlMailTestReport = '';
+$htmlMailTestErrors = [];
+$htmlMailTestSummary = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_plain_test_email'])) {
+    $generatedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+    $modeLabel = 'Plain text';
+    $subject = 'SecureIT diagnostics email test - plain text - ' . $generatedAt;
+    $bodyContent = secureit_diag_build_email_body($modeLabel, $generatedAt, $mailTestSenderMailbox, $mailTestRecipientMailbox);
+    $plainMailTestSummary = 'Plain text email test was not sent.';
+
+    if ($mailTestTenantId === '') {
+        $plainMailTestErrors[] = 'No Entra tenant ID is configured for Graph app-only mail sending. Set SECUREIT_ENTRA_TENANT_ID, or keep SECUREIT_KEY_VAULT_TENANT_ID populated as a fallback.';
+    } elseif (!secureit_entra_is_enabled()) {
+        $plainMailTestErrors[] = 'Entra client credentials are not configured, so SecureIT cannot request a Graph token.';
+    } else {
+        try {
+            $response = secureit_entra_graph_send_mail(
+                $mailTestTenantId,
+                $mailTestSenderMailbox,
+                $subject,
+                'Text',
+                $bodyContent,
+                [$mailTestRecipientMailbox],
+                true
+            );
+            $plainMailTestSummary = 'Plain text email was accepted by Microsoft Graph.';
+            $plainMailTestReport = secureit_diag_build_email_test_report([
+                'modeLabel' => $modeLabel,
+                'outcomeLabel' => 'success',
+                'attemptedAt' => $generatedAt,
+                'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+                'mailTenantId' => $mailTestTenantId,
+                'senderMailbox' => $mailTestSenderMailbox,
+                'recipientMailbox' => $mailTestRecipientMailbox,
+                'endpoint' => (string) ($response['endpoint'] ?? ''),
+                'subject' => $subject,
+                'bodyContentType' => 'Text',
+                'bodyContent' => $bodyContent,
+                'saveToSentItems' => (bool) ($response['saveToSentItems'] ?? true),
+                'response' => $response,
+            ]);
+        } catch (Throwable $exception) {
+            $plainMailTestErrors[] = 'Plain text email could not be sent through Microsoft Graph: ' . $exception->getMessage();
+            $plainMailTestReport = secureit_diag_build_email_test_report([
+                'modeLabel' => $modeLabel,
+                'outcomeLabel' => 'failure',
+                'attemptedAt' => $generatedAt,
+                'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+                'mailTenantId' => $mailTestTenantId,
+                'senderMailbox' => $mailTestSenderMailbox,
+                'recipientMailbox' => $mailTestRecipientMailbox,
+                'endpoint' => 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($mailTestSenderMailbox) . '/sendMail',
+                'subject' => $subject,
+                'bodyContentType' => 'Text',
+                'bodyContent' => $bodyContent,
+                'saveToSentItems' => true,
+                'errors' => [
+                    'Plain text email could not be sent through Microsoft Graph: ' . $exception->getMessage(),
+                ],
+            ]);
+        }
+    }
+
+    if ($plainMailTestReport === '') {
+        $plainMailTestReport = secureit_diag_build_email_test_report([
+            'modeLabel' => $modeLabel,
+            'outcomeLabel' => 'not sent',
+            'attemptedAt' => $generatedAt,
+            'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+            'mailTenantId' => $mailTestTenantId,
+            'senderMailbox' => $mailTestSenderMailbox,
+            'recipientMailbox' => $mailTestRecipientMailbox,
+            'endpoint' => 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($mailTestSenderMailbox) . '/sendMail',
+            'subject' => $subject,
+            'bodyContentType' => 'Text',
+            'bodyContent' => $bodyContent,
+            'saveToSentItems' => true,
+            'errors' => $plainMailTestErrors,
+        ]);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_html_test_email'])) {
+    $generatedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+    $modeLabel = 'HTML';
+    $subject = 'SecureIT diagnostics email test - HTML - ' . $generatedAt;
+    $bodyContent = secureit_diag_build_email_html_body($modeLabel, $generatedAt, $mailTestSenderMailbox, $mailTestRecipientMailbox);
+    $htmlMailTestSummary = 'HTML email test was not sent.';
+
+    if ($mailTestTenantId === '') {
+        $htmlMailTestErrors[] = 'No Entra tenant ID is configured for Graph app-only mail sending. Set SECUREIT_ENTRA_TENANT_ID, or keep SECUREIT_KEY_VAULT_TENANT_ID populated as a fallback.';
+    } elseif (!secureit_entra_is_enabled()) {
+        $htmlMailTestErrors[] = 'Entra client credentials are not configured, so SecureIT cannot request a Graph token.';
+    } else {
+        try {
+            $response = secureit_entra_graph_send_mail(
+                $mailTestTenantId,
+                $mailTestSenderMailbox,
+                $subject,
+                'HTML',
+                $bodyContent,
+                [$mailTestRecipientMailbox],
+                true
+            );
+            $htmlMailTestSummary = 'HTML email was accepted by Microsoft Graph.';
+            $htmlMailTestReport = secureit_diag_build_email_test_report([
+                'modeLabel' => $modeLabel,
+                'outcomeLabel' => 'success',
+                'attemptedAt' => $generatedAt,
+                'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+                'mailTenantId' => $mailTestTenantId,
+                'senderMailbox' => $mailTestSenderMailbox,
+                'recipientMailbox' => $mailTestRecipientMailbox,
+                'endpoint' => (string) ($response['endpoint'] ?? ''),
+                'subject' => $subject,
+                'bodyContentType' => 'HTML',
+                'bodyContent' => $bodyContent,
+                'saveToSentItems' => (bool) ($response['saveToSentItems'] ?? true),
+                'response' => $response,
+            ]);
+        } catch (Throwable $exception) {
+            $htmlMailTestErrors[] = 'HTML email could not be sent through Microsoft Graph: ' . $exception->getMessage();
+            $htmlMailTestReport = secureit_diag_build_email_test_report([
+                'modeLabel' => $modeLabel,
+                'outcomeLabel' => 'failure',
+                'attemptedAt' => $generatedAt,
+                'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+                'mailTenantId' => $mailTestTenantId,
+                'senderMailbox' => $mailTestSenderMailbox,
+                'recipientMailbox' => $mailTestRecipientMailbox,
+                'endpoint' => 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($mailTestSenderMailbox) . '/sendMail',
+                'subject' => $subject,
+                'bodyContentType' => 'HTML',
+                'bodyContent' => $bodyContent,
+                'saveToSentItems' => true,
+                'errors' => [
+                    'HTML email could not be sent through Microsoft Graph: ' . $exception->getMessage(),
+                ],
+            ]);
+        }
+    }
+
+    if ($htmlMailTestReport === '') {
+        $htmlMailTestReport = secureit_diag_build_email_test_report([
+            'modeLabel' => $modeLabel,
+            'outcomeLabel' => 'not sent',
+            'attemptedAt' => $generatedAt,
+            'mailTenantSource' => $mailTestTenantIdSource !== '' ? $mailTestTenantIdSource : '[not set]',
+            'mailTenantId' => $mailTestTenantId,
+            'senderMailbox' => $mailTestSenderMailbox,
+            'recipientMailbox' => $mailTestRecipientMailbox,
+            'endpoint' => 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($mailTestSenderMailbox) . '/sendMail',
+            'subject' => $subject,
+            'bodyContentType' => 'HTML',
+            'bodyContent' => $bodyContent,
+            'saveToSentItems' => true,
+            'errors' => $htmlMailTestErrors,
+        ]);
+    }
+}
+
 if ($secretWriteTenantKey === '' && $tenants !== []) {
     $secretWriteTenantKey = (string) ($tenants[0]['id'] ?? '');
 }
@@ -561,6 +823,7 @@ $rawLines[] = '';
 $rawLines[] = '[Entra sign-in]';
 $rawLines[] = secureit_diag_env_line('SECUREIT_ENTRA_CLIENT_ID', (string) ($config['entra_client_id'] ?? ''), true);
 $rawLines[] = secureit_diag_env_line('SECUREIT_ENTRA_CLIENT_SECRET', (string) ($config['entra_client_secret'] ?? ''), true);
+$rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_TENANT_ID', (string) ($config['entra_tenant_id'] ?? ''));
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_AUTHORITY', (string) ($config['entra_authority'] ?? ''));
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_REDIRECT_URI', (string) ($config['entra_redirect_uri'] ?? ''));
 $rawLines[] = secureit_diag_json_line('SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI', (string) ($config['entra_post_logout_redirect_uri'] ?? ''));
@@ -753,6 +1016,57 @@ ob_start();
         <button type="submit" name="write_tenant_secret" value="1">Write secret to Key Vault</button>
       </form>
     <?php endif; ?>
+  </div>
+
+  <div class="card panel" style="margin-bottom:18px;">
+    <div class="section-header" style="margin-bottom:12px;">
+      <div>
+        <h3 class="section-title" style="font-size:1.35rem;">Email send test</h3>
+        <div class="muted">Send a test message from the shared mailbox <code>secureit@ict365.ky</code> using the app's Graph Mail.Send permission. Both tests target the shared mailbox itself so you can inspect the result in one place.</div>
+      </div>
+    </div>
+
+    <div class="split" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px;">
+      <div class="empty-state" style="margin:0; align-self:start;">
+        <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">Plain text email</h4>
+        <p class="muted" style="margin:0 0 12px;">Uses a `text/plain` message body and writes the same diagnostic block into the message body.</p>
+        <form method="post" style="margin-bottom:12px;">
+          <button type="submit" name="send_plain_test_email" value="1">Send plain text test email</button>
+        </form>
+        <?php if ($plainMailTestReport === '' && $plainMailTestErrors === []): ?>
+          <div class="empty-state" style="margin-bottom:12px;">
+            <strong>Awaiting test run</strong>
+            <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
+          </div>
+        <?php else: ?>
+          <div class="<?php echo $plainMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin-bottom:12px;">
+            <?php echo htmlspecialchars($plainMailTestErrors !== [] ? implode(' ', $plainMailTestErrors) : $plainMailTestSummary); ?>
+          </div>
+        <?php endif; ?>
+        <label for="plain_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
+        <textarea id="plain_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($plainMailTestReport !== '' ? $plainMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
+      </div>
+
+      <div class="empty-state" style="margin:0; align-self:start;">
+        <h4 class="section-title" style="font-size:1.15rem; margin-bottom:8px;">HTML email</h4>
+        <p class="muted" style="margin:0 0 12px;">Uses a `text/html` message body with the same diagnostic content rendered as markup.</p>
+        <form method="post" style="margin-bottom:12px;">
+          <button type="submit" name="send_html_test_email" value="1">Send HTML test email</button>
+        </form>
+        <?php if ($htmlMailTestReport === '' && $htmlMailTestErrors === []): ?>
+          <div class="empty-state" style="margin-bottom:12px;">
+            <strong>Awaiting test run</strong>
+            <p class="muted" style="margin:8px 0 0;">Press the button above to generate a diagnostic report.</p>
+          </div>
+        <?php else: ?>
+          <div class="<?php echo $htmlMailTestErrors !== [] ? 'error' : 'success'; ?>" style="margin-bottom:12px;">
+            <?php echo htmlspecialchars($htmlMailTestErrors !== [] ? implode(' ', $htmlMailTestErrors) : $htmlMailTestSummary); ?>
+          </div>
+        <?php endif; ?>
+        <label for="html_email_diagnostic" style="margin-top:0;">Diagnostic output</label>
+        <textarea id="html_email_diagnostic" readonly spellcheck="false" style="width:100%; min-height:280px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"><?php echo htmlspecialchars($htmlMailTestReport !== '' ? $htmlMailTestReport : "Press the button above to generate a diagnostic report.\n"); ?></textarea>
+      </div>
+    </div>
   </div>
 
   <div class="card panel">

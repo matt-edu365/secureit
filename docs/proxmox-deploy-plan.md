@@ -87,7 +87,7 @@ docker compose up -d
 - `SECUREIT_KEY_VAULT_CLIENT_SECRET=<secureit-app-client-secret>`
 - `SECUREIT_KEY_VAULT_NAME=<key-vault-name>`
 - `SECUREIT_KEY_VAULT_URI=<key-vault-uri>`
-- `SECUREIT_ENTRA_TENANT_ID=<ict365-or-common-authority>`
+- `SECUREIT_ENTRA_TENANT_ID=<ict365-tenant-id>`
 - `SECUREIT_ENTRA_CLIENT_ID=<secureit-login-app-client-id>`
 - `SECUREIT_ENTRA_CLIENT_SECRET=<secureit-login-app-client-secret>`
 - `SECUREIT_ENTRA_REDIRECT_URI=https://secureit.ict365.ky/auth/callback`

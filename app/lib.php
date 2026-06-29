@@ -82,6 +82,7 @@ function secureit_entra_config(): array {
 
     return [
         'authority' => trim((string) ($config['entra_authority'] ?? 'organizations')),
+        'tenantId' => trim((string) ($config['entra_tenant_id'] ?? '')),
         'clientId' => trim((string) ($config['entra_client_id'] ?? '')),
         'clientSecret' => trim((string) ($config['entra_client_secret'] ?? '')),
         'redirectUri' => trim((string) ($config['entra_redirect_uri'] ?? '')),
@@ -344,6 +345,127 @@ function secureit_http_post_form(string $url, array $fields): array {
 
     $data = json_decode($body, true);
     return is_array($data) ? $data : [];
+}
+
+function secureit_new_guid(): string {
+    $bytes = bin2hex(random_bytes(16));
+
+    return sprintf(
+        '%s-%s-%s-%s-%s',
+        substr($bytes, 0, 8),
+        substr($bytes, 8, 4),
+        substr($bytes, 12, 4),
+        substr($bytes, 16, 4),
+        substr($bytes, 20, 12)
+    );
+}
+
+function secureit_http_capture_header_line(array &$headers, string $headerLine): int {
+    $length = strlen($headerLine);
+    $headerLine = trim($headerLine);
+    if ($headerLine === '' || str_starts_with($headerLine, 'HTTP/')) {
+        return $length;
+    }
+
+    $parts = explode(':', $headerLine, 2);
+    if (count($parts) !== 2) {
+        return $length;
+    }
+
+    $name = strtolower(trim($parts[0]));
+    $value = trim($parts[1]);
+    if ($name !== '') {
+        $headers[$name] = $value;
+    }
+
+    return $length;
+}
+
+function secureit_http_post_json_with_bearer(string $url, string $bearerToken, array $payload): array {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'data' => [],
+            'body' => '',
+            'headers' => [],
+            'error' => 'Unable to initialise the request.',
+            'clientRequestId' => '',
+        ];
+    }
+
+    $responseHeaders = [];
+    $clientRequestId = secureit_new_guid();
+    $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    if ($body === false) {
+        $body = '{}';
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_HEADERFUNCTION => static function ($curlHandle, string $headerLine) use (&$responseHeaders): int {
+            return secureit_http_capture_header_line($responseHeaders, $headerLine);
+        },
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Authorization: Bearer ' . $bearerToken,
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($body),
+            'client-request-id: ' . $clientRequestId,
+            'return-client-request-id: true',
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => [],
+            'body' => '',
+            'headers' => $responseHeaders,
+            'error' => $curlError !== '' ? $curlError : 'The request failed before a response body was returned.',
+            'clientRequestId' => $clientRequestId,
+        ];
+    }
+
+    if ($status < 200 || $status >= 300) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => is_string($response) ? (json_decode($response, true) ?: []) : [],
+            'body' => (string) $response,
+            'headers' => $responseHeaders,
+            'error' => secureit_http_describe_json_error(
+                $status,
+                (string) $response,
+                'Microsoft Graph rejected the request with HTTP ' . $status . '.'
+            ),
+            'clientRequestId' => $clientRequestId,
+        ];
+    }
+
+    $data = json_decode((string) $response, true);
+
+    return [
+        'ok' => true,
+        'status' => $status,
+        'data' => is_array($data) ? $data : [],
+        'body' => (string) $response,
+        'headers' => $responseHeaders,
+        'error' => '',
+        'clientRequestId' => $clientRequestId,
+    ];
 }
 
 function secureit_base64url_encode(string $value): string {
@@ -669,6 +791,89 @@ function secureit_entra_graph_get_json_for_tenant(string $tenantId, string $path
     }
 
     return is_array($response['data'] ?? null) ? $response['data'] : [];
+}
+
+function secureit_entra_graph_send_mail(
+    string $tenantId,
+    string $senderMailbox,
+    string $subject,
+    string $bodyContentType,
+    string $bodyContent,
+    array $toRecipients,
+    bool $saveToSentItems = true
+): array {
+    $tenantId = trim($tenantId);
+    $senderMailbox = trim($senderMailbox);
+    $subject = trim($subject);
+    $bodyContentType = trim($bodyContentType);
+    $bodyContent = (string) $bodyContent;
+
+    if ($tenantId === '') {
+        throw new RuntimeException('Tenant ID is required to send Microsoft Graph mail.');
+    }
+    if ($senderMailbox === '') {
+        throw new RuntimeException('Sender mailbox is required to send Microsoft Graph mail.');
+    }
+    if ($subject === '') {
+        throw new RuntimeException('Message subject is required to send Microsoft Graph mail.');
+    }
+
+    $recipientPayload = [];
+    foreach ($toRecipients as $recipient) {
+        $recipient = trim((string) $recipient);
+        if ($recipient === '') {
+            continue;
+        }
+
+        $recipientPayload[] = [
+            'emailAddress' => [
+                'address' => $recipient,
+            ],
+        ];
+    }
+
+    if ($recipientPayload === []) {
+        throw new RuntimeException('At least one recipient is required to send Microsoft Graph mail.');
+    }
+
+    $normalizedContentType = strtolower($bodyContentType);
+    if ($normalizedContentType === 'text') {
+        $normalizedContentType = 'Text';
+    } elseif ($normalizedContentType === 'html') {
+        $normalizedContentType = 'HTML';
+    } else {
+        throw new RuntimeException('Message body content type must be Text or HTML.');
+    }
+
+    $endpoint = 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($senderMailbox) . '/sendMail';
+    $token = secureit_entra_graph_access_token_for_tenant($tenantId);
+    $response = secureit_http_post_json_with_bearer($endpoint, $token, [
+        'message' => [
+            'subject' => $subject,
+            'body' => [
+                'contentType' => $normalizedContentType,
+                'content' => $bodyContent,
+            ],
+            'toRecipients' => $recipientPayload,
+        ],
+        'saveToSentItems' => $saveToSentItems,
+    ]);
+
+    if (empty($response['ok'])) {
+        throw new RuntimeException(trim((string) ($response['error'] ?? 'Unable to send mail through Microsoft Graph.')));
+    }
+
+    $response['endpoint'] = $endpoint;
+    $response['tenantId'] = $tenantId;
+    $response['senderMailbox'] = $senderMailbox;
+    $response['subject'] = $subject;
+    $response['bodyContentType'] = $normalizedContentType;
+    $response['bodyContent'] = $bodyContent;
+    $response['toRecipients'] = array_values(array_map('trim', array_filter(array_map('strval', $toRecipients), static fn(string $recipient): bool => trim($recipient) !== '')));
+    $response['saveToSentItems'] = $saveToSentItems;
+    $response['requestedAt'] = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+
+    return $response;
 }
 
 function secureit_entra_resolve_tenant_identity(string $tenantId): array {

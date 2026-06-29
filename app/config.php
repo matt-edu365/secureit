@@ -9,6 +9,7 @@ return [
     'canonical_controls_example_file' => __DIR__ . '/../config/canonical-controls.example.json',
     'test_descriptions_dir' => getenv('SECUREIT_TEST_DESCRIPTIONS_DIR') ?: __DIR__ . '/../data/maester-test-descriptions',
     'entra_authority' => getenv('SECUREIT_ENTRA_AUTHORITY') ?: 'organizations',
+    'entra_tenant_id' => getenv('SECUREIT_ENTRA_TENANT_ID') ?: '',
     'entra_client_id' => getenv('SECUREIT_ENTRA_CLIENT_ID') ?: '',
     'entra_client_secret' => getenv('SECUREIT_ENTRA_CLIENT_SECRET') ?: '',
     'entra_redirect_uri' => getenv('SECUREIT_ENTRA_REDIRECT_URI') ?: '',

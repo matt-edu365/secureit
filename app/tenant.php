@@ -139,7 +139,7 @@ function secureit_functional_area_trend_card(string $areaName, array $points): s
     }
 
     $width = 640;
-    $height = 240;
+    $height = 160;
     $paddingX = 34;
     $paddingY = 28;
     $plotWidth = $width - ($paddingX * 2);
@@ -453,6 +453,79 @@ ob_start();
 <?php endif; ?>
 
 <?php if ($selectedArea): ?>
+  <section class="section">
+    <article class="card panel" style="margin-bottom:18px;">
+      <div class="section-header" style="margin-bottom:14px;">
+        <div>
+          <h3 class="section-title" style="font-size:1.2rem;"><?php echo htmlspecialchars($selectedArea['name'] ?? 'Functional area'); ?> checks</h3>
+          <div class="muted">Pass and fail detail for the selected functional area.</div>
+        </div>
+        <div class="inline-links">
+          <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to all areas</a>
+        </div>
+      </div>
+      <?php if (!empty($selectedArea['controls'])): ?>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Check</th>
+                <th>Status</th>
+                <th>Weight</th>
+                <th>Matched checks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($selectedArea['controls'] as $control): ?>
+                <?php
+                  $controlStatus = (string) ($control['status'] ?? 'unknown');
+                  $controlTone = 'neutral';
+                  if ($controlStatus === 'pass') {
+                      $controlTone = 'good';
+                  } elseif ($controlStatus === 'partial') {
+                      $controlTone = 'warn';
+                  } elseif ($controlStatus === 'fail') {
+                      $controlTone = 'bad';
+                  }
+                ?>
+                <tr>
+                  <td>
+                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong><br>
+                    <span class="muted"><?php echo htmlspecialchars($control['description'] ?? ''); ?></span>
+                  </td>
+                  <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars(ucfirst($controlStatus)); ?></span></td>
+                  <td><?php echo htmlspecialchars((string) ($control['weight'] ?? 1)); ?></td>
+                  <td>
+                    <?php if (!empty($control['matchedTests'])): ?>
+                      <div class="muted" style="font-size:0.92rem;">
+                        <?php
+                          $matchedLabels = [];
+                          foreach (array_slice($control['matchedTests'], 0, 6) as $test) {
+                              $matchedLabels[] = $test['id'] . ' (' . ucfirst((string) ($test['result'] ?? 'unknown')) . ')';
+                          }
+                          echo htmlspecialchars(implode(', ', $matchedLabels));
+                        ?>
+                      </div>
+                      <?php if (count($control['matchedTests']) > 6): ?>
+                        <div class="muted" style="font-size:0.88rem; margin-top:4px;">+<?php echo htmlspecialchars((string) (count($control['matchedTests']) - 6)); ?> more checks</div>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <span class="muted">No matched checks</span>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php else: ?>
+        <div class="empty-state" style="box-shadow:none;">
+          <strong>No checks mapped to this area.</strong>
+          <p class="muted">This area currently has no canonical checks in the seeded data.</p>
+        </div>
+      <?php endif; ?>
+    </article>
+  </section>
   <section class="section">
     <?php echo secureit_functional_area_trend_card((string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaHistory); ?>
   </section>

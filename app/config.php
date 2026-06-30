@@ -26,5 +26,5 @@ return [
     'github_repository' => getenv('SECUREIT_GITHUB_REPOSITORY') ?: 'matt-edu365/secureit',
     'github_workflow_file' => getenv('SECUREIT_GITHUB_WORKFLOW_FILE') ?: 'secureit-production.yml',
     'github_workflow_ref' => getenv('SECUREIT_GITHUB_WORKFLOW_REF') ?: 'main',
-    'github_token' => getenv('SECUREIT_GITHUB_TOKEN') ?: '',
+    'github_token' => getenv('SECUREIT_WORKFLOW_SYNC_TOKEN') ?: (getenv('SECUREIT_GITHUB_TOKEN') ?: ''),
 ];

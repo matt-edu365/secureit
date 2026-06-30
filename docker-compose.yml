@@ -25,7 +25,7 @@ services:
       SECUREIT_GITHUB_REPOSITORY: "${SECUREIT_GITHUB_REPOSITORY:-matt-edu365/secureit}"
       SECUREIT_GITHUB_WORKFLOW_FILE: "${SECUREIT_GITHUB_WORKFLOW_FILE:-secureit-production.yml}"
       SECUREIT_GITHUB_WORKFLOW_REF: "${SECUREIT_GITHUB_WORKFLOW_REF:-main}"
-      SECUREIT_GITHUB_TOKEN: "${SECUREIT_GITHUB_TOKEN:-}"
+      SECUREIT_WORKFLOW_SYNC_TOKEN: "${SECUREIT_WORKFLOW_SYNC_TOKEN:-}"
     volumes:
       - ./data:/var/www/data
       - ./.local:/var/www/local

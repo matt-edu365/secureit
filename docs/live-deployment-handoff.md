@@ -99,7 +99,7 @@ Likely later:
 - `SECUREIT_GITHUB_REPOSITORY=<owner/repo>` for tenant-page workflow dispatch
 - `SECUREIT_GITHUB_WORKFLOW_FILE=secureit-production.yml`
 - `SECUREIT_GITHUB_WORKFLOW_REF=main`
-- `SECUREIT_GITHUB_TOKEN=<repo dispatch token>` for tenant-page workflow dispatch
+- `SECUREIT_WORKFLOW_SYNC_TOKEN=<repo dispatch token>` for tenant-page workflow dispatch and workflow sync
 
 The app also persists optional Key Vault metadata in `/var/www/data/admin-config.json` for display and future portability, but the runtime secret write path uses the Key Vault environment variables above.
 

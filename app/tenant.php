@@ -25,10 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_latest_report']))
         'certificate_password_secret_name' => trim((string) ($tenant['certificatePasswordSecretName'] ?? '')),
         'tenant_domain' => trim((string) ($tenant['tenantDomain'] ?? '')),
         'm365_tenant_name' => trim((string) ($tenant['m365TenantName'] ?? '')),
-        'report_base_url' => trim((string) ($tenant['reportBaseUrl'] ?? '')),
         'email_to' => trim((string) ($tenant['emailTo'] ?? '')),
         'test_profile' => 'client-secret-full',
     ];
+    $dispatchInputs['report_base_url'] = trim((string) ($tenant['reportBaseUrl'] ?? ''));
+    if ($dispatchInputs['report_base_url'] === '') {
+        $dispatchInputs['report_base_url'] = rtrim((string) ($app['base_url'] ?? secureit_config()['base_url']), '/') . '/' . rawurlencode($tenantKey);
+    }
     $dispatchResult = secureit_github_dispatch_workflow($dispatchInputs);
 
     if (!empty($dispatchResult['ok'])) {

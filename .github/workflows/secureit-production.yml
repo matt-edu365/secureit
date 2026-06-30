@@ -102,6 +102,12 @@ jobs:
           $reportBaseUrl = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.report_base_url }}') ? '' : '${{ github.event.inputs.report_base_url }}'
           $emailTo = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.email_to }}') ? '' : '${{ github.event.inputs.email_to }}'
           $m365TenantName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.m365_tenant_name }}') ? '' : '${{ github.event.inputs.m365_tenant_name }}'
+          $reportBaseUrlSource = 'workflow_dispatch input'
+
+          if ([string]::IsNullOrWhiteSpace($reportBaseUrl) -and $tenantKey -ne '' -and $baseUrl -match '^https?://') {
+            $reportBaseUrl = $baseUrl.TrimEnd('/') + '/' + [uri]::EscapeDataString($tenantKey)
+            $reportBaseUrlSource = 'derived from SECUREIT_BASE_URL'
+          }
 
           $useDirectTenantInputs = $tenantKey -ne '' -and $tenantName -ne '' -and $tenantId -ne '' -and $clientId -ne '' -and $authMode -ne '' -and $reportBaseUrl -ne ''
           switch ($authMode) {
@@ -219,7 +225,8 @@ jobs:
             "Base URL: $baseUrl",
             "Requested tenant key: " + ($(if ($tenantKey -ne '') { $tenantKey } else { '[all ready tenants]' })),
             "Discovered tenants: $($tenants.Count)",
-            "Tenant source: " + ($(if ($useDirectTenantInputs) { 'workflow_dispatch inputs' } else { 'SecureIT workflow-sync' }))
+            "Tenant source: " + ($(if ($useDirectTenantInputs) { 'workflow_dispatch inputs' } else { 'SecureIT workflow-sync' })),
+            "Report base URL source: $reportBaseUrlSource"
           )
           foreach ($tenant in $tenants) {
             $summaryLines += "- $($tenant.tenantKey) | $($tenant.tenantName) | auth=$($tenant.authMode) | ready=$($tenant.ready)"

@@ -126,33 +126,120 @@ function secureit_functional_area_history_points(array $history, string $areaNam
     return $points;
 }
 
-function secureit_functional_area_trend_card(string $areaName, array $points): string {
-    $scores = [];
-    foreach ($points as $point) {
-        if (($point['score'] ?? null) !== null) {
-            $scores[] = (int) $point['score'];
+function secureit_tenant_history_series(array $history): array {
+    $series = [
+        'overall' => [
+            'label' => 'Overall',
+            'color' => '#0f766e',
+            'fill' => '#0f766e',
+            'points' => [],
+        ],
+    ];
+
+    $allAreaNames = [];
+    foreach ($history as $item) {
+        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $overallCounts = secureit_check_summary_counts($rowAreaData);
+        $series['overall']['points'][] = [
+            'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
+            'score' => (int) ($overallCounts['passRate'] ?? 0),
+        ];
+
+        foreach (($rowAreaData['areas'] ?? []) as $area) {
+            $areaName = (string) ($area['name'] ?? '');
+            if ($areaName === '') {
+                continue;
+            }
+            $allAreaNames[$areaName] = true;
         }
     }
 
-    if ($scores === []) {
-        return '<article class="card panel" style="margin-bottom:18px;"><div class="empty-state" style="box-shadow:none;"><strong>No area trend data yet.</strong><p class="muted">A score trend will appear once SecureIT has a few historical runs for this functional area.</p></div></article>';
+    $palette = [
+        ['color' => '#1d4ed8', 'fill' => '#1d4ed8'],
+        ['color' => '#7c3aed', 'fill' => '#7c3aed'],
+        ['color' => '#c2410c', 'fill' => '#c2410c'],
+        ['color' => '#b91c1c', 'fill' => '#b91c1c'],
+        ['color' => '#0891b2', 'fill' => '#0891b2'],
+        ['color' => '#ca8a04', 'fill' => '#ca8a04'],
+        ['color' => '#15803d', 'fill' => '#15803d'],
+    ];
+
+    $index = 0;
+    foreach (array_keys($allAreaNames) as $areaName) {
+        $series[$areaName] = [
+            'label' => $areaName,
+            'color' => $palette[$index % count($palette)]['color'],
+            'fill' => $palette[$index % count($palette)]['fill'],
+            'points' => [],
+        ];
+        $index++;
     }
 
+    foreach ($history as $item) {
+        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $areaScores = [];
+        foreach (($rowAreaData['areas'] ?? []) as $area) {
+            $areaName = (string) ($area['name'] ?? '');
+            if ($areaName === '') {
+                continue;
+            }
+            $areaScores[$areaName] = $area['score'] !== null ? (int) $area['score'] : null;
+        }
+
+        foreach ($series as $key => &$definition) {
+            if ($key === 'overall') {
+                continue;
+            }
+            $definition['points'][] = [
+                'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
+                'score' => $areaScores[$key] ?? null,
+            ];
+        }
+        unset($definition);
+    }
+
+    return $series;
+}
+
+function secureit_series_points(array $series): array {
+    $points = [];
+    foreach (($series['points'] ?? []) as $point) {
+        if (($point['score'] ?? null) !== null) {
+            $points[] = [
+                'generatedAt' => (string) ($point['generatedAt'] ?? ''),
+                'score' => (int) $point['score'],
+            ];
+        }
+    }
+
+    return $points;
+}
+
+function secureit_line_graph_card(string $title, array $series, array $options = []): string {
     $width = 640;
-    $height = 160;
+    $height = (int) ($options['height'] ?? 160);
     $paddingX = 34;
     $paddingY = 28;
     $plotWidth = $width - ($paddingX * 2);
     $plotHeight = $height - ($paddingY * 2);
-    $count = count($scores);
-    $step = $count > 1 ? $plotWidth / ($count - 1) : 0;
-    $linePoints = [];
-    $plotPoints = [];
-    foreach ($scores as $index => $score) {
-        $x = $paddingX + ($step * $index);
-        $y = $paddingY + ($plotHeight - (($score / 100) * $plotHeight));
-        $linePoints[] = number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
-        $plotPoints[] = [$x, $y, $score];
+    $activeSeries = [];
+    foreach ($series as $key => $definition) {
+        $points = secureit_series_points($definition);
+        if ($points === []) {
+            continue;
+        }
+        $activeSeries[$key] = [
+            'label' => (string) ($definition['label'] ?? $key),
+            'color' => (string) ($definition['color'] ?? '#0f766e'),
+            'fill' => (string) ($definition['fill'] ?? '#0f766e'),
+            'points' => $points,
+        ];
+    }
+
+    if ($activeSeries === []) {
+        return '<article class="card panel" style="margin-bottom:18px;"><div class="empty-state" style="box-shadow:none;"><strong>No trend data yet.</strong><p class="muted">A score trend will appear once SecureIT has a few historical runs.</p></div></article>';
     }
 
     $gridLines = '';
@@ -162,43 +249,79 @@ function secureit_functional_area_trend_card(string $areaName, array $points): s
         $gridLines .= '<text x="12" y="' . number_format($y + 4, 2, '.', '') . '" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . $mark . '%</text>';
     }
 
-    $fillPath = '';
-    if ($plotPoints !== []) {
-        $first = $plotPoints[0];
-        $last = $plotPoints[$count - 1];
-        $fillPath = 'M ' . number_format($first[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' L ' . implode(' L ', $linePoints) . ' L ' . number_format($last[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' Z';
+    $svgSeries = '';
+    $legend = '';
+    foreach ($activeSeries as $key => $definition) {
+        $points = $definition['points'];
+        $count = count($points);
+        $step = $count > 1 ? $plotWidth / ($count - 1) : 0;
+        $linePoints = [];
+        $plotPoints = [];
+        foreach ($points as $index => $point) {
+            $x = $paddingX + ($step * $index);
+            $y = $paddingY + ($plotHeight - (($point['score'] / 100) * $plotHeight));
+            $linePoints[] = number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
+            $plotPoints[] = [$x, $y, (int) $point['score']];
+        }
+
+        $fillPath = '';
+        if ($plotPoints !== []) {
+            $first = $plotPoints[0];
+            $last = $plotPoints[$count - 1];
+            $fillPath = 'M ' . number_format($first[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' L ' . implode(' L ', $linePoints) . ' L ' . number_format($last[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' Z';
+        }
+
+        $dots = '';
+        foreach ($plotPoints as $index => $point) {
+            [$x, $y, $score] = $point;
+            $label = secureit_format_datetime($points[$index]['generatedAt'] ?? null);
+            $dots .= '<circle cx="' . number_format($x, 2, '.', '') . '" cy="' . number_format($y, 2, '.', '') . '" r="4" fill="' . htmlspecialchars($definition['color']) . '" stroke="#ffffff" stroke-width="2"><title>' . htmlspecialchars($definition['label'] . ' - ' . $label . ' - ' . $score . '%') . '</title></circle>';
+        }
+
+        $svgSeries .= ($fillPath !== '' ? '<path d="' . htmlspecialchars($fillPath) . '" fill="' . htmlspecialchars($definition['fill']) . '" fill-opacity="0.08" stroke="none"/>' : '')
+            . '<path d="' . htmlspecialchars('M ' . implode(' L ', $linePoints)) . '" fill="none" stroke="' . htmlspecialchars($definition['color']) . '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+            . $dots;
+
+        $legend .= '<span class="badge" style="display:inline-flex; align-items:center; gap:8px; background:#f7faf9; border:1px solid #dbe8e2; color:#102d2a;">'
+            . '<span style="width:10px; height:10px; border-radius:999px; background:' . htmlspecialchars($definition['color']) . '; display:inline-block;"></span>'
+            . htmlspecialchars((string) $definition['label'])
+            . '</span>';
     }
 
-    $dots = '';
-    foreach ($plotPoints as $index => $point) {
-        [$x, $y, $score] = $point;
-        $label = secureit_format_datetime($points[$index]['generatedAt'] ?? null);
-        $dots .= '<g>';
-        $dots .= '<circle cx="' . number_format($x, 2, '.', '') . '" cy="' . number_format($y, 2, '.', '') . '" r="4.5" fill="#0f766e" stroke="#ffffff" stroke-width="2"><title>' . htmlspecialchars($label . ' - ' . $score . '%') . '</title></circle>';
-        $dots .= '<text x="' . number_format($x, 2, '.', '') . '" y="' . ($height - 10) . '" text-anchor="middle" fill="#526660" font-size="10" font-family="Arial,Helvetica,sans-serif">' . htmlspecialchars($index === ($count - 1) ? 'Latest' : 'Run ' . ($index + 1)) . '</text>';
-        $dots .= '</g>';
-    }
-
-    $latestScore = $scores[$count - 1];
-    $latestLabel = secureit_format_datetime($points[$count - 1]['generatedAt'] ?? null);
+    $latestSeries = reset($activeSeries);
+    $latestPoints = is_array($latestSeries) ? ($latestSeries['points'] ?? []) : [];
+    $latestPoint = is_array($latestPoints) ? end($latestPoints) : null;
+    $latestScore = is_array($latestPoint) ? (int) ($latestPoint['score'] ?? 0) : 0;
+    $latestLabel = is_array($latestPoint) ? secureit_format_datetime($latestPoint['generatedAt'] ?? null) : '';
 
     return '<article class="card panel" style="margin-bottom:18px; padding:20px 20px 18px;">'
         . '<div class="section-header" style="margin-bottom:14px; align-items:flex-start;">'
         . '<div>'
-        . '<h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Score trend - ' . htmlspecialchars($areaName) . '</h3>'
-        . '<div class="muted">Last 5 report scores for this functional area. Latest score: ' . htmlspecialchars((string) $latestScore) . '% on ' . htmlspecialchars($latestLabel) . '.</div>'
+        . '<h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">' . htmlspecialchars($title) . '</h3>'
+        . '<div class="muted">Overall score is shown by default. Select functional-area lines to compare overlays.</div>'
         . '</div>'
         . '<div class="badge tone-good">Latest ' . htmlspecialchars((string) $latestScore) . '%</div>'
         . '</div>'
-        . '<svg viewBox="0 0 ' . $width . ' ' . $height . '" role="img" aria-label="Score trend for ' . htmlspecialchars($areaName) . '" style="width:100%; height:auto; display:block; overflow:visible;">'
-        . '<defs><linearGradient id="areaTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
+        . ($legend !== '' ? '<div class="inline-links" style="flex-wrap:wrap; gap:8px; margin-bottom:12px;">' . $legend . '</div>' : '')
+        . '<svg viewBox="0 0 ' . $width . ' ' . $height . '" role="img" aria-label="' . htmlspecialchars($title) . '" style="width:100%; height:auto; display:block; overflow:visible;">'
+        . '<defs><linearGradient id="overallTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
         . $gridLines
-        . ($fillPath !== '' ? '<path d="' . htmlspecialchars($fillPath) . '" fill="url(#areaTrendFill)" stroke="none"/>' : '')
-        . '<path d="' . htmlspecialchars('M ' . implode(' L ', $linePoints)) . '" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
-        . $dots
+        . $svgSeries
         . '</svg>'
-        . '<div class="muted" style="margin-top:10px;">The chart plots the selected functional area score from the last five stored reports.</div>'
+        . '<div class="muted" style="margin-top:10px;">Latest plotted point: ' . htmlspecialchars($latestLabel) . '.</div>'
         . '</article>';
+}
+
+function secureit_functional_area_trend_card(string $areaName, array $points): string {
+    $series = [
+        'area' => [
+            'label' => $areaName,
+            'color' => '#0f766e',
+            'fill' => '#0f766e',
+            'points' => $points,
+        ],
+    ];
+    return secureit_line_graph_card('Score trend - ' . $areaName, $series, ['height' => 160]);
 }
 
 function secureit_functional_area_analysis_text(array $area): string {
@@ -324,6 +447,25 @@ if (is_dir($historyRoot)) {
 $historyStoredCount = count($history);
 $history = array_slice($history, 0, 5);
 $selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
+$overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
+$selectedOverviewTrendAreas = [];
+if (!$selectedArea) {
+    $rawTrendAreas = $_GET['trend_area'] ?? [];
+    if (!is_array($rawTrendAreas)) {
+        $rawTrendAreas = [$rawTrendAreas];
+    }
+    $allowedAreaNames = [];
+    foreach ($functionalAreas as $area) {
+        $allowedAreaNames[(string) ($area['name'] ?? '')] = true;
+    }
+    foreach ($rawTrendAreas as $areaName) {
+        $areaName = trim((string) $areaName);
+        if ($areaName !== '' && isset($allowedAreaNames[$areaName])) {
+            $selectedOverviewTrendAreas[] = $areaName;
+        }
+    }
+    $selectedOverviewTrendAreas = array_values(array_unique($selectedOverviewTrendAreas));
+}
 
 ob_start();
 ?>
@@ -452,6 +594,61 @@ ob_start();
   <?php endif; ?>
 <?php endif; ?>
 
+<?php if (!$selectedArea): ?>
+  <section class="section">
+    <article class="card panel" style="margin-bottom:18px; padding:20px 20px 18px;">
+      <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
+        <div>
+          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Score trend - tenant overview</h3>
+          <div class="muted">Overall score is plotted by default. Tick functional areas below to overlay their trends.</div>
+        </div>
+        <div class="badge tone-good">Latest overall</div>
+      </div>
+      <form method="get" action="tenant.php" style="margin:0 0 12px;">
+        <input type="hidden" name="tenant" value="<?php echo htmlspecialchars($tenantKey); ?>">
+        <div class="inline-links" style="flex-wrap:wrap; gap:8px;">
+          <label class="badge" style="display:inline-flex; align-items:center; gap:8px; background:#f7faf9; border:1px solid #dbe8e2; color:#102d2a;">
+            <input type="checkbox" checked disabled>
+            Overall
+          </label>
+          <?php foreach ($functionalAreas as $area): ?>
+            <?php $areaName = (string) ($area['name'] ?? ''); ?>
+            <?php if ($areaName === '') { continue; } ?>
+            <label class="badge" style="display:inline-flex; align-items:center; gap:8px; background:#f7faf9; border:1px solid #dbe8e2; color:#102d2a;">
+              <input type="checkbox" name="trend_area[]" value="<?php echo htmlspecialchars($areaName); ?>" <?php echo in_array($areaName, $selectedOverviewTrendAreas, true) ? 'checked' : ''; ?>>
+              <?php echo htmlspecialchars($areaName); ?>
+            </label>
+          <?php endforeach; ?>
+          <button type="submit">Update trend</button>
+        </div>
+      </form>
+      <?php
+        $overviewSeriesForGraph = $overviewTrendSeries;
+        foreach ($functionalAreas as $area) {
+            $areaName = (string) ($area['name'] ?? '');
+            if ($areaName === '' || !in_array($areaName, $selectedOverviewTrendAreas, true)) {
+                continue;
+            }
+            $tone = (string) ($area['tone'] ?? 'neutral');
+            $color = match ($tone) {
+                'good' => '#15803d',
+                'warn' => '#ca8a04',
+                'bad' => '#b91c1c',
+                default => '#1d4ed8',
+            };
+            $overviewSeriesForGraph[$areaName] = [
+                'label' => $areaName,
+                'color' => $color,
+                'fill' => $color,
+                'points' => secureit_functional_area_history_points($history, $areaName),
+            ];
+        }
+        echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160]);
+      ?>
+    </article>
+  </section>
+<?php endif; ?>
+
 <?php if ($selectedArea): ?>
   <section class="section">
     <article class="card panel" style="margin-bottom:18px;">
@@ -532,15 +729,14 @@ ob_start();
 <?php endif; ?>
 
 <section class="section">
-  <div class="section-header">
-    <div>
-      <h2 class="section-title"><?php echo $selectedArea ? 'Run history - ' . htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')) : 'Run history'; ?></h2>
-      <div class="muted"><?php echo $selectedArea ? 'Historical published reports for this functional area only.' : 'Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.'; ?></div>
-    </div>
-    <div class="muted"><?php echo htmlspecialchars((string) min(5, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
-  </div>
-
   <article class="card panel">
+    <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
+      <div>
+        <h2 class="section-title"><?php echo $selectedArea ? 'Run history - ' . htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')) : 'Run history'; ?></h2>
+        <div class="muted"><?php echo $selectedArea ? 'Historical published reports for this functional area only.' : 'Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.'; ?></div>
+      </div>
+      <div class="muted"><?php echo htmlspecialchars((string) min(5, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
+    </div>
     <?php if (!$history): ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No historical reports found.</strong>

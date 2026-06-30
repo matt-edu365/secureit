@@ -103,6 +103,104 @@ function secureit_functional_area_partial_test_count(array $area): int {
     return count($partialTests);
 }
 
+function secureit_functional_area_history_points(array $history, string $areaName): array {
+    $points = [];
+    foreach ($history as $item) {
+        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $areaScore = null;
+        foreach (($rowAreaData['areas'] ?? []) as $area) {
+            if (($area['name'] ?? '') !== $areaName) {
+                continue;
+            }
+            $areaScore = $area['score'] !== null ? (int) $area['score'] : null;
+            break;
+        }
+
+        $points[] = [
+            'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
+            'score' => $areaScore,
+        ];
+    }
+
+    return $points;
+}
+
+function secureit_functional_area_trend_card(string $areaName, array $points): string {
+    $scores = [];
+    foreach ($points as $point) {
+        if (($point['score'] ?? null) !== null) {
+            $scores[] = (int) $point['score'];
+        }
+    }
+
+    if ($scores === []) {
+        return '<article class="card panel" style="margin-bottom:18px;"><div class="empty-state" style="box-shadow:none;"><strong>No area trend data yet.</strong><p class="muted">A score trend will appear once SecureIT has a few historical runs for this functional area.</p></div></article>';
+    }
+
+    $width = 640;
+    $height = 240;
+    $paddingX = 34;
+    $paddingY = 28;
+    $plotWidth = $width - ($paddingX * 2);
+    $plotHeight = $height - ($paddingY * 2);
+    $count = count($scores);
+    $step = $count > 1 ? $plotWidth / ($count - 1) : 0;
+    $linePoints = [];
+    $plotPoints = [];
+    foreach ($scores as $index => $score) {
+        $x = $paddingX + ($step * $index);
+        $y = $paddingY + ($plotHeight - (($score / 100) * $plotHeight));
+        $linePoints[] = number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
+        $plotPoints[] = [$x, $y, $score];
+    }
+
+    $gridLines = '';
+    foreach ([0, 25, 50, 75, 100] as $mark) {
+        $y = $paddingY + ($plotHeight - (($mark / 100) * $plotHeight));
+        $gridLines .= '<line x1="' . $paddingX . '" y1="' . number_format($y, 2, '.', '') . '" x2="' . ($width - $paddingX) . '" y2="' . number_format($y, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.08)" stroke-width="1"/>';
+        $gridLines .= '<text x="12" y="' . number_format($y + 4, 2, '.', '') . '" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . $mark . '%</text>';
+    }
+
+    $fillPath = '';
+    if ($plotPoints !== []) {
+        $first = $plotPoints[0];
+        $last = $plotPoints[$count - 1];
+        $fillPath = 'M ' . number_format($first[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' L ' . implode(' L ', $linePoints) . ' L ' . number_format($last[0], 2, '.', '') . ',' . number_format($height - $paddingY, 2, '.', '') . ' Z';
+    }
+
+    $dots = '';
+    foreach ($plotPoints as $index => $point) {
+        [$x, $y, $score] = $point;
+        $label = secureit_format_datetime($points[$index]['generatedAt'] ?? null);
+        $dots .= '<g>';
+        $dots .= '<circle cx="' . number_format($x, 2, '.', '') . '" cy="' . number_format($y, 2, '.', '') . '" r="4.5" fill="#0f766e" stroke="#ffffff" stroke-width="2"><title>' . htmlspecialchars($label . ' - ' . $score . '%') . '</title></circle>';
+        $dots .= '<text x="' . number_format($x, 2, '.', '') . '" y="' . ($height - 10) . '" text-anchor="middle" fill="#526660" font-size="10" font-family="Arial,Helvetica,sans-serif">' . htmlspecialchars($index === ($count - 1) ? 'Latest' : 'Run ' . ($index + 1)) . '</text>';
+        $dots .= '</g>';
+    }
+
+    $latestScore = $scores[$count - 1];
+    $latestLabel = secureit_format_datetime($points[$count - 1]['generatedAt'] ?? null);
+
+    return '<article class="card panel" style="margin-bottom:18px; padding:20px 20px 18px;">'
+        . '<div class="section-header" style="margin-bottom:14px; align-items:flex-start;">'
+        . '<div>'
+        . '<h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Score trend - ' . htmlspecialchars($areaName) . '</h3>'
+        . '<div class="muted">Last 5 report scores for this functional area. Latest score: ' . htmlspecialchars((string) $latestScore) . '% on ' . htmlspecialchars($latestLabel) . '.</div>'
+        . '</div>'
+        . '<div class="badge tone-good">Latest ' . htmlspecialchars((string) $latestScore) . '%</div>'
+        . '</div>'
+        . '<svg viewBox="0 0 ' . $width . ' ' . $height . '" role="img" aria-label="Score trend for ' . htmlspecialchars($areaName) . '" style="width:100%; height:auto; display:block; overflow:visible;">'
+        . '<defs><linearGradient id="areaTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
+        . $gridLines
+        . ($fillPath !== '' ? '<path d="' . htmlspecialchars($fillPath) . '" fill="url(#areaTrendFill)" stroke="none"/>' : '')
+        . '<path d="' . htmlspecialchars('M ' . implode(' L ', $linePoints)) . '" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+        . $dots
+        . '</svg>'
+        . '<div class="muted" style="margin-top:10px;">The chart plots the selected functional area score from the last five stored reports.</div>'
+        . '</article>';
+}
+
 function secureit_functional_area_analysis_text(array $area): string {
     $controlsTotal = (int) ($area['controlsTotal'] ?? 0);
     if ($controlsTotal === 0) {
@@ -225,6 +323,7 @@ if (is_dir($historyRoot)) {
 }
 $historyStoredCount = count($history);
 $history = array_slice($history, 0, 5);
+$selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
 
 ob_start();
 ?>
@@ -305,128 +404,65 @@ ob_start();
     <?php endif; ?>
   </article>
 </section>
+<?php if (!$selectedArea): ?>
 <section class="section">
   <div class="section-header">
     <div>
       <h2 class="section-title">Functional areas:</h2>
     </div>
   </div>
-  <?php if ($selectedArea): ?>
-    <article class="card panel" style="margin-bottom:18px;">
-      <div class="section-header" style="margin-bottom:14px;">
-        <div>
-          <h3 class="section-title" style="font-size:1.2rem;"><?php echo htmlspecialchars($selectedArea['name'] ?? 'Functional area'); ?></h3>
-        </div>
-        <div class="inline-links">
-          <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to all areas</a>
-        </div>
-      </div>
-      <?php if (!empty($selectedArea['controls'])): ?>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Check</th>
-                <th>Status</th>
-                <th>Weight</th>
-                <th>Matched checks</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($selectedArea['controls'] as $control): ?>
-                <?php
-                  $controlStatus = (string) ($control['status'] ?? 'unknown');
-                  $controlTone = 'neutral';
-                  if ($controlStatus === 'pass') {
-                      $controlTone = 'good';
-                  } elseif ($controlStatus === 'partial') {
-                      $controlTone = 'warn';
-                  } elseif ($controlStatus === 'fail') {
-                      $controlTone = 'bad';
-                  }
-                ?>
-                <tr>
-                  <td>
-                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong><br>
-                    <span class="muted"><?php echo htmlspecialchars($control['description'] ?? ''); ?></span>
-                  </td>
-                  <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars(ucfirst($controlStatus)); ?></span></td>
-                  <td><?php echo htmlspecialchars((string) ($control['weight'] ?? 1)); ?></td>
-                  <td>
-                    <?php if (!empty($control['matchedTests'])): ?>
-                      <div class="muted" style="font-size:0.92rem;">
-                        <?php
-                          $matchedLabels = [];
-                          foreach (array_slice($control['matchedTests'], 0, 6) as $test) {
-                              $matchedLabels[] = $test['id'] . ' (' . ucfirst((string) ($test['result'] ?? 'unknown')) . ')';
-                          }
-                          echo htmlspecialchars(implode(', ', $matchedLabels));
-                        ?>
-                      </div>
-                      <?php if (count($control['matchedTests']) > 6): ?>
-                        <div class="muted" style="font-size:0.88rem; margin-top:4px;">+<?php echo htmlspecialchars((string) (count($control['matchedTests']) - 6)); ?> more checks</div>
-                      <?php endif; ?>
-                    <?php else: ?>
-                      <span class="muted">No matched checks</span>
-                    <?php endif; ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
+  <?php if (!$selectedArea): ?>
+    <div class="feature-grid" id="functional-areas">
+      <?php if (!$functionalAreas): ?>
+        <article class="card feature-card">
+          <h3>No functional area data yet</h3>
+          <p>Run a tenant assessment with embedded summary persistence to populate canonical SecureIT checks and area scoring.</p>
+        </article>
       <?php else: ?>
-        <div class="empty-state" style="box-shadow:none;">
-          <strong>No checks mapped to this area.</strong>
-          <p class="muted">This area currently has no canonical checks in the seeded data.</p>
-        </div>
-      <?php endif; ?>
-    </article>
-  <?php endif; ?>
-  <div class="feature-grid" id="functional-areas">
-    <?php if (!$functionalAreas): ?>
-      <article class="card feature-card">
-        <h3>No functional area data yet</h3>
-        <p>Run a tenant assessment with embedded summary persistence to populate canonical SecureIT checks and area scoring.</p>
-      </article>
-    <?php else: ?>
-      <?php foreach ($functionalAreas as $area): ?>
-        <?php $toneClass = 'tone-' . ($area['tone'] ?? 'neutral'); ?>
-        <?php $areaHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode((string) ($area['name'] ?? '')); ?>
-        <?php $areaVisual = secureit_functional_area_visual((string) ($area['name'] ?? '')); ?>
-        <?php
-          $areaScore = $area['score'] !== null ? (int) $area['score'] : null;
-          $scoreState = secureit_functional_area_status_from_score($areaScore);
-          $scoreTone = 'tone-' . $scoreState['tone'];
-          $scoreLabel = $scoreState['scoreLabel'];
-        ?>
-        <a class="card feature-card" href="<?php echo htmlspecialchars($areaHref); ?>" style="display:block; text-decoration:none; color:inherit;">
-          <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
-            <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:<?php echo htmlspecialchars($areaVisual['bg']); ?>; box-shadow:0 10px 20px <?php echo htmlspecialchars($areaVisual['shadow']); ?>; color:<?php echo htmlspecialchars($areaVisual['stroke']); ?>; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
-              <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-                <?php echo $areaVisual['svg']; ?>
+        <?php foreach ($functionalAreas as $area): ?>
+          <?php $toneClass = 'tone-' . ($area['tone'] ?? 'neutral'); ?>
+          <?php $areaHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode((string) ($area['name'] ?? '')); ?>
+          <?php $areaVisual = secureit_functional_area_visual((string) ($area['name'] ?? '')); ?>
+          <?php
+            $areaScore = $area['score'] !== null ? (int) $area['score'] : null;
+            $scoreState = secureit_functional_area_status_from_score($areaScore);
+            $scoreTone = 'tone-' . $scoreState['tone'];
+            $scoreLabel = $scoreState['scoreLabel'];
+          ?>
+          <a class="card feature-card" href="<?php echo htmlspecialchars($areaHref); ?>" style="display:block; text-decoration:none; color:inherit;">
+            <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:<?php echo htmlspecialchars($areaVisual['bg']); ?>; box-shadow:0 10px 20px <?php echo htmlspecialchars($areaVisual['shadow']); ?>; color:<?php echo htmlspecialchars($areaVisual['stroke']); ?>; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
+                <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
+                  <?php echo $areaVisual['svg']; ?>
+                </span>
               </span>
-            </span>
-            <span class="badge <?php echo htmlspecialchars($scoreTone); ?>"><?php echo htmlspecialchars($scoreLabel); ?></span>
-          </div>
-          <h3 style="min-height:2.8em;"><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
-          <div class="kv" style="gap:6px; margin-top:12px;">
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Checks</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Partially met</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?></div></div>
-            <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsFailing'] ?? 0)); ?></div></div>
-          </div>
-        </a>
-      <?php endforeach; ?>
-    <?php endif; ?>
-  </div>
-</section>
+              <span class="badge <?php echo htmlspecialchars($scoreTone); ?>"><?php echo htmlspecialchars($scoreLabel); ?></span>
+            </div>
+            <h3 style="min-height:2.8em;"><?php echo htmlspecialchars($area['name'] ?? 'Functional area'); ?></h3>
+            <div class="kv" style="gap:6px; margin-top:12px;">
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Checks</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsTotal'] ?? 0)); ?></div></div>
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?></div></div>
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Partially met</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?></div></div>
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsFailing'] ?? 0)); ?></div></div>
+            </div>
+          </a>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+<?php endif; ?>
+
+<?php if ($selectedArea): ?>
+  <section class="section">
+    <?php echo secureit_functional_area_trend_card((string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaHistory); ?>
+  </section>
+<?php endif; ?>
 
 <section class="section">
   <div class="section-header">
     <div>
-      <h2 class="section-title">Run history</h2>
-      <div class="muted">Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.</div>
+      <h2 class="section-title"><?php echo $selectedArea ? 'Run history - ' . htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')) : 'Run history'; ?></h2>
+      <div class="muted"><?php echo $selectedArea ? 'Historical published reports for this functional area only.' : 'Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.'; ?></div>
     </div>
     <div class="muted"><?php echo htmlspecialchars((string) min(5, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
   </div>
@@ -448,7 +484,9 @@ ob_start();
               <th>Partially met</th>
               <th>Failed</th>
               <th>Status</th>
-              <th>Report</th>
+              <?php if (!$selectedArea): ?>
+                <th>Report</th>
+              <?php endif; ?>
             </tr>
           </thead>
           <tbody>
@@ -456,17 +494,43 @@ ob_start();
               <?php
                 $s = $item['summary'] ?? [];
                 $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, is_array($s) ? $s : null);
-                $rowCounts = secureit_check_summary_counts($rowAreaData);
-                $rowToneClass = 'tone-' . strtolower($rowCounts['riskTone']);
+                if ($selectedArea) {
+                    $row = null;
+                    foreach (($rowAreaData['areas'] ?? []) as $area) {
+                        if (($area['name'] ?? '') === (string) ($selectedArea['name'] ?? '')) {
+                            $row = $area;
+                            break;
+                        }
+                    }
+
+                    $rowControlsTotal = (int) ($row['controlsTotal'] ?? 0);
+                    $rowControlsPassing = (int) ($row['controlsPassing'] ?? 0);
+                    $rowControlsPartial = (int) ($row['controlsPartial'] ?? 0);
+                    $rowControlsFailing = (int) ($row['controlsFailing'] ?? 0);
+                    $rowScore = $row['score'] !== null ? (int) $row['score'] : null;
+                    $rowStatus = secureit_functional_area_status_from_score($rowScore);
+                    $rowToneClass = 'tone-' . $rowStatus['tone'];
+                    $rowRiskLevel = $rowStatus['status'];
+                } else {
+                    $rowCounts = secureit_check_summary_counts($rowAreaData);
+                    $rowControlsTotal = $rowCounts['total'];
+                    $rowControlsPassing = $rowCounts['passed'];
+                    $rowControlsPartial = $rowCounts['partial'];
+                    $rowControlsFailing = $rowCounts['failed'];
+                    $rowToneClass = 'tone-' . strtolower($rowCounts['riskTone']);
+                    $rowRiskLevel = $rowCounts['riskLevel'];
+                }
               ?>
               <tr>
                 <td><?php echo htmlspecialchars(secureit_format_datetime($s['generatedAt'] ?? null)); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['total']); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['passed']); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['partial']); ?></td>
-                <td><?php echo htmlspecialchars((string) $rowCounts['failed']); ?></td>
-                <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowCounts['riskLevel']); ?></span></td>
-                <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsTotal); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsPassing); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsPartial); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsFailing); ?></td>
+                <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowRiskLevel); ?></span></td>
+                <?php if (!$selectedArea): ?>
+                  <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>
+                <?php endif; ?>
               </tr>
             <?php endforeach; ?>
           </tbody>

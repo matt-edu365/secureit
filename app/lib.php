@@ -525,7 +525,7 @@ function secureit_github_dispatch_workflow(array $inputs): array {
             'status' => 0,
             'body' => '',
             'headers' => [],
-            'error' => 'GitHub workflow dispatch is not configured because SECUREIT_WORKFLOW_SYNC_TOKEN (or SECUREIT_GITHUB_TOKEN) is empty.',
+            'error' => 'GitHub workflow dispatch is not configured because SECUREIT_GITHUB_TOKEN is empty.',
             'workflowUrl' => '',
             'repository' => $config['repository'],
             'workflowFile' => $config['workflowFile'],

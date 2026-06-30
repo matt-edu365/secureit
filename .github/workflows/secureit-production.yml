@@ -435,6 +435,7 @@ jobs:
           SECUREIT_BASE_URL: ${{ vars.SECUREIT_BASE_URL_DEV || vars.SECUREIT_BASE_URL_LIVE || 'https://secureit.ict365.ky' }}
           SECUREIT_WORKFLOW_SYNC_TOKEN: ${{ secrets.SECUREIT_WORKFLOW_SYNC_TOKEN }}
           TENANT_KEY: ${{ matrix.tenantKey }}
+          EMAIL_TO: ${{ matrix.emailTo }}
         run: |
           set -euo pipefail
 
@@ -452,6 +453,11 @@ jobs:
             exit 0
           fi
 
+          reportRecipientHeader=()
+          if [ -n "${EMAIL_TO:-}" ]; then
+            reportRecipientHeader=(-H "X-SecureIT-Report-Recipient: ${EMAIL_TO}")
+          fi
+
           tarPath="$RUNNER_TEMP/secureit-report-${TENANT_KEY}.tar.gz"
           rm -f "$tarPath"
           if [ -d "output/${TENANT_KEY}/history" ]; then
@@ -465,12 +471,31 @@ jobs:
             -H "Authorization: Bearer ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
             -H "X-SecureIT-Workflow-Token: ${SECUREIT_WORKFLOW_SYNC_TOKEN}" \
             -H "X-SecureIT-Tenant-Key: ${TENANT_KEY}" \
+            "${reportRecipientHeader[@]}" \
             -H "Content-Type: application/gzip" \
             --data-binary @"${tarPath}" \
             "${baseUrl}/report-import.php?tenant_key=${TENANT_KEY}")"
 
           echo "Portal import response:"
           cat "$responseFile"
+          python3 - "$responseFile" <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text())
+          notification = payload.get("notification") if isinstance(payload, dict) else {}
+          if not isinstance(notification, dict):
+              notification = {}
+
+          print("")
+          print("## Report notification")
+          print(f"- Status: {notification.get('status', '[not set]')}")
+          print(f"- Recipient: {notification.get('recipientMailbox', '[not set]')}")
+          print(f"- Message: {notification.get('message', '[not set]')}")
+          print(f"- Graph request ID: {notification.get('graphRequestId', '[not set]')}")
+          print(f"- Graph client request ID: {notification.get('graphClientRequestId', '[not set]')}")
+          PY
           rm -f "$responseFile"
           if [ "$httpStatus" -ge 400 ]; then
             echo "Portal import failed with HTTP ${httpStatus}." >&2

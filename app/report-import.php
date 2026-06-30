@@ -230,7 +230,16 @@ try {
         'recipientMailbox' => '',
     ];
     $tenant = secureit_find_tenant($tenantKey);
-    $recipientMailbox = trim((string) ($tenant['emailTo'] ?? ''));
+    $requestedRecipientMailbox = trim((string) secureit_request_header_value([
+        'HTTP_X_SECUREIT_REPORT_RECIPIENT',
+        'X-SecureIT-Report-Recipient',
+    ]));
+    if ($requestedRecipientMailbox === '') {
+        $requestedRecipientMailbox = trim((string) ($_GET['email_to'] ?? $_POST['email_to'] ?? ''));
+    }
+    $recipientMailbox = $requestedRecipientMailbox !== ''
+        ? $requestedRecipientMailbox
+        : trim((string) ($tenant['emailTo'] ?? ''));
     $entraTenantId = trim((string) (secureit_config()['entra_tenant_id'] ?? ''));
 
     if ($recipientMailbox === '') {

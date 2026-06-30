@@ -492,6 +492,7 @@ jobs:
           print("## Report notification")
           print(f"- Status: {notification.get('status', '[not set]')}")
           print(f"- Recipient: {notification.get('recipientMailbox', '[not set]')}")
+          print(f"- Mail tenant ID source: {notification.get('mailTenantIdSource', '[not set]')}")
           print(f"- Message: {notification.get('message', '[not set]')}")
           print(f"- Graph request ID: {notification.get('graphRequestId', '[not set]')}")
           print(f"- Graph client request ID: {notification.get('graphClientRequestId', '[not set]')}")

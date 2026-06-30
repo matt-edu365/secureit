@@ -240,12 +240,18 @@ try {
     $recipientMailbox = $requestedRecipientMailbox !== ''
         ? $requestedRecipientMailbox
         : trim((string) ($tenant['emailTo'] ?? ''));
-    $entraTenantId = trim((string) (secureit_config()['entra_tenant_id'] ?? ''));
+    $config = secureit_config();
+    $mailTenantId = trim((string) ($config['entra_tenant_id'] ?? ''));
+    $mailTenantIdSource = 'SECUREIT_ENTRA_TENANT_ID';
+    if ($mailTenantId === '' && trim((string) ($config['key_vault_tenant_id'] ?? '')) !== '') {
+        $mailTenantId = trim((string) ($config['key_vault_tenant_id'] ?? ''));
+        $mailTenantIdSource = 'SECUREIT_KEY_VAULT_TENANT_ID';
+    }
 
     if ($recipientMailbox === '') {
         $notification['message'] = 'No report recipient is configured for this tenant.';
-    } elseif ($entraTenantId === '') {
-        $notification['message'] = 'The report was imported, but SECUREIT_ENTRA_TENANT_ID is not configured so the HTML notification was skipped.';
+    } elseif ($mailTenantId === '') {
+        $notification['message'] = 'The report was imported, but no Graph mail tenant ID is configured so the HTML notification was skipped. Set SECUREIT_ENTRA_TENANT_ID, or keep SECUREIT_KEY_VAULT_TENANT_ID populated as a fallback.';
     } elseif (!secureit_entra_is_enabled()) {
         $notification['message'] = 'The report was imported, but the Entra client credentials are not configured so the HTML notification was skipped.';
     } else {
@@ -284,7 +290,7 @@ try {
                 'footerNote' => 'This notification was sent automatically after SecureIT ingested the latest report bundle.',
             ]);
             $mailResponse = secureit_entra_graph_send_mail(
-                $entraTenantId,
+                $mailTenantId,
                 secureit_mail_sender_mailbox(),
                 'SecureIT report summary - ' . $tenantName . ' - ' . $generatedAt,
                 'HTML',
@@ -296,6 +302,7 @@ try {
                 'status' => 'sent',
                 'message' => 'HTML report notification sent to ' . $recipientMailbox . '.',
                 'recipientMailbox' => $recipientMailbox,
+                'mailTenantIdSource' => $mailTenantIdSource,
                 'graphRequestId' => (string) ($mailResponse['request-id'] ?? ($mailResponse['headers']['request-id'] ?? '')),
                 'graphClientRequestId' => (string) ($mailResponse['clientRequestId'] ?? ''),
             ];
@@ -304,6 +311,7 @@ try {
                 'status' => 'failed',
                 'message' => 'The report was imported, but the HTML notification could not be sent: ' . $exception->getMessage(),
                 'recipientMailbox' => $recipientMailbox,
+                'mailTenantIdSource' => $mailTenantIdSource,
             ];
         }
     }

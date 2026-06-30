@@ -224,6 +224,81 @@ try {
     secureit_brand_report_html_tree($historyDestination, $tenantKey);
     secureit_ensure_tenant_report_web_link($tenantKey);
 
+    $notification = [
+        'status' => 'skipped',
+        'message' => 'No report email was sent.',
+        'recipientMailbox' => '',
+    ];
+    $tenant = secureit_find_tenant($tenantKey);
+    $recipientMailbox = trim((string) ($tenant['emailTo'] ?? ''));
+    $entraTenantId = trim((string) (secureit_config()['entra_tenant_id'] ?? ''));
+
+    if ($recipientMailbox === '') {
+        $notification['message'] = 'No report recipient is configured for this tenant.';
+    } elseif ($entraTenantId === '') {
+        $notification['message'] = 'The report was imported, but SECUREIT_ENTRA_TENANT_ID is not configured so the HTML notification was skipped.';
+    } elseif (!secureit_entra_is_enabled()) {
+        $notification['message'] = 'The report was imported, but the Entra client credentials are not configured so the HTML notification was skipped.';
+    } else {
+        try {
+            $areaData = secureit_resolve_canonical_area_scores($tenantKey);
+            $counts = secureit_check_summary_counts($areaData);
+            $tenantName = trim((string) ($tenant['name'] ?? $tenantKey));
+            $generatedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+            $overviewStats = [
+                'title' => 'Summary of the latest report',
+                'subtitle' => 'SecureIT imported a new report bundle for ' . $tenantName . '.',
+                'summary' => sprintf(
+                    'The latest report for %s has been imported into SecureIT. %d checks are represented in the overview: %d passed, %d partially met, and %d failed.',
+                    $tenantName,
+                    $counts['total'],
+                    $counts['passed'],
+                    $counts['partial'],
+                    $counts['failed']
+                ),
+                'checks' => $counts['total'],
+                'passed' => $counts['passed'],
+                'partial' => $counts['partial'],
+                'failed' => $counts['failed'],
+                'passRate' => $counts['passRate'],
+            ];
+            $bodyContent = secureit_mail_build_overview_html($overviewStats, [
+                'brandLabel' => 'SecureIT report delivery',
+                'eyebrow' => 'Tenant report',
+                'headline' => 'Summary of the latest report',
+                'intro' => 'The latest report has been imported into SecureIT and the overview below reflects the current posture snapshot.',
+                'summaryLabel' => 'Latest report',
+                'modeLabel' => 'HTML report',
+                'generatedAt' => $generatedAt,
+                'senderMailbox' => secureit_mail_sender_mailbox(),
+                'recipientMailbox' => $recipientMailbox,
+                'footerNote' => 'This notification was sent automatically after SecureIT ingested the latest report bundle.',
+            ]);
+            $mailResponse = secureit_entra_graph_send_mail(
+                $entraTenantId,
+                secureit_mail_sender_mailbox(),
+                'SecureIT report summary - ' . $tenantName . ' - ' . $generatedAt,
+                'HTML',
+                $bodyContent,
+                [$recipientMailbox],
+                true
+            );
+            $notification = [
+                'status' => 'sent',
+                'message' => 'HTML report notification sent to ' . $recipientMailbox . '.',
+                'recipientMailbox' => $recipientMailbox,
+                'graphRequestId' => (string) ($mailResponse['request-id'] ?? ($mailResponse['headers']['request-id'] ?? '')),
+                'graphClientRequestId' => (string) ($mailResponse['clientRequestId'] ?? ''),
+            ];
+        } catch (Throwable $exception) {
+            $notification = [
+                'status' => 'failed',
+                'message' => 'The report was imported, but the HTML notification could not be sent: ' . $exception->getMessage(),
+                'recipientMailbox' => $recipientMailbox,
+            ];
+        }
+    }
+
     secureit_report_import_json_response(200, [
         'ok' => true,
         'tenantKey' => $tenantKey,
@@ -232,6 +307,7 @@ try {
         'latestSummary' => 'latest/summary.json',
         'latestReport' => 'latest/index.html',
         'historyImported' => is_dir($historySource),
+        'notification' => $notification,
     ]);
 }
 catch (Throwable $exception) {

@@ -68,10 +68,6 @@ function secureit_diag_header_value(array $headers, string $name): string {
     return '';
 }
 
-function secureit_diag_html(string $value): string {
-    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-
 function secureit_diag_default_email_recipient(): string {
     return 'secureit@ict365.ky';
 }
@@ -113,127 +109,18 @@ function secureit_diag_build_email_body(string $modeLabel, string $generatedAt, 
 }
 
 function secureit_diag_build_email_html_body(string $modeLabel, string $generatedAt, string $senderMailbox, string $recipientMailbox, array $overviewStats): string {
-    $title = secureit_diag_html((string) ($overviewStats['title'] ?? 'Tenant overview snapshot'));
-    $subtitle = secureit_diag_html((string) ($overviewStats['subtitle'] ?? ''));
-    $summary = secureit_diag_html((string) ($overviewStats['summary'] ?? ''));
-    $statusLabel = secureit_diag_html((string) ($overviewStats['statusLabel'] ?? 'Healthy'));
-    $modeLabel = secureit_diag_html($modeLabel);
-    $generatedAt = secureit_diag_html($generatedAt);
-    $senderMailbox = secureit_diag_html($senderMailbox);
-    $recipientMailbox = secureit_diag_html($recipientMailbox);
-    $checks = (int) ($overviewStats['checks'] ?? 0);
-    $passed = (int) ($overviewStats['passed'] ?? 0);
-    $partial = (int) ($overviewStats['partial'] ?? 0);
-    $failed = (int) ($overviewStats['failed'] ?? 0);
-    $passRate = max(0, min(100, (int) ($overviewStats['passRate'] ?? 0)));
-    $statusTone = strtolower(trim((string) ($overviewStats['statusTone'] ?? 'good')));
-    $statusColor = match ($statusTone) {
-        'warn' => '#a1600a',
-        'bad' => '#b42318',
-        default => '#0f766e',
-    };
-    $statusBackground = match ($statusTone) {
-        'warn' => '#fff7ed',
-        'bad' => '#fff1f2',
-        default => '#edf9f5',
-    };
-    $metricCards = [
-        [
-            'label' => 'Checks',
-            'value' => $checks,
-            'background' => '#eaf6f4',
-            'border' => '#cbe7df',
-            'accent' => '#0f766e',
-            'note' => 'Across the latest assessment',
-        ],
-        [
-            'label' => 'Passed',
-            'value' => $passed,
-            'background' => '#edf9f5',
-            'border' => '#c8eadb',
-            'accent' => '#13795b',
-            'note' => 'Controls already meeting the baseline',
-        ],
-        [
-            'label' => 'Partially met',
-            'value' => $partial,
-            'background' => '#fff7e8',
-            'border' => '#f3d7a7',
-            'accent' => '#a1600a',
-            'note' => 'Controls that need a small amount of follow-up',
-        ],
-        [
-            'label' => 'Failed',
-            'value' => $failed,
-            'background' => '#fff1ef',
-            'border' => '#f1c0b7',
-            'accent' => '#b42318',
-            'note' => 'Controls still needing attention',
-        ],
-    ];
-
-    $cardRows = '';
-    foreach (array_chunk($metricCards, 2) as $rowCards) {
-        $cardRows .= '<tr>';
-        foreach ($rowCards as $card) {
-            $cardRows .= '<td width="50%" valign="top" style="padding:0 6px 12px 0;">';
-            $cardRows .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; background:' . secureit_diag_html((string) $card['background']) . '; border:1px solid ' . secureit_diag_html((string) $card['border']) . '; border-radius:18px;">';
-            $cardRows .= '<tr><td style="padding:16px 16px 14px;">';
-            $cardRows .= '<div style="font-size:12px; line-height:1.2; letter-spacing:0.12em; text-transform:uppercase; color:' . secureit_diag_html((string) $card['accent']) . '; font-weight:700;">' . secureit_diag_html((string) $card['label']) . '</div>';
-            $cardRows .= '<div style="font-size:32px; line-height:1.05; margin-top:8px; font-weight:800; color:#163a37;">' . secureit_diag_html((string) $card['value']) . '</div>';
-            $cardRows .= '<div style="font-size:12px; line-height:1.45; margin-top:8px; color:#4f645f;">' . secureit_diag_html((string) $card['note']) . '</div>';
-            $cardRows .= '</td></tr></table>';
-            $cardRows .= '</td>';
-        }
-        if (count($rowCards) === 1) {
-            $cardRows .= '<td width="50%" valign="top" style="padding:0 0 12px 6px;"></td>';
-        }
-        $cardRows .= '</tr>';
-    }
-
-    return '<!doctype html>'
-        . '<html><body style="margin:0; padding:0; background:#edf5f2; font-family:Arial,Helvetica,sans-serif; color:#163a37;">'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; background:linear-gradient(180deg,#0f2f2c 0%, #133f3a 100%);">'
-        . '<tr><td align="center" style="padding:28px 16px;">'
-        . '<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="border-collapse:separate; max-width:640px; width:100%;">'
-        . '<tr><td style="padding:0;">'
-        . '<div style="background:#0f2f2c; color:#f3fbf9; border-radius:26px 26px 0 0; padding:28px 30px 24px; box-shadow:0 14px 30px rgba(8,36,33,0.28);">'
-        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.18em; text-transform:uppercase; opacity:0.8;">SecureIT diagnostics</div>'
-        . '<div style="margin-top:8px; font-size:26px; line-height:1.2; font-weight:800;">' . $title . '</div>'
-        . '<div style="margin-top:10px; font-size:14px; line-height:1.5; max-width:520px; color:#d5ede8;">' . $subtitle . '</div>'
-        . '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px;"><tr>'
-        . '<td style="padding:0 10px 0 0;"><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Mode: ' . $modeLabel . '</div></td>'
-        . '<td style="padding:0 10px 0 0;"><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Recipient: ' . $recipientMailbox . '</div></td>'
-        . '<td><div style="display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.12); color:#f3fbf9; font-size:12px; font-weight:700;">Generated: ' . $generatedAt . '</div></td>'
-        . '</tr></table>'
-        . '</div>'
-        . '</td></tr>'
-        . '<tr><td style="background:#ffffff; border-radius:0 0 26px 26px; padding:28px 30px 30px; box-shadow:0 18px 40px rgba(18,50,46,0.12);">'
-        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.14em; text-transform:uppercase; color:#53706a; font-weight:700;">Tenant overview</div>'
-        . '<div style="margin-top:8px; font-size:22px; line-height:1.25; font-weight:800; color:#102d2a;">Illustrative tenant overview</div>'
-        . '<div style="margin-top:8px; font-size:15px; line-height:1.6; color:#4f645f;">This is a dummy summary that mirrors the SecureIT tenant overview cards and pass-rate block so you can verify HTML rendering in the mailbox.</div>'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px; border-collapse:separate;">'
-        . $cardRows
-        . '</table>'
-        . '<div style="margin-top:6px; padding:18px 18px 16px; border-radius:18px; background:#f3fbf9; border:1px solid #cae7de;">'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>'
-        . '<td valign="middle" style="padding:0 12px 0 0;"><div style="font-size:13px; line-height:1.3; font-weight:700; color:#53706a; text-transform:uppercase; letter-spacing:0.1em;">Pass rate</div></td>'
-        . '<td valign="middle" align="right"><div style="display:inline-block; font-size:14px; line-height:1.3; font-weight:800; color:' . secureit_diag_html($statusColor) . '; background:' . secureit_diag_html($statusBackground) . '; border:1px solid rgba(0,0,0,0.05); border-radius:999px; padding:6px 12px;">' . $statusLabel . '</div></td>'
-        . '</tr></table>'
-        . '<div style="margin-top:10px; height:12px; background:#d9ebe6; border-radius:999px; overflow:hidden;"><div style="width:' . $passRate . '%; height:12px; background:linear-gradient(90deg,#0f766e 0%, #2f8f84 100%); border-radius:999px;"></div></div>'
-        . '<div style="margin-top:8px; font-size:13px; line-height:1.5; color:#4f645f;">' . $passRate . '% of the dummy checks passed in this sample overview. ' . secureit_diag_html(sprintf('%d passed, %d partially met, %d failed.', $passed, $partial, $failed)) . '</div>'
-        . '</div>'
-        . '<div style="margin-top:16px; padding:18px; border-radius:18px; background:#102d2a; color:#edf7f4;">'
-        . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.12em; text-transform:uppercase; color:#9ed8cf; font-weight:700;">Summary</div>'
-        . '<div style="margin-top:8px; font-size:16px; line-height:1.6; font-weight:600;">' . $summary . '</div>'
-        . '<div style="margin-top:10px; font-size:12px; line-height:1.5; color:#c5e4de;">Sender mailbox: ' . $senderMailbox . ' | Recipient mailbox: ' . $recipientMailbox . ' | Generated at: ' . $generatedAt . '</div>'
-        . '</div>'
-        . '<div style="margin-top:16px; font-size:12px; line-height:1.5; color:#6a817b;">SecureIT diagnostics mail test. The numbers above are dummy values and are intended only to validate HTML rendering, formatting, and Graph mail delivery.</div>'
-        . '</td></tr>'
-        . '</table>'
-        . '</td></tr>'
-        . '</table>'
-        . '</body></html>';
+    return secureit_mail_build_overview_html($overviewStats, [
+        'brandLabel' => 'SecureIT diagnostics',
+        'eyebrow' => 'Tenant overview',
+        'headline' => 'Illustrative tenant overview',
+        'intro' => 'This is a dummy summary that mirrors the SecureIT tenant overview cards and pass-rate block so you can verify HTML rendering in the mailbox.',
+        'summaryLabel' => 'Summary',
+        'modeLabel' => $modeLabel,
+        'generatedAt' => $generatedAt,
+        'senderMailbox' => $senderMailbox,
+        'recipientMailbox' => $recipientMailbox,
+        'footerNote' => 'SecureIT diagnostics mail test. The numbers above are dummy values and are intended only to validate HTML rendering, formatting, and Graph mail delivery.',
+    ]);
 }
 
 function secureit_diag_build_email_test_report(array $state): string {

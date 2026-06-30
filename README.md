@@ -96,6 +96,14 @@ Typical flow:
 
 The onboarding flow also writes the customer application secret into Azure Key Vault so the live tenant setup stays aligned with the workflow and diagnostics paths.
 
+## Diagnostics email tests
+
+`app/diagnostics.php` includes plain text and HTML Graph mail tests that send from the shared mailbox and let you choose the recipient on the page. The routines are intended to be reused wherever email is wired into SecureIT, but attachment sending has not been tested yet.
+
+## Report runs
+
+Tenant overview pages can queue a single-tenant run of the `SecureIT Production` GitHub workflow when the GitHub dispatch token and repository settings are configured in the environment. After the resulting bundle is imported back into SecureIT, the app sends the tenant's report recipient an HTML summary email using the same overview layout as the diagnostics page.
+
 ## Functional-area scoring
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.

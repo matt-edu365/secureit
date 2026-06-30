@@ -13,6 +13,50 @@ if (!$tenant) {
 
 secureit_require_tenant_access($tenantKey);
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_latest_report'])) {
+    $dispatchInputs = [
+        'tenant_key' => $tenantKey,
+        'tenant_name' => trim((string) ($tenant['name'] ?? '')),
+        'tenant_id' => trim((string) ($tenant['tenantId'] ?? '')),
+        'client_id' => trim((string) ($tenant['clientId'] ?? '')),
+        'auth_mode' => trim((string) ($tenant['authMode'] ?? 'client-secret')),
+        'client_secret_name' => trim((string) ($tenant['clientSecretName'] ?? '')),
+        'certificate_secret_name' => trim((string) ($tenant['certificateSecretName'] ?? '')),
+        'certificate_password_secret_name' => trim((string) ($tenant['certificatePasswordSecretName'] ?? '')),
+        'tenant_domain' => trim((string) ($tenant['tenantDomain'] ?? '')),
+        'm365_tenant_name' => trim((string) ($tenant['m365TenantName'] ?? '')),
+        'report_base_url' => trim((string) ($tenant['reportBaseUrl'] ?? '')),
+        'email_to' => trim((string) ($tenant['emailTo'] ?? '')),
+        'test_profile' => 'client-secret-full',
+    ];
+    $dispatchResult = secureit_github_dispatch_workflow($dispatchInputs);
+
+    if (!empty($dispatchResult['ok'])) {
+        $workflowUrl = (string) ($dispatchResult['workflowUrl'] ?? '');
+        $message = 'Queued SecureIT Production for ' . ($tenant['name'] ?? $tenantKey) . '.';
+        if ($workflowUrl !== '') {
+            $message .= ' Open the workflow runs page if you want to watch it progress.';
+        }
+
+        secureit_flash_set('tenant_manual_report_run', [
+            'ok' => true,
+            'message' => $message,
+            'workflowUrl' => $workflowUrl,
+        ]);
+    } else {
+        secureit_flash_set('tenant_manual_report_run', [
+            'ok' => false,
+            'message' => 'Unable to queue the SecureIT Production workflow: ' . trim((string) ($dispatchResult['error'] ?? 'Unknown error')),
+            'workflowUrl' => (string) ($dispatchResult['workflowUrl'] ?? ''),
+        ]);
+    }
+
+    header('Location: tenant.php?tenant=' . rawurlencode($tenantKey), true, 303);
+    exit;
+}
+
+$manualReportRunNotice = secureit_flash_pull('tenant_manual_report_run');
+
 $summary = secureit_tenant_summary($tenantKey);
 $areaData = secureit_resolve_canonical_area_scores($tenantKey);
 $counts = secureit_check_summary_counts($areaData);
@@ -211,12 +255,28 @@ ob_start();
   </article>
 
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
-    <div class="section-header" style="margin-bottom:18px;">
-      <div>
-          <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
-        <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Operational snapshot of the latest report.'; ?></div>
+    <div class="section-header" style="margin-bottom:18px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div style="min-width:0;">
+        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
+        <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Summary of the latest report.'; ?></div>
       </div>
+      <?php if (!$selectedArea): ?>
+        <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
+          <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap;">Run report now</button>
+        </form>
+      <?php endif; ?>
     </div>
+
+    <?php if (is_array($manualReportRunNotice ?? null)): ?>
+      <div class="<?php echo !empty($manualReportRunNotice['ok']) ? 'success' : 'error'; ?>" style="margin-bottom:16px;">
+        <?php echo htmlspecialchars((string) ($manualReportRunNotice['message'] ?? '')); ?>
+        <?php if (!empty($manualReportRunNotice['workflowUrl'])): ?>
+          <div style="margin-top:8px;">
+            <a class="textlink" href="<?php echo htmlspecialchars((string) $manualReportRunNotice['workflowUrl']); ?>">Open GitHub workflow runs</a>
+          </div>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
 
     <?php if ($summary): ?>
       <div class="stats-row" style="margin-bottom:14px;">

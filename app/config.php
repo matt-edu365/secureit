@@ -23,4 +23,8 @@ return [
     'key_vault_name' => getenv('SECUREIT_KEY_VAULT_NAME') ?: '',
     'key_vault_uri' => getenv('SECUREIT_KEY_VAULT_URI') ?: '',
     'workflow_sync_token' => getenv('SECUREIT_WORKFLOW_SYNC_TOKEN') ?: '',
+    'github_repository' => getenv('SECUREIT_GITHUB_REPOSITORY') ?: 'matt-edu365/secureit',
+    'github_workflow_file' => getenv('SECUREIT_GITHUB_WORKFLOW_FILE') ?: 'secureit-production.yml',
+    'github_workflow_ref' => getenv('SECUREIT_GITHUB_WORKFLOW_REF') ?: 'main',
+    'github_token' => getenv('SECUREIT_GITHUB_TOKEN') ?: '',
 ];

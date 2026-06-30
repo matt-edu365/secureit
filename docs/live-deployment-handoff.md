@@ -96,6 +96,10 @@ Likely later:
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 - `SECUREIT_ENTRA_TENANT_ID=<ict365-tenant-id>` for app-only Graph features such as the diagnostics mail test
+- `SECUREIT_GITHUB_REPOSITORY=<owner/repo>` for tenant-page workflow dispatch
+- `SECUREIT_GITHUB_WORKFLOW_FILE=secureit-production.yml`
+- `SECUREIT_GITHUB_WORKFLOW_REF=main`
+- `SECUREIT_GITHUB_TOKEN=<repo dispatch token>` for tenant-page workflow dispatch
 
 The app also persists optional Key Vault metadata in `/var/www/data/admin-config.json` for display and future portability, but the runtime secret write path uses the Key Vault environment variables above.
 
@@ -125,17 +129,18 @@ The diagnostics page includes a temporary secret-write tool for existing tenants
 
 ## Workflow-to-runtime integration gap
 
-One of the biggest remaining decisions is how workflow output reaches the live app storage.
+The production workflow now publishes report bundles back into SecureIT through `report-import.php`, which means the workflow-to-app bridge is live rather than just theoretical.
 
 Current available path:
 1. GitHub workflow generates `output/<tenant-key>/...`
 2. workflow prepares `app-import/<tenant-key>/...`
-3. `scripts/Import-AppReportBundle.ps1` can import that bundle into app runtime storage
+3. the workflow posts the bundle to `report-import.php`
+4. `report-import.php` imports the bundle into app runtime storage and can send the tenant's HTML report summary email
 
 Still to decide:
-- manual import by operator
-- automated artifact deployment to the live host
-- host-side sync/pull job
+- whether the live host will also use a host-side sync/pull job or rely on the workflow push path alone
+- whether manual import by operator should remain as a repair-only option
+- whether any additional workflow completion summary should surface the imported report status in GitHub
 
 The next agent should treat this as a priority integration decision.
 
@@ -169,7 +174,7 @@ After the first live deploy, verify:
 
 1. confirm live Docker host deployment method
 2. implement or document the GHCR-to-host deployment path
-3. define how app-import bundles reach live runtime storage
+3. confirm the workflow-to-app report import path and email notification flow
 4. validate mounted storage permissions and ownership
 5. verify TLS and reverse-proxy behaviour for `secureit.ict365.ky`
 6. decide short-term access control before public exposure

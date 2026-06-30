@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../shared/functional-areas.php';
+require_once __DIR__ . '/../shared/mail.php';
 function secureit_config(): array {
     static $config = null;
     if ($config === null) {
@@ -345,6 +346,240 @@ function secureit_http_post_form(string $url, array $fields): array {
 
     $data = json_decode($body, true);
     return is_array($data) ? $data : [];
+}
+
+function secureit_http_describe_api_error(int $status, string $body, string $fallback): string {
+    $body = trim($body);
+    if ($body === '') {
+        return $fallback;
+    }
+
+    $decoded = json_decode($body, true);
+    if (is_array($decoded)) {
+        $error = $decoded['error'] ?? null;
+        if (is_array($error)) {
+            $code = trim((string) ($error['code'] ?? ''));
+            $message = trim((string) ($error['message'] ?? ''));
+            if ($code !== '' && $message !== '') {
+                return 'HTTP ' . $status . ' API error ' . $code . ': ' . $message;
+            }
+            if ($message !== '') {
+                return 'HTTP ' . $status . ' API error: ' . $message;
+            }
+            if ($code !== '') {
+                return 'HTTP ' . $status . ' API error code: ' . $code;
+            }
+        }
+
+        $message = trim((string) ($decoded['message'] ?? ''));
+        if ($message !== '') {
+            return 'HTTP ' . $status . ' API error: ' . $message;
+        }
+
+        $errors = $decoded['errors'] ?? null;
+        if (is_array($errors) && $errors !== []) {
+            $firstError = $errors[0] ?? null;
+            if (is_array($firstError)) {
+                $message = trim((string) ($firstError['message'] ?? $firstError['detail'] ?? ''));
+                if ($message !== '') {
+                    return 'HTTP ' . $status . ' API error: ' . $message;
+                }
+            } elseif (is_scalar($firstError)) {
+                $message = trim((string) $firstError);
+                if ($message !== '') {
+                    return 'HTTP ' . $status . ' API error: ' . $message;
+                }
+            }
+        }
+    }
+
+    $snippet = preg_replace('/\s+/', ' ', $body);
+    $snippet = trim(substr((string) $snippet, 0, 240));
+    if ($snippet !== '') {
+        return 'HTTP ' . $status . ' API response: ' . $snippet;
+    }
+
+    return $fallback;
+}
+
+function secureit_http_post_json_with_headers(string $url, array $headers, array $payload): array {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'data' => [],
+            'body' => '',
+            'headers' => [],
+            'error' => 'Unable to initialise the request.',
+        ];
+    }
+
+    $responseHeaders = [];
+    $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    if ($body === false) {
+        $body = '{}';
+    }
+
+    $requestHeaders = array_merge([
+        'Accept: application/json',
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($body),
+    ], $headers);
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_HEADERFUNCTION => static function ($curlHandle, string $headerLine) use (&$responseHeaders): int {
+            return secureit_http_capture_header_line($responseHeaders, $headerLine);
+        },
+        CURLOPT_HTTPHEADER => $requestHeaders,
+    ]);
+
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => [],
+            'body' => '',
+            'headers' => $responseHeaders,
+            'error' => $curlError !== '' ? $curlError : 'The request failed before a response body was returned.',
+        ];
+    }
+
+    if ($status < 200 || $status >= 300) {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => is_string($response) ? (json_decode($response, true) ?: []) : [],
+            'body' => (string) $response,
+            'headers' => $responseHeaders,
+            'error' => secureit_http_describe_api_error(
+                $status,
+                (string) $response,
+                'The request was rejected with HTTP ' . $status . '.'
+            ),
+        ];
+    }
+
+    $data = json_decode((string) $response, true);
+
+    return [
+        'ok' => true,
+        'status' => $status,
+        'data' => is_array($data) ? $data : [],
+        'body' => (string) $response,
+        'headers' => $responseHeaders,
+        'error' => '',
+    ];
+}
+
+function secureit_github_repository_parts(string $repository): array {
+    $repository = trim($repository);
+    if ($repository === '') {
+        return [];
+    }
+
+    $parts = explode('/', $repository, 2);
+    if (count($parts) !== 2) {
+        return [];
+    }
+
+    $owner = trim($parts[0]);
+    $name = trim($parts[1]);
+    if ($owner === '' || $name === '') {
+        return [];
+    }
+
+    return [
+        'owner' => $owner,
+        'name' => $name,
+    ];
+}
+
+function secureit_github_dispatch_config(): array {
+    $config = secureit_config();
+
+    return [
+        'repository' => trim((string) ($config['github_repository'] ?? 'matt-edu365/secureit')),
+        'workflowFile' => trim((string) ($config['github_workflow_file'] ?? 'secureit-production.yml')),
+        'ref' => trim((string) ($config['github_workflow_ref'] ?? 'main')),
+        'token' => trim((string) ($config['github_token'] ?? '')),
+    ];
+}
+
+function secureit_github_dispatch_workflow(array $inputs): array {
+    $config = secureit_github_dispatch_config();
+    if ($config['token'] === '') {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'body' => '',
+            'headers' => [],
+            'error' => 'GitHub workflow dispatch is not configured because SECUREIT_GITHUB_TOKEN is empty.',
+            'workflowUrl' => '',
+            'repository' => $config['repository'],
+            'workflowFile' => $config['workflowFile'],
+            'ref' => $config['ref'],
+        ];
+    }
+
+    $repositoryParts = secureit_github_repository_parts($config['repository']);
+    if ($repositoryParts === []) {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'body' => '',
+            'headers' => [],
+            'error' => 'GitHub repository is not configured in owner/repo form.',
+            'workflowUrl' => '',
+            'repository' => $config['repository'],
+            'workflowFile' => $config['workflowFile'],
+            'ref' => $config['ref'],
+        ];
+    }
+
+    if ($config['workflowFile'] === '') {
+        return [
+            'ok' => false,
+            'status' => 0,
+            'body' => '',
+            'headers' => [],
+            'error' => 'GitHub workflow file is not configured.',
+            'workflowUrl' => '',
+            'repository' => $config['repository'],
+            'workflowFile' => $config['workflowFile'],
+            'ref' => $config['ref'],
+        ];
+    }
+
+    $workflowUrl = 'https://github.com/' . rawurlencode($repositoryParts['owner']) . '/' . rawurlencode($repositoryParts['name']) . '/actions/workflows/' . rawurlencode($config['workflowFile']);
+    $dispatchUrl = 'https://api.github.com/repos/' . rawurlencode($repositoryParts['owner']) . '/' . rawurlencode($repositoryParts['name']) . '/actions/workflows/' . rawurlencode($config['workflowFile']) . '/dispatches';
+    $response = secureit_http_post_json_with_headers($dispatchUrl, [
+        'Authorization: Bearer ' . $config['token'],
+        'User-Agent: SecureIT',
+        'X-GitHub-Api-Version: 2022-11-28',
+    ], [
+        'ref' => $config['ref'],
+        'inputs' => $inputs,
+    ]);
+
+    $response['workflowUrl'] = $workflowUrl;
+    $response['repository'] = $config['repository'];
+    $response['workflowFile'] = $config['workflowFile'];
+    $response['ref'] = $config['ref'];
+    $response['dispatchUrl'] = $dispatchUrl;
+
+    return $response;
 }
 
 function secureit_new_guid(): string {
@@ -1192,6 +1427,35 @@ function secureit_current_auth_context(): ?array {
     secureit_start_session();
     $auth = $_SESSION['secureit_auth'] ?? null;
     return is_array($auth) ? $auth : null;
+}
+
+function secureit_flash_set(string $key, mixed $value): void {
+    secureit_start_session();
+    if (!isset($_SESSION['secureit_flash']) || !is_array($_SESSION['secureit_flash'])) {
+        $_SESSION['secureit_flash'] = [];
+    }
+
+    $_SESSION['secureit_flash'][$key] = $value;
+}
+
+function secureit_flash_pull(string $key, mixed $default = null): mixed {
+    secureit_start_session();
+    if (!isset($_SESSION['secureit_flash']) || !is_array($_SESSION['secureit_flash'])) {
+        return $default;
+    }
+
+    if (!array_key_exists($key, $_SESSION['secureit_flash'])) {
+        return $default;
+    }
+
+    $value = $_SESSION['secureit_flash'][$key];
+    unset($_SESSION['secureit_flash'][$key]);
+
+    if ($_SESSION['secureit_flash'] === []) {
+        unset($_SESSION['secureit_flash']);
+    }
+
+    return $value;
 }
 
 function secureit_set_auth_context(string $role, ?string $email = null, ?string $tenantKey = null, array $extra = []): void {

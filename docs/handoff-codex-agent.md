@@ -59,7 +59,8 @@ The app expects runtime data outside the image:
 Current important bridge:
 1. workflow generates `output/<tenant-key>/...`
 2. workflow prepares an app-import bundle
-3. `scripts/Import-AppReportBundle.ps1` imports into app runtime storage
+3. the workflow posts the bundle to `report-import.php`
+4. `report-import.php` imports into app runtime storage and can send the tenant's HTML report summary email
 
 ## Recommended priorities
 

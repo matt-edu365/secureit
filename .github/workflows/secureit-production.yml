@@ -7,6 +7,50 @@ on:
         description: Optional tenant key to run
         required: false
         default: ""
+      tenant_name:
+        description: Optional tenant display name for direct dispatch
+        required: false
+        default: ""
+      tenant_domain:
+        description: Optional tenant domain for direct dispatch
+        required: false
+        default: ""
+      tenant_id:
+        description: Optional Microsoft 365 tenant ID for direct dispatch
+        required: false
+        default: ""
+      client_id:
+        description: Optional Microsoft 365 application ID for direct dispatch
+        required: false
+        default: ""
+      auth_mode:
+        description: Optional authentication mode for direct dispatch
+        required: false
+        default: ""
+      client_secret_name:
+        description: Optional Azure Key Vault client secret name for direct dispatch
+        required: false
+        default: ""
+      certificate_secret_name:
+        description: Optional Azure Key Vault certificate secret name for direct dispatch
+        required: false
+        default: ""
+      certificate_password_secret_name:
+        description: Optional Azure Key Vault certificate password secret name for direct dispatch
+        required: false
+        default: ""
+      report_base_url:
+        description: Optional report base URL for direct dispatch
+        required: false
+        default: ""
+      email_to:
+        description: Optional report recipient email for direct dispatch
+        required: false
+        default: ""
+      m365_tenant_name:
+        description: Optional Microsoft 365 tenant display name for direct dispatch
+        required: false
+        default: ""
       test_profile:
         description: Test profile to run
         required: true
@@ -46,62 +90,123 @@ jobs:
           $syncFingerprint = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($env:SECUREIT_WORKFLOW_SYNC_TOKEN))).Substring(0, 12)
           "Workflow sync fingerprint: $syncFingerprint" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
-          $tenantKey = ''
-          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
-            $tenantKey = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_key }}') ? '' : '${{ github.event.inputs.tenant_key }}'
-          }
+          $tenantKey = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_key }}') ? '' : '${{ github.event.inputs.tenant_key }}'
+          $tenantName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_name }}') ? '' : '${{ github.event.inputs.tenant_name }}'
+          $tenantDomain = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_domain }}') ? '' : '${{ github.event.inputs.tenant_domain }}'
+          $tenantId = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.tenant_id }}') ? '' : '${{ github.event.inputs.tenant_id }}'
+          $clientId = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.client_id }}') ? '' : '${{ github.event.inputs.client_id }}'
+          $authMode = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.auth_mode }}') ? '' : '${{ github.event.inputs.auth_mode }}'
+          $clientSecretName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.client_secret_name }}') ? '' : '${{ github.event.inputs.client_secret_name }}'
+          $certificateSecretName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.certificate_secret_name }}') ? '' : '${{ github.event.inputs.certificate_secret_name }}'
+          $certificatePasswordSecretName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.certificate_password_secret_name }}') ? '' : '${{ github.event.inputs.certificate_password_secret_name }}'
+          $reportBaseUrl = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.report_base_url }}') ? '' : '${{ github.event.inputs.report_base_url }}'
+          $emailTo = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.email_to }}') ? '' : '${{ github.event.inputs.email_to }}'
+          $m365TenantName = [string]::IsNullOrWhiteSpace('${{ github.event.inputs.m365_tenant_name }}') ? '' : '${{ github.event.inputs.m365_tenant_name }}'
 
-          $query = @()
-          if ($tenantKey -ne '') {
-            $query += 'tenant_key=' + [uri]::EscapeDataString($tenantKey)
-          }
-          else {
-            $query += 'ready=1'
-          }
-
-          $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
-          $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
-            Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
-            'X-SecureIT-Workflow-Token' = $env:SECUREIT_WORKFLOW_SYNC_TOKEN
-            Accept = 'application/json'
-          } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
-
-          $statusCode = [int] $response.StatusCode
-          $responseText = [string] $response.Content
-          if ($statusCode -ne 200) {
-            $details = $responseText
-            try {
-              $errorPayload = $responseText | ConvertFrom-Json -ErrorAction Stop
-              if ($errorPayload.message) {
-                $details = [string] $errorPayload.message
+          $useDirectTenantInputs = $tenantKey -ne '' -and $tenantName -ne '' -and $tenantId -ne '' -and $clientId -ne '' -and $authMode -ne '' -and $reportBaseUrl -ne ''
+          switch ($authMode) {
+            'client-secret' {
+              if ([string]::IsNullOrWhiteSpace($clientSecretName)) {
+                $useDirectTenantInputs = $false
               }
             }
+            'certificate' {
+              if ([string]::IsNullOrWhiteSpace($certificateSecretName) -or [string]::IsNullOrWhiteSpace($certificatePasswordSecretName)) {
+                $useDirectTenantInputs = $false
+              }
+            }
+            '' {
+              $useDirectTenantInputs = $false
+            }
+            default {
+              if ($useDirectTenantInputs) {
+                $useDirectTenantInputs = $true
+              }
+            }
+          }
+
+          if ($useDirectTenantInputs) {
+            $tenants = @(
+              [ordered]@{
+                tenantKey = $tenantKey
+                tenantName = $tenantName
+                tenantId = $tenantId
+                clientId = $clientId
+                authMode = $authMode
+                clientSecretName = $clientSecretName
+                certificateSecretName = $certificateSecretName
+                certificatePasswordSecretName = $certificatePasswordSecretName
+                tenantDomain = $tenantDomain
+                m365TenantName = $m365TenantName
+                reportBaseUrl = $reportBaseUrl
+                emailTo = $emailTo
+                ready = $true
+                missing = @()
+              }
+            )
+            $responseBody = [ordered]@{
+              ok = $true
+              generatedAt = [DateTimeOffset]::UtcNow.ToString('o')
+              fingerprint = $syncFingerprint
+              count = 1
+              readyCount = 1
+              tenants = $tenants
+              source = 'workflow_dispatch'
+            }
+          }
+          else {
+            $query = @()
+            if ($tenantKey -ne '') {
+              $query += 'tenant_key=' + [uri]::EscapeDataString($tenantKey)
+            }
+            else {
+              $query += 'ready=1'
+            }
+
+            $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
+            $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
+              Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
+              'X-SecureIT-Workflow-Token' = $env:SECUREIT_WORKFLOW_SYNC_TOKEN
+              Accept = 'application/json'
+            } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
+
+            $statusCode = [int] $response.StatusCode
+            $responseText = [string] $response.Content
+            if ($statusCode -ne 200) {
+              $details = $responseText
+              try {
+                $errorPayload = $responseText | ConvertFrom-Json -ErrorAction Stop
+                if ($errorPayload.message) {
+                  $details = [string] $errorPayload.message
+                }
+              }
+              catch {
+              }
+
+              switch ($statusCode) {
+                401 { throw "SecureIT rejected the workflow sync token. Check that the GitHub secret matches the live container value. Details: $details" }
+                403 { throw "SecureIT denied the workflow sync request. Check the token and live host permissions. Details: $details" }
+                404 { throw "SecureIT workflow sync endpoint was not found. Check that the deployed container includes app/workflow-sync.php. Details: $details" }
+                default { throw "SecureIT workflow sync endpoint returned HTTP $statusCode. Details: $details" }
+              }
+            }
+
+            try {
+              $responseBody = $responseText | ConvertFrom-Json -ErrorAction Stop
+            }
             catch {
+              throw "SecureIT workflow sync endpoint returned invalid JSON: $($_.Exception.Message)"
             }
 
-            switch ($statusCode) {
-              401 { throw "SecureIT rejected the workflow sync token. Check that the GitHub secret matches the live container value. Details: $details" }
-              403 { throw "SecureIT denied the workflow sync request. Check the token and live host permissions. Details: $details" }
-              404 { throw "SecureIT workflow sync endpoint was not found. Check that the deployed container includes app/workflow-sync.php. Details: $details" }
-              default { throw "SecureIT workflow sync endpoint returned HTTP $statusCode. Details: $details" }
+            if (-not $responseBody.ok) {
+              $syncMessage = [string] ($responseBody.message ?? 'Unknown error')
+              throw "SecureIT workflow sync endpoint reported failure: $syncMessage"
             }
-          }
 
-          try {
-            $responseBody = $responseText | ConvertFrom-Json -ErrorAction Stop
-          }
-          catch {
-            throw "SecureIT workflow sync endpoint returned invalid JSON: $($_.Exception.Message)"
-          }
-
-          if (-not $responseBody.ok) {
-            $syncMessage = [string] ($responseBody.message ?? 'Unknown error')
-            throw "SecureIT workflow sync endpoint reported failure: $syncMessage"
-          }
-
-          $tenants = @($responseBody.tenants)
-          if (-not $tenants) {
-            throw 'SecureIT did not return any tenants for this run.'
+            $tenants = @($responseBody.tenants)
+            if (-not $tenants) {
+              throw 'SecureIT did not return any tenants for this run.'
+            }
           }
 
           $matrixObject = [ordered]@{
@@ -113,7 +218,8 @@ jobs:
             "",
             "Base URL: $baseUrl",
             "Requested tenant key: " + ($(if ($tenantKey -ne '') { $tenantKey } else { '[all ready tenants]' })),
-            "Discovered tenants: $($tenants.Count)"
+            "Discovered tenants: $($tenants.Count)",
+            "Tenant source: " + ($(if ($useDirectTenantInputs) { 'workflow_dispatch inputs' } else { 'SecureIT workflow-sync' }))
           )
           foreach ($tenant in $tenants) {
             $summaryLines += "- $($tenant.tenantKey) | $($tenant.tenantName) | auth=$($tenant.authMode) | ready=$($tenant.ready)"

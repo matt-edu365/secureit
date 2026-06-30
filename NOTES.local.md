@@ -18,3 +18,13 @@ The current intention is to keep the product surface and container runtime consi
 - security reporting terminology
 - report bundle contract
 - runtime storage paths
+
+## Email wiring
+
+The diagnostics mail routines are the reusable baseline for future email work.
+
+- Plain text and HTML Graph mail sends are both working.
+- Recipient selection is configurable from the diagnostics page.
+- Attachment sending has not been tested yet, so treat that as the next validation step before using the helpers elsewhere.
+- Tenant pages can now queue the `SecureIT Production` workflow when the GitHub dispatch token is configured.
+- Imported report bundles now send an HTML summary email to the tenant's configured report recipient.

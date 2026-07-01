@@ -223,6 +223,8 @@ function secureit_line_graph_card(string $title, array $series, array $options =
     $showLegend = (bool) ($options['showLegend'] ?? true);
     $showSubtitle = (bool) ($options['showSubtitle'] ?? true);
     $showLatestPoint = (bool) ($options['showLatestPoint'] ?? true);
+    $controlsHtml = (string) ($options['controlsHtml'] ?? '');
+    $controlsWidth = (int) ($options['controlsWidth'] ?? 258);
     $paddingX = 34;
     $paddingY = 28;
     $plotWidth = $width - ($paddingX * 2);
@@ -306,12 +308,17 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         . '<div class="badge tone-good">Latest ' . htmlspecialchars((string) $latestScore) . '%</div>'
         . '</div>'
         . ($showLegend && $legend !== '' ? '<div class="inline-links" style="flex-wrap:wrap; gap:8px; margin-bottom:12px;">' . $legend . '</div>' : '')
+        . '<div style="' . ($controlsHtml !== '' ? 'display:flex; gap:22px; align-items:flex-start; flex-wrap:nowrap;' : '') . '">'
+        . '<div style="' . ($controlsHtml !== '' ? 'flex:1 1 auto; min-width:0;' : '') . '">'
         . '<svg viewBox="0 0 ' . $width . ' ' . $height . '" role="img" aria-label="' . htmlspecialchars($title) . '" style="width:100%; height:auto; display:block; overflow:visible;">'
         . '<defs><linearGradient id="overallTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
         . $gridLines
         . $svgSeries
         . '</svg>'
         . ($showLatestPoint ? '<div class="muted" style="margin-top:10px;">Latest plotted point: ' . htmlspecialchars($latestLabel) . '.</div>' : '')
+        . '</div>'
+        . ($controlsHtml !== '' ? '<div style="flex:0 0 ' . $controlsWidth . 'px; min-width:' . $controlsWidth . 'px; align-self:stretch;">' . $controlsHtml . '</div>' : '')
+        . '</div>'
         . '</article>';
 }
 
@@ -599,59 +606,63 @@ ob_start();
 
 <?php if (!$selectedArea): ?>
   <section class="section">
-    <article class="card panel" style="margin-bottom:18px; padding:20px 20px 18px;">
-      <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
-        <div>
-          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Score trend - tenant overview</h3>
-        </div>
-        <div class="badge tone-good">Latest overall</div>
-      </div>
-      <form method="get" action="tenant.php" id="trend-form" style="margin:0 0 12px;">
-        <input type="hidden" name="tenant" value="<?php echo htmlspecialchars($tenantKey); ?>">
-        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-          <input type="hidden" name="trend_area[]" value="">
-          <?php foreach ($functionalAreas as $area): ?>
-            <?php $areaName = (string) ($area['name'] ?? ''); ?>
-            <?php if ($areaName === '') { continue; } ?>
-            <label style="display:inline-flex; align-items:center; gap:0; margin-right:4px;">
-              <input
-                type="checkbox"
-                name="trend_area[]"
-                value="<?php echo htmlspecialchars($areaName); ?>"
-                title="<?php echo htmlspecialchars($areaName); ?>"
-                aria-label="<?php echo htmlspecialchars($areaName); ?>"
-                style="width:12px; height:12px; accent-color:<?php echo htmlspecialchars((string) ($area['tone'] === 'good' ? '#15803d' : ($area['tone'] === 'warn' ? '#ca8a04' : ($area['tone'] === 'bad' ? '#b91c1c' : '#1d4ed8')))); ?>; margin:0;"
-                <?php echo in_array($areaName, $selectedOverviewTrendAreas, true) ? 'checked' : ''; ?>
-                onchange="document.getElementById('trend-form').submit();"
-              >
-            </label>
-          <?php endforeach; ?>
-        </div>
-      </form>
-      <?php
-        $overviewSeriesForGraph = $overviewTrendSeries;
-        foreach ($functionalAreas as $area) {
-            $areaName = (string) ($area['name'] ?? '');
-            if ($areaName === '' || !in_array($areaName, $selectedOverviewTrendAreas, true)) {
-                continue;
-            }
-            $tone = (string) ($area['tone'] ?? 'neutral');
-            $color = match ($tone) {
-                'good' => '#15803d',
-                'warn' => '#ca8a04',
-                'bad' => '#b91c1c',
-                default => '#1d4ed8',
-            };
-            $overviewSeriesForGraph[$areaName] = [
-                'label' => $areaName,
-                'color' => $color,
-                'fill' => $color,
-                'points' => secureit_functional_area_history_points($history, $areaName),
-            ];
-        }
-        echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false]);
-      ?>
-    </article>
+    <?php
+      $overviewSeriesForGraph = $overviewTrendSeries;
+      foreach ($functionalAreas as $area) {
+          $areaName = (string) ($area['name'] ?? '');
+          if ($areaName === '' || !in_array($areaName, $selectedOverviewTrendAreas, true)) {
+              continue;
+          }
+          $tone = (string) ($area['tone'] ?? 'neutral');
+          $color = match ($tone) {
+              'good' => '#15803d',
+              'warn' => '#ca8a04',
+              'bad' => '#b91c1c',
+              default => '#1d4ed8',
+          };
+          $overviewSeriesForGraph[$areaName] = [
+              'label' => $areaName,
+              'color' => $color,
+              'fill' => $color,
+              'points' => secureit_functional_area_history_points($history, $areaName),
+          ];
+      }
+
+      $overviewControlsHtml = '<div style="display:flex; flex-direction:column; gap:10px; align-items:stretch; padding-top:6px;">'
+          . '<div class="badge tone-good" style="align-self:flex-end; width:max-content;">Overall</div>';
+      foreach ($functionalAreas as $area) {
+          $areaName = (string) ($area['name'] ?? '');
+          if ($areaName === '') {
+              continue;
+          }
+          $tone = (string) ($area['tone'] ?? 'neutral');
+          $color = match ($tone) {
+              'good' => '#15803d',
+              'warn' => '#ca8a04',
+              'bad' => '#b91c1c',
+              default => '#1d4ed8',
+          };
+          $overviewControlsHtml .= '<label style="display:flex; align-items:center; gap:10px; justify-content:flex-start; padding:8px 12px; border-radius:999px; border:1px solid #dbe8e2; background:#ffffff; color:#102d2a; font-size:0.84rem; font-weight:600; box-shadow:0 1px 0 rgba(15, 23, 42, 0.03); cursor:pointer;">'
+              . '<input'
+              . ' type="checkbox"'
+              . ' name="trend_area[]"'
+              . ' value="' . htmlspecialchars($areaName) . '"'
+              . ' title="' . htmlspecialchars($areaName) . '"'
+              . ' aria-label="' . htmlspecialchars($areaName) . '"'
+              . ' style="width:13px; height:13px; accent-color:' . htmlspecialchars($color) . '; margin:0; flex:0 0 auto;"'
+              . (in_array($areaName, $selectedOverviewTrendAreas, true) ? ' checked' : '')
+              . ' onchange="document.getElementById(\'trend-form\').submit();"'
+              . '>'
+              . '<span style="flex:1 1 auto;">' . htmlspecialchars($areaName) . '</span>'
+              . '</label>';
+      }
+      $overviewControlsHtml .= '</div>';
+    ?>
+    <form method="get" action="tenant.php" id="trend-form" style="margin:0;">
+      <input type="hidden" name="tenant" value="<?php echo htmlspecialchars($tenantKey); ?>">
+      <input type="hidden" name="trend_area[]" value="">
+      <?php echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false, 'controlsHtml' => $overviewControlsHtml, 'controlsWidth' => 272]); ?>
+    </form>
   </section>
 <?php endif; ?>
 

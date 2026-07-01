@@ -103,11 +103,29 @@ function secureit_functional_area_partial_test_count(array $area): int {
     return count($partialTests);
 }
 
+function secureit_history_row_area_data(array $item): array {
+    if (is_array($item['areaData'] ?? null)) {
+        return $item['areaData'];
+    }
+
+    $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+    return secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+}
+
+function secureit_hydrate_history_area_data(array $history): array {
+    foreach ($history as &$item) {
+        $item['areaData'] = secureit_history_row_area_data($item);
+    }
+    unset($item);
+
+    return $history;
+}
+
 function secureit_functional_area_history_points(array $history, string $areaName): array {
     $points = [];
     foreach ($history as $item) {
         $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
-        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $rowAreaData = secureit_history_row_area_data($item);
         $areaScore = null;
         foreach (($rowAreaData['areas'] ?? []) as $area) {
             if (($area['name'] ?? '') !== $areaName) {
@@ -139,7 +157,7 @@ function secureit_tenant_history_series(array $history): array {
     $allAreaNames = [];
     foreach ($history as $item) {
         $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
-        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $rowAreaData = secureit_history_row_area_data($item);
         $overallCounts = secureit_check_summary_counts($rowAreaData);
         $series['overall']['points'][] = [
             'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
@@ -180,7 +198,7 @@ function secureit_tenant_history_series(array $history): array {
 
     foreach ($history as $item) {
         $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
-        $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, $summary);
+        $rowAreaData = secureit_history_row_area_data($item);
         $areaScores = [];
         foreach (($rowAreaData['areas'] ?? []) as $area) {
             $areaName = (string) ($area['name'] ?? '');
@@ -219,6 +237,19 @@ function secureit_series_points(array $series): array {
     return $points;
 }
 
+function secureit_graph_axis_date(?string $value): string {
+    if (!$value) {
+        return '';
+    }
+
+    try {
+        $dt = new DateTimeImmutable($value);
+        return $dt->format('d/m');
+    } catch (Throwable $e) {
+        return substr($value, 0, 5);
+    }
+}
+
 function secureit_line_graph_card(string $title, array $series, array $options = []): string {
     $width = 640;
     $height = (int) ($options['height'] ?? 160);
@@ -255,6 +286,21 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         $y = $paddingY + ($plotHeight - (($mark / 100) * $plotHeight));
         $gridLines .= '<line x1="' . $paddingX . '" y1="' . number_format($y, 2, '.', '') . '" x2="' . ($width - $paddingX) . '" y2="' . number_format($y, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.08)" stroke-width="1"/>';
         $gridLines .= '<text x="12" y="' . number_format($y + 4, 2, '.', '') . '" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . $mark . '%</text>';
+    }
+
+    $axisLabels = '';
+    $axisSeries = $activeSeries['overall'] ?? reset($activeSeries);
+    $axisPoints = is_array($axisSeries) ? ($axisSeries['points'] ?? []) : [];
+    $axisCount = is_array($axisPoints) ? count($axisPoints) : 0;
+    if ($axisCount > 0) {
+        $axisStep = $axisCount > 1 ? $plotWidth / ($axisCount - 1) : 0;
+        $axisY = $height - $paddingY;
+        $axisLabels .= '<line x1="' . $paddingX . '" y1="' . number_format($axisY, 2, '.', '') . '" x2="' . ($width - $paddingX) . '" y2="' . number_format($axisY, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.18)" stroke-width="1"/>';
+        foreach ($axisPoints as $index => $point) {
+            $x = $paddingX + ($axisStep * $index);
+            $axisLabels .= '<line x1="' . number_format($x, 2, '.', '') . '" y1="' . number_format($axisY, 2, '.', '') . '" x2="' . number_format($x, 2, '.', '') . '" y2="' . number_format($axisY + 5, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.18)" stroke-width="1"/>';
+            $axisLabels .= '<text x="' . number_format($x, 2, '.', '') . '" y="' . number_format($height - 8, 2, '.', '') . '" text-anchor="middle" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . htmlspecialchars(secureit_graph_axis_date($point['generatedAt'] ?? null)) . '</text>';
+        }
     }
 
     $svgSeries = '';
@@ -319,6 +365,7 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         . '<defs><linearGradient id="overallTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
         . $gridLines
         . $svgSeries
+        . $axisLabels
         . '</svg>'
         . ($showLatestPoint ? '<div class="muted" style="margin-top:10px;">Latest plotted point: ' . htmlspecialchars($latestLabel) . '.</div>' : '')
         . '</div>'
@@ -461,6 +508,7 @@ if (is_dir($historyRoot)) {
 }
 $historyStoredCount = count($history);
 $history = array_slice($history, 0, 5);
+$history = secureit_hydrate_history_area_data($history);
 $selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
 $overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
 $selectedOverviewTrendOverall = true;
@@ -605,7 +653,10 @@ ob_start();
           '#15803d',
           '#db2777',
       ];
-      $overviewSeriesForGraph = $overviewTrendSeries;
+      $overviewSeriesForGraph = [];
+      if (isset($overviewTrendSeries['overall'])) {
+          $overviewSeriesForGraph['overall'] = $overviewTrendSeries['overall'];
+      }
       $overviewSeriesForGraph['overall']['visible'] = $selectedOverviewTrendOverall;
       $overviewControlsHtml = '<div style="display:flex; flex-direction:column; gap:1px; align-items:stretch; padding-top:2px;">'
           . '<label style="display:flex; align-items:center; gap:6px; justify-content:flex-start; padding:1px 0; color:#102d2a; font-size:0.76rem; font-weight:600; line-height:1; cursor:pointer;">'
@@ -625,7 +676,8 @@ ob_start();
           if ($areaName === '') {
               continue;
           }
-          $areaPoints = secureit_functional_area_history_points($history, $areaName);
+          $areaSeries = is_array($overviewTrendSeries[$areaName] ?? null) ? $overviewTrendSeries[$areaName] : [];
+          $areaPoints = is_array($areaSeries['points'] ?? null) ? $areaSeries['points'] : [];
           $hasHistoryPoint = false;
           foreach ($areaPoints as $point) {
               if (($point['score'] ?? null) !== null) {
@@ -777,7 +829,7 @@ ob_start();
             <?php foreach ($history as $item): ?>
               <?php
                 $s = $item['summary'] ?? [];
-                $rowAreaData = secureit_resolve_canonical_area_scores_from_artifact($item['embedded'] ?? null, is_array($s) ? $s : null);
+                $rowAreaData = secureit_history_row_area_data($item);
                 if ($selectedArea) {
                     $row = null;
                     foreach (($rowAreaData['areas'] ?? []) as $area) {

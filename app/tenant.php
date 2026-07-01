@@ -220,6 +220,9 @@ function secureit_series_points(array $series): array {
 function secureit_line_graph_card(string $title, array $series, array $options = []): string {
     $width = 640;
     $height = (int) ($options['height'] ?? 160);
+    $showLegend = (bool) ($options['showLegend'] ?? true);
+    $showSubtitle = (bool) ($options['showSubtitle'] ?? true);
+    $showLatestPoint = (bool) ($options['showLatestPoint'] ?? true);
     $paddingX = 34;
     $paddingY = 28;
     $plotWidth = $width - ($paddingX * 2);
@@ -298,17 +301,17 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         . '<div class="section-header" style="margin-bottom:14px; align-items:flex-start;">'
         . '<div>'
         . '<h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">' . htmlspecialchars($title) . '</h3>'
-        . '<div class="muted">Overall score is shown by default. Select functional-area lines to compare overlays.</div>'
+        . ($showSubtitle ? '<div class="muted">Overall score is shown by default. Select functional-area lines to compare overlays.</div>' : '')
         . '</div>'
         . '<div class="badge tone-good">Latest ' . htmlspecialchars((string) $latestScore) . '%</div>'
         . '</div>'
-        . ($legend !== '' ? '<div class="inline-links" style="flex-wrap:wrap; gap:8px; margin-bottom:12px;">' . $legend . '</div>' : '')
+        . ($showLegend && $legend !== '' ? '<div class="inline-links" style="flex-wrap:wrap; gap:8px; margin-bottom:12px;">' . $legend . '</div>' : '')
         . '<svg viewBox="0 0 ' . $width . ' ' . $height . '" role="img" aria-label="' . htmlspecialchars($title) . '" style="width:100%; height:auto; display:block; overflow:visible;">'
         . '<defs><linearGradient id="overallTrendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.28"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0.02"/></linearGradient></defs>'
         . $gridLines
         . $svgSeries
         . '</svg>'
-        . '<div class="muted" style="margin-top:10px;">Latest plotted point: ' . htmlspecialchars($latestLabel) . '.</div>'
+        . ($showLatestPoint ? '<div class="muted" style="margin-top:10px;">Latest plotted point: ' . htmlspecialchars($latestLabel) . '.</div>' : '')
         . '</article>';
 }
 
@@ -600,26 +603,29 @@ ob_start();
       <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
         <div>
           <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Score trend - tenant overview</h3>
-          <div class="muted">Overall score is plotted by default. Tick functional areas below to overlay their trends.</div>
         </div>
         <div class="badge tone-good">Latest overall</div>
       </div>
-      <form method="get" action="tenant.php" style="margin:0 0 12px;">
+      <form method="get" action="tenant.php" id="trend-form" style="margin:0 0 12px;">
         <input type="hidden" name="tenant" value="<?php echo htmlspecialchars($tenantKey); ?>">
-        <div class="inline-links" style="flex-wrap:wrap; gap:8px;">
-          <label class="badge" style="display:inline-flex; align-items:center; gap:8px; background:#f7faf9; border:1px solid #dbe8e2; color:#102d2a;">
-            <input type="checkbox" checked disabled>
-            Overall
-          </label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+          <input type="hidden" name="trend_area[]" value="">
           <?php foreach ($functionalAreas as $area): ?>
             <?php $areaName = (string) ($area['name'] ?? ''); ?>
             <?php if ($areaName === '') { continue; } ?>
-            <label class="badge" style="display:inline-flex; align-items:center; gap:8px; background:#f7faf9; border:1px solid #dbe8e2; color:#102d2a;">
-              <input type="checkbox" name="trend_area[]" value="<?php echo htmlspecialchars($areaName); ?>" <?php echo in_array($areaName, $selectedOverviewTrendAreas, true) ? 'checked' : ''; ?>>
-              <?php echo htmlspecialchars($areaName); ?>
+            <label style="display:inline-flex; align-items:center; gap:0; margin-right:4px;">
+              <input
+                type="checkbox"
+                name="trend_area[]"
+                value="<?php echo htmlspecialchars($areaName); ?>"
+                title="<?php echo htmlspecialchars($areaName); ?>"
+                aria-label="<?php echo htmlspecialchars($areaName); ?>"
+                style="width:12px; height:12px; accent-color:<?php echo htmlspecialchars((string) ($area['tone'] === 'good' ? '#15803d' : ($area['tone'] === 'warn' ? '#ca8a04' : ($area['tone'] === 'bad' ? '#b91c1c' : '#1d4ed8')))); ?>; margin:0;"
+                <?php echo in_array($areaName, $selectedOverviewTrendAreas, true) ? 'checked' : ''; ?>
+                onchange="document.getElementById('trend-form').submit();"
+              >
             </label>
           <?php endforeach; ?>
-          <button type="submit">Update trend</button>
         </div>
       </form>
       <?php
@@ -643,7 +649,7 @@ ob_start();
                 'points' => secureit_functional_area_history_points($history, $areaName),
             ];
         }
-        echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160]);
+        echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false]);
       ?>
     </article>
   </section>

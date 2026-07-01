@@ -172,6 +172,7 @@ function secureit_tenant_history_series(array $history): array {
             'color' => $palette[$index % count($palette)]['color'],
             'fill' => $palette[$index % count($palette)]['fill'],
             'points' => [],
+            'visible' => false,
         ];
         $index++;
     }
@@ -460,8 +461,15 @@ $historyStoredCount = count($history);
 $history = array_slice($history, 0, 5);
 $selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
 $overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
+$selectedOverviewTrendOverall = true;
 $selectedOverviewTrendAreas = [];
 if (!$selectedArea) {
+    if (array_key_exists('trend_overall', $_GET)) {
+        $overallSelection = filter_var($_GET['trend_overall'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+        if ($overallSelection !== null) {
+            $selectedOverviewTrendOverall = $overallSelection;
+        }
+    }
     $rawTrendAreas = $_GET['trend_area'] ?? [];
     if (!is_array($rawTrendAreas)) {
         $rawTrendAreas = [$rawTrendAreas];
@@ -609,43 +617,55 @@ ob_start();
 <?php if (!$selectedArea): ?>
   <section class="section">
     <?php
+      $overviewColors = [
+          '#0f766e',
+          '#1d4ed8',
+          '#7c3aed',
+          '#c2410c',
+          '#b91c1c',
+          '#0891b2',
+          '#ca8a04',
+          '#15803d',
+      ];
       $overviewSeriesForGraph = $overviewTrendSeries;
-      foreach ($functionalAreas as $area) {
-          $areaName = (string) ($area['name'] ?? '');
-          if ($areaName === '' || !in_array($areaName, $selectedOverviewTrendAreas, true)) {
-              continue;
-          }
-          $tone = (string) ($area['tone'] ?? 'neutral');
-          $color = match ($tone) {
-              'good' => '#15803d',
-              'warn' => '#ca8a04',
-              'bad' => '#b91c1c',
-              default => '#1d4ed8',
-          };
-          $overviewSeriesForGraph[$areaName] = [
-              'label' => $areaName,
-              'color' => $color,
-              'fill' => $color,
-              'points' => secureit_functional_area_history_points($history, $areaName),
-              'visible' => in_array($areaName, $selectedOverviewTrendAreas, true),
-          ];
-      }
+      $overviewSeriesForGraph['overall']['visible'] = $selectedOverviewTrendOverall;
+      $overviewControlsHtml = '<div style="display:flex; flex-direction:column; gap:3px; align-items:stretch; padding-top:4px;">'
+          . '<label style="display:flex; align-items:center; gap:8px; justify-content:flex-start; padding:2px 0; color:#102d2a; font-size:0.8rem; font-weight:600; line-height:1.1; cursor:pointer;">'
+          . '<input'
+          . ' type="checkbox"'
+          . ' name="trend_overall"'
+          . ' value="1"'
+          . ($selectedOverviewTrendOverall ? ' checked' : '')
+          . ' data-series-key="overall"'
+          . ' style="width:13px; height:13px; accent-color:#0f766e; margin:0; flex:0 0 auto;"'
+          . '>'
+          . '<span style="flex:1 1 auto;">Overall</span>'
+          . '</label>';
 
-      $overviewControlsHtml = '<div style="display:flex; flex-direction:column; gap:4px; align-items:stretch; padding-top:4px;">'
-          . '<div style="font-size:0.72rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:#5e726d; margin-bottom:2px;">Overall</div>';
-      foreach ($functionalAreas as $area) {
+      foreach ($functionalAreas as $index => $area) {
           $areaName = (string) ($area['name'] ?? '');
           if ($areaName === '') {
               continue;
           }
-          $tone = (string) ($area['tone'] ?? 'neutral');
-          $color = match ($tone) {
-              'good' => '#15803d',
-              'warn' => '#ca8a04',
-              'bad' => '#b91c1c',
-              default => '#1d4ed8',
-          };
-          $overviewControlsHtml .= '<label style="display:flex; align-items:center; gap:8px; justify-content:flex-start; padding:2px 0; color:#102d2a; font-size:0.8rem; font-weight:600; line-height:1.1; cursor:pointer;">'
+          $areaPoints = secureit_functional_area_history_points($history, $areaName);
+          $hasData = false;
+          foreach ($areaPoints as $point) {
+              if (($point['score'] ?? null) !== null) {
+                  $hasData = true;
+                  break;
+              }
+          }
+          $color = $overviewColors[$index % count($overviewColors)];
+          if ($hasData) {
+              $overviewSeriesForGraph[$areaName] = [
+                  'label' => $areaName,
+                  'color' => $color,
+                  'fill' => $color,
+                  'points' => $areaPoints,
+                  'visible' => false,
+              ];
+          }
+          $overviewControlsHtml .= '<label style="display:flex; align-items:center; gap:8px; justify-content:flex-start; padding:2px 0; color:' . htmlspecialchars($hasData ? '#102d2a' : '#94a3b8') . '; font-size:0.8rem; font-weight:600; line-height:1.1; cursor:' . htmlspecialchars($hasData ? 'pointer' : 'not-allowed') . '; opacity:' . htmlspecialchars($hasData ? '1' : '0.42') . ';">'
               . '<input'
               . ' type="checkbox"'
               . ' name="trend_area[]"'
@@ -653,13 +673,43 @@ ob_start();
               . ' title="' . htmlspecialchars($areaName) . '"'
               . ' aria-label="' . htmlspecialchars($areaName) . '"'
               . ' data-series-key="' . htmlspecialchars($areaName) . '"'
-              . ' style="width:13px; height:13px; accent-color:' . htmlspecialchars($color) . '; margin:0; flex:0 0 auto;"'
+              . ($hasData ? '' : ' disabled')
+              . ' style="width:13px; height:13px; accent-color:' . htmlspecialchars($hasData ? $color : '#94a3b8') . '; margin:0; flex:0 0 auto;"'
               . (in_array($areaName, $selectedOverviewTrendAreas, true) ? ' checked' : '')
               . '>'
               . '<span style="flex:1 1 auto;">' . htmlspecialchars($areaName) . '</span>'
               . '</label>';
       }
       $overviewControlsHtml .= '</div>';
+      foreach ($functionalAreas as $index => $area) {
+          $areaName = (string) ($area['name'] ?? '');
+          if ($areaName === '' || !in_array($areaName, $selectedOverviewTrendAreas, true)) {
+              continue;
+          }
+          if (!isset($overviewSeriesForGraph[$areaName])) {
+              $areaPoints = secureit_functional_area_history_points($history, $areaName);
+              $hasData = false;
+              foreach ($areaPoints as $point) {
+                  if (($point['score'] ?? null) !== null) {
+                      $hasData = true;
+                      break;
+                  }
+              }
+              if (!$hasData) {
+                  continue;
+              }
+              $color = $overviewColors[$index % count($overviewColors)];
+              $overviewSeriesForGraph[$areaName] = [
+                  'label' => $areaName,
+                  'color' => $color,
+                  'fill' => $color,
+                  'points' => $areaPoints,
+                  'visible' => true,
+              ];
+          } else {
+              $overviewSeriesForGraph[$areaName]['visible'] = true;
+          }
+      }
     ?>
     <?php echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 160, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false, 'controlsHtml' => $overviewControlsHtml, 'controlsWidth' => 254]); ?>
   </section>
@@ -833,11 +883,6 @@ ob_start();
       return;
     }
 
-    const overallGroup = chart.querySelector('[data-series-key="overall"]');
-    if (overallGroup) {
-      overallGroup.hidden = false;
-    }
-
     const selected = [];
     controls.querySelectorAll('input[type="checkbox"][data-series-key]').forEach((checkbox) => {
       const key = checkbox.dataset.seriesKey || '';
@@ -847,14 +892,22 @@ ob_start();
       }
 
       group.hidden = !checkbox.checked;
+      if (key === 'overall') {
+        return;
+      }
+      if (checkbox.disabled) {
+        return;
+      }
       if (checkbox.checked) {
         selected.push(checkbox.value);
       }
     });
 
     const currentUrl = new URL(window.location.href);
+    const overallCheckbox = controls.querySelector('input[type="checkbox"][data-series-key="overall"]');
     currentUrl.searchParams.delete('trend_area[]');
     currentUrl.searchParams.delete('trend_area');
+    currentUrl.searchParams.set('trend_overall', overallCheckbox && overallCheckbox.checked ? '1' : '0');
     selected.forEach((areaName) => {
       currentUrl.searchParams.append('trend_area[]', areaName);
     });

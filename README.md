@@ -104,6 +104,21 @@ The onboarding flow also writes the customer application secret into Azure Key V
 
 Tenant overview pages can queue a single-tenant run of the `SecureIT Production` GitHub workflow when `SECUREIT_GITHUB_TOKEN` and the repository settings are configured in the environment. `SECUREIT_WORKFLOW_SYNC_TOKEN` remains the app-to-app bridge token used by the SecureIT workflow-sync endpoint. The workflow now also forwards the tenant report recipient to the import endpoint so the post-import email does not depend only on the stored tenant record. After the resulting bundle is imported back into SecureIT, the app sends the tenant's report recipient an HTML summary email using the same overview layout as the diagnostics page.
 
+## Tenant overview trends
+
+Tenant overview pages include an SVG trend graph for the latest five stored reports.
+
+Current behavior:
+- the overview graph initially renders only the `Overall` line
+- `Overall` has its own selected checkbox
+- functional-area lines are toggled on and off locally in the browser, without a page refresh
+- each line and control has a distinct color
+- functional areas with unavailable current scores are greyed out and disabled
+- the X axis uses each report date in `dd/MM` format
+- report-history area data is resolved once per history row and reused by the graph and run-history table to avoid repeated scoring work
+
+Functional-area views also show a single-area trend graph below the checks table and above run history. The eight functional-area cards are hidden while a functional-area view is active.
+
 ## Functional-area scoring
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.

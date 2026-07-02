@@ -28,3 +28,27 @@ The diagnostics mail routines are the reusable baseline for future email work.
 - Attachment sending has not been tested yet, so treat that as the next validation step before using the helpers elsewhere.
 - Tenant pages can now queue the `SecureIT Production` workflow when the GitHub dispatch token is configured.
 - Imported report bundles now send an HTML summary email to the tenant's configured report recipient.
+
+## Tenant overview and history graph
+
+The current tenant overview graph behavior is deliberate and should be preserved unless Matt asks for a different interaction:
+
+- initial render shows only the `Overall` line
+- `Overall` is controlled by its own checkbox and is selected by default
+- functional-area controls add/remove lines without a full page refresh
+- each line/control uses an individual color
+- functional areas with unavailable current scores are disabled and greyed out
+- X-axis labels use report dates in `dd/MM` format
+- the graph is rendered server-side as SVG, and JavaScript only toggles the relevant SVG group with `display`
+
+Performance note:
+
+- `app/tenant.php` hydrates history rows with resolved area data once and reuses that data for graph series and run history.
+- Avoid reintroducing per-functional-area calls that resolve every historical report repeatedly; that was the source of a noticeable tenant overview slowdown.
+
+## Current local-only files
+
+The following files are present as local reference artifacts and should stay out of the repo unless Matt explicitly asks otherwise:
+
+- `Overall-tenant-line-graph.jpg`
+- `Report_Screenshot.jpg`

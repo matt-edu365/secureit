@@ -33,5 +33,11 @@
     "MTCISTHIRDPARTYAPPLICATIONSDISALLOWED": "Checks that unapproved third-party apps are blocked.",
     "MTCISWEAKAUTHENTICATIONMETHODSDISABLED": "Checks that weak sign-in methods are turned off.",
     "MTSECURITYGROUPCREATIONRESTRICTED": "Checks that only approved people can create security groups.",
-    "MTTENANTCREATIONRESTRICTED": "Checks that tenant creation is limited to approved users."
+    "MTTENANTCREATIONRESTRICTED": "Checks that tenant creation is limited to approved users.",
+    "INSPECTAZPSASSIGNMENT": "Checks that Azure PowerShell access is limited to assigned users or roles.",
+    "INSPECTAZPSMODULES": "Checks that the Azure and Microsoft Graph PowerShell service principals are configured as expected.",
+    "INSPECTEMAILVERIFIEDUSERCREATION": "Checks that self-service email-verified account creation is controlled.",
+    "INSPECTLINKEDINCONNECTION": "Checks that users cannot link work accounts to LinkedIn more broadly than policy allows.",
+    "INSPECTMSOLPOWERSHELL": "Checks that the legacy MSOnline PowerShell module is no longer available.",
+    "INSPECTPARTNERSUPPORT": "Checks that hidden partner support role assignments are approved."
 }

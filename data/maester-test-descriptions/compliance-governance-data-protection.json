@@ -19,6 +19,8 @@
     "MTCISTHIRDPARTYANDCUSTOMAPPS": "Checks that third-party and custom apps are allowed only where approved.",
     "MTCISTHIRDPARTYSTORAGESERVICESRESTRICTED": "Checks that third-party storage services are restricted.",
     "MTCISUSEROWNEDAPPSRESTRICTED": "Checks that user-created apps are limited to approved uses.",
+    "INSPECTEDISCOVERYADMINS": "Checks that eDiscovery administrator access is restricted to approved users.",
+    "INSPECTOFFICEMESSAGEENCRYPTION": "Checks that Office Message Encryption is configured where needed.",
     "MTENTITLEMENTMANAGEMENTINACTIVEPOLICIES": "Checks that entitlement management inactive policies is configured as expected.",
     "MTENTITLEMENTMANAGEMENTORPHANEDRESOURCES": "Checks that entitlement management orphaned resources is configured as expected.",
     "MTENTITLEMENTMANAGEMENTVALIDAPPROVERS": "Checks that app access and consent are controlled appropriately.",

@@ -1,1 +1,4 @@
-{}
+{
+    "INSPECTOUTGOINGSHARINGMONITORED": "Checks that outgoing sharing invitations are monitored.",
+    "INSPECTSHAREPOINTLEGACYAUTHENABLED": "Checks that SharePoint legacy authentication is disabled or constrained as expected."
+}

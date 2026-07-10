@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online','secureit-365inspect')]
+    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online','secureit-365inspect','secureit-full')]
     [string]$TestProfile = 'light'
 )
 
@@ -245,7 +245,7 @@ function Get-MaesterSelectedTestsPath {
         )
     }
 
-    if ($Profile -in @('client-secret-baseline','client-secret-full')) {
+    if ($Profile -in @('client-secret-baseline','client-secret-full','secureit-full')) {
         $allowLists = @{
             'client-secret-baseline' = @(
                 'Test-AppManagementPolicies.Tests.ps1',
@@ -368,10 +368,13 @@ function Get-MaesterSelectedTestsPath {
             )
         }
 
+        $allowLists['secureit-full'] = $allowLists['client-secret-full']
+
         $allowList = $allowLists[$Profile]
         $missingMessages = @{
             'client-secret-baseline' = 'Baseline allowlist file not found in installed Maester tests'
             'client-secret-full' = 'Client-secret full allowlist file not found in installed Maester tests'
+            'secureit-full' = 'SecureIT full allowlist file not found in installed Maester tests'
         }
 
         $matchedFiles = foreach ($name in $allowList) {
@@ -445,6 +448,7 @@ function Get-MaesterSelectedTestsPath {
     }
 
     if ($Profile -eq 'secureit-full') {
+        Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
     }
 
@@ -752,7 +756,7 @@ $invokeParams = @{
     Path = $selectedTestsPath
     PassThru = $true
 }
-if ($TestProfile -in @('light','graph-baseline','client-secret-baseline','client-secret-full')) {
+if ($TestProfile -in @('light','graph-baseline','client-secret-baseline','client-secret-full','secureit-full')) {
     $invokeParams['ExcludeTag'] = @('Preview')
 }
 try {

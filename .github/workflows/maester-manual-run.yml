@@ -41,7 +41,7 @@ on:
         required: false
         default: ""
       test_profile:
-        description: Test profile to run (client-secret-full is the 83-check run)
+        description: Test profile to run (client-secret-full is the 83-check baseline; secureit-full includes the 365Inspect bundle)
         required: true
         default: client-secret-full
         type: choice
@@ -52,6 +52,7 @@ on:
           - light
           - exchange-online
           - secureit-365inspect
+          - secureit-full
           - full
 
 jobs:

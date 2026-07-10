@@ -2057,6 +2057,10 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             $bestMatch = null;
             $bestScore = 0.0;
             foreach ($tests as $test) {
+                if (preg_match('/^Inspect-/i', (string) ($test['id'] ?? '')) === 1) {
+                    continue;
+                }
+
                 $score = secureit_score_control_test_match($control, $test);
                 if ($score > $bestScore) {
                     $bestScore = $score;

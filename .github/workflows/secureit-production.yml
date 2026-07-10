@@ -63,6 +63,7 @@ on:
           - light
           - exchange-online
           - secureit-365inspect
+          - secureit-full
           - full
   schedule:
     - cron: '0 3 * * 1'
@@ -269,7 +270,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
     env:
       CONFIG_PATH: config/tenants.json
-      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'client-secret-full' }}
+      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'secureit-full' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

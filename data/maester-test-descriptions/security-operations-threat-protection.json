@@ -1,4 +1,6 @@
 {
+    "INSPECTDOMAINEXPIRATION": "Checks that tenant domain registrations are still valid and owned.",
+    "INSPECTSIMPHISH": "Checks that phishing simulation bypass rules are tightly controlled.",
     "MTCISCLOUDADMIN": "Checks that administrator access is tightly controlled.",
     "MTCISCUSTOMERLOCKBOX": "Checks that Microsoft support access requires customer approval.",
     "MTHIGHRISKAPPPERMISSIONS": "Checks that risky app permissions are reviewed before they are granted.",

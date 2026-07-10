@@ -1044,8 +1044,7 @@
       "title": "Unmanaged role assignments",
       "functionalArea": "Identity & Access Management",
       "frameworkMappings": [
-        "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1",
-        "Inspect-PartnerSupport"
+        "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1"
       ],
       "duplicatePolicy": "single",
       "scoring": {
@@ -1093,7 +1092,72 @@
       }
     },
     {
-      "id": "MTCISEXOSENDASDELEGATES",
+      "id": "INSPECTAZPSASSIGNMENT",
+      "title": "Azure PowerShell assignment enforcement",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-AZPSAssignment"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTAZPSMODULES",
+      "title": "Azure PowerShell service principal configuration",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-AZPSModules"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTDOMAINEXPIRATION",
+      "title": "Expired domain registration",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Inspect-DomainExpiration"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTEXOFULLACCESS",
+      "title": "Exchange mailboxes with FullAccess delegates",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-EXOFullAccess"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTEXOHIDDENMAILBOXES",
+      "title": "Exchange mailboxes hidden from the GAL",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-EXOHiddenMailboxes"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTEXOSENDASPERMISSIONS",
       "title": "Exchange mailboxes with SendAs delegates",
       "functionalArea": "Email & Calendaring",
       "frameworkMappings": [
@@ -1106,7 +1170,7 @@
       }
     },
     {
-      "id": "MTCISEXOSENDONBEHALFOFDELEGATES",
+      "id": "INSPECTEXOSENDONBEHALFOF",
       "title": "Exchange mailboxes with SendOnBehalfOf delegates",
       "functionalArea": "Email & Calendaring",
       "frameworkMappings": [
@@ -1119,11 +1183,141 @@
       }
     },
     {
-      "id": "MTCISASHAREPOINTOUTGOINGSHARINGMONITORED",
+      "id": "INSPECTEMAILVERIFIEDUSERCREATION",
+      "title": "Email-verified self-service user creation",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-EmailVerifiedUserCreation"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTLARGEATTACHMENTBLOCKINGRULE",
+      "title": "Large attachment blocking rule",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-LargeAttachmentBlockingRule"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTLINKEDINCONNECTION",
+      "title": "LinkedIn account connection",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-LinkedInConnection"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTMAILBOXESWITHINTERNALFORWARDING",
+      "title": "Mailboxes with internal forwarding",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-MailboxesWithInternalForwarding"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTMSOLPOWERSHELL",
+      "title": "MSOnline PowerShell module",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-MSOLPowerShell"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTOFFICEMESSAGEENCRYPTION",
+      "title": "Office Message Encryption",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Inspect-OfficeMessageEncryption"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTOUTGOINGSHARINGMONITORED",
       "title": "Outgoing sharing invitations monitored",
-      "functionalArea": "Collaboration & Communication",
+      "functionalArea": "Files, Intranet & Content Management",
       "frameworkMappings": [
         "Inspect-OutgoingSharingMonitored"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTPARTNERSUPPORT",
+      "title": "Partner support role assignments",
+      "functionalArea": "Identity & Access Management",
+      "frameworkMappings": [
+        "Inspect-PartnerSupport"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTSHAREPOINTLEGACYAUTHENABLED",
+      "title": "SharePoint legacy authentication",
+      "functionalArea": "Files, Intranet & Content Management",
+      "frameworkMappings": [
+        "Inspect-SharepointLegacyAuthEnabled"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTSIMPHISH",
+      "title": "Simulated phishing bypass rules",
+      "functionalArea": "Security Operations & Threat Protection",
+      "frameworkMappings": [
+        "Inspect-SimPhish"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "INSPECTEDISCOVERYADMINS",
+      "title": "eDiscovery case administrators",
+      "functionalArea": "Compliance, Governance & Data Protection",
+      "frameworkMappings": [
+        "Inspect-eDiscoveryAdmins"
       ],
       "duplicatePolicy": "single",
       "scoring": {

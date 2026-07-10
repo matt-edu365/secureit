@@ -1,1 +1,7 @@
-{}
+{
+    "INSPECTEXOFULLACCESS": "Checks that Exchange FullAccess mailbox delegation is controlled.",
+    "INSPECTEXOSENDASPERMISSIONS": "Checks that Exchange SendAs delegation is controlled.",
+    "INSPECTEXOSENDONBEHALFOF": "Checks that Exchange SendOnBehalfOf delegation is controlled.",
+    "INSPECTLARGEATTACHMENTBLOCKINGRULE": "Checks that large attachment blocking rules are in place when required.",
+    "INSPECTMAILBOXESWITHINTERNALFORWARDING": "Checks that mailbox forwarding rules are controlled."
+}

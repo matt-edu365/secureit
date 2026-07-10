@@ -2623,7 +2623,6 @@ function secureit_dashboard_stats(array $tenants): array {
 }
 
 function secureit_render_shell(string $title, string $content, array $options = []): void {
-    $app = secureit_config();
     $pageTitle = $options['pageTitle'] ?? null;
     $pageIntro = $options['pageIntro'] ?? null;
     $backHref = $options['backHref'] ?? null;
@@ -2633,9 +2632,6 @@ function secureit_render_shell(string $title, string $content, array $options = 
     $eyebrow = $options['eyebrow'] ?? 'ICT365 SecureIT';
     $navLinks = $options['navLinks'] ?? [];
     $navCta = $options['navCta'] ?? null;
-    $footerLinks = $options['footerLinks'] ?? [];
-    $footerSecondaryLinks = $options['footerSecondaryLinks'] ?? [];
-    $footerContact = $options['footerContact'] ?? [];
     $heroIntroMaxWidth = $options['heroIntroMaxWidth'] ?? '760px';
     $hideHeroChrome = (bool) ($options['hideHeroChrome'] ?? false);
     $headerMenu = $options['headerMenu'] ?? [];
@@ -3193,49 +3189,29 @@ function secureit_render_shell(string $title, string $content, array $options = 
       border-top: 1px solid var(--footer-line);
     }
     .footer-wrap {
-      padding: 42px 0 18px;
-      display: grid;
-      gap: 26px;
+      padding: 24px 0;
     }
-    .footer-grid {
+    .footer-contact-row {
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 22px;
-      align-items: start;
+      align-items: center;
     }
-    .footer-heading {
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 14px;
-    }
-    .footer-copy,
-    .footer-list a,
-    .footer-list li,
-    .footer-meta {
+    .footer-contact-row a {
       color: var(--footer-text);
-      line-height: 1.7;
       font-size: 0.95rem;
+      font-weight: 700;
       text-decoration: none;
+      overflow-wrap: anywhere;
     }
-    .footer-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 10px;
+    .footer-contact-row a:nth-child(2) {
+      text-align: center;
     }
-    .footer-list a:hover {
+    .footer-contact-row a:nth-child(3) {
+      text-align: right;
+    }
+    .footer-contact-row a:hover {
       color: #fff;
-    }
-    .footer-meta {
-      padding-top: 18px;
-      border-top: 1px solid var(--footer-line);
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      color: var(--footer-muted);
     }
     @media (max-width: 980px) {
       .main-nav {
@@ -3243,7 +3219,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
         justify-content: flex-end;
       }
       .split { grid-template-columns: 1fr; }
-      .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid, .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .kv-row { grid-template-columns: 1fr; gap: 6px; }
     }
     @media (max-width: 640px) {
@@ -3255,9 +3231,13 @@ function secureit_render_shell(string $title, string $content, array $options = 
       .nav-links, .header-actions { width: 100%; }
       .header-actions { justify-content: flex-start; }
       .hero { padding: 22px; border-radius: 20px; }
-      .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid, .footer-grid { grid-template-columns: 1fr; }
+      .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid, .footer-contact-row { grid-template-columns: 1fr; }
       th, td { padding: 12px; }
-      .footer-meta { flex-direction: column; }
+      .footer-contact-row a,
+      .footer-contact-row a:nth-child(2),
+      .footer-contact-row a:nth-child(3) {
+        text-align: left;
+      }
     }
   </style>
 </head>
@@ -3338,39 +3318,10 @@ function secureit_render_shell(string $title, string $content, array $options = 
 
   <footer class="site-footer">
     <div class="container footer-wrap">
-      <div class="footer-grid">
-        <div>
-          <div class="footer-heading">SecureIT by ICT365</div>
-          <p class="footer-copy">Container-ready SecureIT surface for managed Microsoft 365 security reporting, customer posture visibility, and tenant onboarding.</p>
-        </div>
-        <div>
-          <div class="footer-heading">Explore</div>
-          <ul class="footer-list">
-            <?php foreach ($footerLinks as $link): ?>
-              <li><a href="<?php echo htmlspecialchars($link['href']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-        <div>
-          <div class="footer-heading">Platform</div>
-          <ul class="footer-list">
-            <?php foreach ($footerSecondaryLinks as $link): ?>
-              <li><a href="<?php echo htmlspecialchars($link['href']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-        <div>
-          <div class="footer-heading">Contact</div>
-          <ul class="footer-list">
-            <?php foreach ($footerContact as $link): ?>
-              <li><a href="<?php echo htmlspecialchars($link['href']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-      </div>
-      <div class="footer-meta">
-        <span>SecureIT container app</span>
-        <span><?php echo htmlspecialchars($app['base_url']); ?></span>
+      <div class="footer-contact-row" aria-label="ICT365 contact details">
+        <a href="mailto:helpdesk@ict365.ky">helpdesk@ict365.ky</a>
+        <a href="tel:+13457450365">+1(345) 745-0365</a>
+        <a href="https://ict365.ky">https://ict365.ky</a>
       </div>
     </div>
   </footer>

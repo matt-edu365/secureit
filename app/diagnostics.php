@@ -361,6 +361,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_runtime_files'])
         $createdFiles[] = 'admin-config.json';
     }
 
+    $canonicalControlsVersionPath = (string) ($config['canonical_controls_version_file'] ?? '');
+    if ($canonicalControlsVersionPath !== '') {
+        $canonicalControlsVersionSeed = '';
+        foreach ([
+            '/usr/local/share/secureit/canonical-controls.version',
+        ] as $sourcePath) {
+            if (!$sourcePath || !file_exists($sourcePath)) {
+                continue;
+            }
+            $canonicalControlsVersionSeed = trim((string) file_get_contents($sourcePath));
+            break;
+        }
+
+        if ($canonicalControlsVersionSeed !== '') {
+            $currentCanonicalControlsVersion = file_exists($canonicalControlsVersionPath) ? trim((string) file_get_contents($canonicalControlsVersionPath)) : '';
+            if ($currentCanonicalControlsVersion === '' || $currentCanonicalControlsVersion !== $canonicalControlsVersionSeed) {
+                $dir = dirname($canonicalControlsVersionPath);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0775, true);
+                }
+                file_put_contents($canonicalControlsVersionPath, $canonicalControlsVersionSeed . PHP_EOL);
+                $createdFiles[] = 'canonical-controls.version';
+            }
+        }
+    }
+
     $canonicalControlsSeed = '';
     foreach ([
         '/usr/local/share/secureit/canonical-controls.json',
@@ -815,6 +841,9 @@ $rawLines[] = secureit_diag_path_line('Admin config', $adminConfigPath);
 $rawLines[] = secureit_diag_path_line('Canonical controls', (string) $config['canonical_controls_file']);
 $rawLines[] = secureit_diag_path_line('Canonical controls loaded from', secureit_canonical_controls_loaded_path());
 $rawLines[] = secureit_diag_json_line('Canonical control count', secureit_total_canonical_control_count());
+$rawLines[] = secureit_diag_path_line('Canonical controls version', (string) ($config['canonical_controls_version_file'] ?? ''));
+$rawLines[] = secureit_diag_path_line('Canonical controls version loaded from', secureit_canonical_controls_version_path());
+$rawLines[] = secureit_diag_json_line('Canonical controls version value', secureit_canonical_controls_version_value());
 $rawLines[] = secureit_diag_path_line('Local identity seeds', (string) ($config['identity_seeds_file'] ?? ''));
 $rawLines[] = '';
 $rawLines[] = '[Application registry]';

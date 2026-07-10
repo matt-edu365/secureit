@@ -1624,6 +1624,32 @@ function secureit_canonical_controls_loaded_path(): string {
     return '';
 }
 
+function secureit_canonical_controls_version_path(): string {
+    $config = secureit_config();
+    $paths = [
+        $config['canonical_controls_version_file'] ?? '',
+        '/usr/local/share/secureit/canonical-controls.version',
+    ];
+
+    foreach ($paths as $path) {
+        if ($path && file_exists($path)) {
+            return $path;
+        }
+    }
+
+    return '';
+}
+
+function secureit_canonical_controls_version_value(): string {
+    $path = secureit_canonical_controls_version_path();
+    if ($path === '') {
+        return '';
+    }
+
+    $value = trim((string) @file_get_contents($path));
+    return $value;
+}
+
 function secureit_load_canonical_controls(): array {
     foreach (secureit_canonical_controls_candidate_paths() as $path) {
         if (!file_exists($path)) {

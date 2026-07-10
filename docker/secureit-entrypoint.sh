@@ -2,8 +2,11 @@
 set -eu
 
 seed_file="/usr/local/share/secureit/canonical-controls.json"
+seed_version_file="/usr/local/share/secureit/canonical-controls.version"
 target_file="${SECUREIT_CANONICAL_CONTROLS_FILE:-/var/www/data/canonical-controls.json}"
+target_version_file="${SECUREIT_CANONICAL_CONTROLS_VERSION_FILE:-/var/www/data/canonical-controls.version}"
 target_dir="$(dirname "$target_file")"
+target_version_dir="$(dirname "$target_version_file")"
 
 should_seed=0
 
@@ -11,7 +14,11 @@ if [ -f "$seed_file" ]; then
     if [ ! -s "$target_file" ]; then
         should_seed=1
     else
-        if ! cmp -s "$seed_file" "$target_file"; then
+        if [ -f "$seed_version_file" ] && [ -f "$target_version_file" ]; then
+            if ! cmp -s "$seed_version_file" "$target_version_file"; then
+                should_seed=1
+            fi
+        elif ! cmp -s "$seed_file" "$target_file"; then
             should_seed=1
         fi
     fi
@@ -20,6 +27,12 @@ fi
 if [ "$should_seed" -eq 1 ]; then
     mkdir -p "$target_dir"
     cp "$seed_file" "$target_file"
+    if [ -f "$seed_version_file" ]; then
+        mkdir -p "$target_version_dir"
+        cp "$seed_version_file" "$target_version_file"
+        chown www-data:www-data "$target_version_file" || true
+        chmod 0644 "$target_version_file" || true
+    fi
     chown www-data:www-data "$target_file" || true
     chmod 0644 "$target_file" || true
 fi

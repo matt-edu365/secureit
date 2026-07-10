@@ -6,7 +6,21 @@ $inspectors = (Get-Content -Raw -LiteralPath $inspectorsPath | ConvertFrom-Json)
 
 Describe 'SecureIT 365Inspect - ported inspectors' {
     foreach ($inspector in $inspectors) {
-        It $($inspector.inspector) {
+        $inspectorJsonPath = Join-Path (Join-Path $customTestsRoot 'inspectors') ($inspector.inspector + '.json')
+        $inspectorTitle = $inspector.inspector
+        if (Test-Path -LiteralPath $inspectorJsonPath) {
+            try {
+                $inspectorMetadata = Get-Content -Raw -LiteralPath $inspectorJsonPath | ConvertFrom-Json
+                $candidateTitle = [string]($inspectorMetadata.FindingName ?? '')
+                if ($candidateTitle.Trim() -ne '') {
+                    $inspectorTitle = $candidateTitle.Trim()
+                }
+            }
+            catch {
+            }
+        }
+
+        It "$($inspector.inspector): $inspectorTitle" {
             (Invoke-SecureIT365InspectInspector -InspectorName $inspector.inspector) | Should -BeNullOrEmpty
         }
     }

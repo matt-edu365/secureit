@@ -548,7 +548,7 @@ if (is_dir($historyRoot)) {
     });
 }
 $historyStoredCount = count($history);
-$history = array_slice($history, 0, 5);
+$history = array_slice($history, 0, 10);
 $history = secureit_hydrate_history_area_data($history);
 $selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
 $overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
@@ -781,7 +781,19 @@ ob_start();
             <thead>
               <tr>
                 <th>Check</th>
-                <th>Status</th>
+                <th>
+                  <details class="status-filter-menu" data-status-filter-menu style="display:inline-block; position:relative;">
+                    <summary style="cursor:pointer; list-style:none; font:inherit; display:inline-flex; align-items:center; gap:6px;">Status</summary>
+                    <div class="status-filter-panel" role="menu" aria-label="Filter check status" style="margin-top:8px; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#ffffff; border:1px solid #dbe8e2; border-radius:8px; box-shadow:0 10px 22px rgba(15, 23, 42, 0.10); min-width:160px;">
+                      <label><input type="checkbox" data-status-filter-option="all" checked> All</label>
+                      <label><input type="checkbox" data-status-filter-option="pass" checked> Pass</label>
+                      <label><input type="checkbox" data-status-filter-option="partial" checked> Partial</label>
+                      <label><input type="checkbox" data-status-filter-option="fail" checked> Fail</label>
+                      <label><input type="checkbox" data-status-filter-option="unmapped" checked> Unmapped</label>
+                      <label><input type="checkbox" data-status-filter-option="unknown" checked> Unknown</label>
+                    </div>
+                  </details>
+                </th>
                 <th>Details</th>
               </tr>
             </thead>
@@ -797,8 +809,12 @@ ob_start();
                   } elseif ($controlStatus === 'fail') {
                       $controlTone = 'bad';
                   }
+                  $controlStatusFilterValue = strtolower(trim($controlStatus));
+                  if ($controlStatusFilterValue === '') {
+                      $controlStatusFilterValue = 'unknown';
+                  }
                 ?>
-                <tr>
+                <tr data-status-value="<?php echo htmlspecialchars($controlStatusFilterValue); ?>">
                   <td>
                     <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
                   </td>
@@ -831,9 +847,9 @@ ob_start();
     <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
       <div>
         <h2 class="section-title"><?php echo $selectedArea ? 'Run history - ' . htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')) : 'Run history'; ?></h2>
-        <div class="muted"><?php echo $selectedArea ? 'Historical published reports for this functional area only.' : 'Historical published reports for trend review and quick drill-down. Showing the latest 5 stored runs for now.'; ?></div>
+        <div class="muted"><?php echo $selectedArea ? 'Historical published reports for this functional area only.' : 'Historical published reports for trend review and quick drill-down. Showing the latest 10 stored runs for now.'; ?></div>
       </div>
-      <div class="muted"><?php echo htmlspecialchars((string) min(5, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
+      <div class="muted"><?php echo htmlspecialchars((string) min(10, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
     </div>
     <?php if (!$history): ?>
       <div class="empty-state" style="box-shadow:none;">
@@ -908,6 +924,8 @@ ob_start();
 </section>
 <script>
 (function () {
+  const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase() || 'unknown';
+
   document.querySelectorAll('[data-trend-controls="1"]').forEach((controls) => {
     const card = controls.closest('article');
     const chart = card ? card.querySelector('[data-trend-chart="1"]') : null;
@@ -935,6 +953,65 @@ ob_start();
       setLineVisibility(checkbox);
       checkbox.addEventListener('change', () => setLineVisibility(checkbox));
     });
+  });
+
+  document.querySelectorAll('[data-status-filter-menu]').forEach((menu) => {
+    const table = menu.closest('table');
+    if (!table) {
+      return;
+    }
+
+    const allOption = menu.querySelector('input[type="checkbox"][data-status-filter-option="all"]');
+    const options = Array.from(menu.querySelectorAll('input[type="checkbox"][data-status-filter-option]'));
+    const rows = Array.from(table.querySelectorAll('tbody tr[data-status-value]'));
+
+    function applyFilter() {
+      const activeValues = new Set(
+        options
+          .filter((checkbox) => checkbox !== allOption && checkbox.checked)
+          .map((checkbox) => normalizeStatus(checkbox.dataset.statusFilterOption))
+      );
+      const showAll = !!allOption && allOption.checked;
+
+      rows.forEach((row) => {
+        const rowValue = normalizeStatus(row.dataset.statusValue);
+        row.style.display = showAll || activeValues.has(rowValue) ? '' : 'none';
+      });
+    }
+
+    function syncAll() {
+      if (!allOption) {
+        return;
+      }
+
+      const nonAll = options.filter((checkbox) => checkbox !== allOption);
+      allOption.checked = nonAll.every((checkbox) => checkbox.checked);
+    }
+
+    if (allOption) {
+      allOption.addEventListener('change', () => {
+        const checked = allOption.checked;
+        options.forEach((checkbox) => {
+          if (checkbox === allOption) {
+            return;
+          }
+          checkbox.checked = checked;
+        });
+        applyFilter();
+      });
+    }
+
+    options.forEach((checkbox) => {
+      if (checkbox === allOption) {
+        return;
+      }
+      checkbox.addEventListener('change', () => {
+        syncAll();
+        applyFilter();
+      });
+    });
+
+    applyFilter();
   });
 })();
 </script>

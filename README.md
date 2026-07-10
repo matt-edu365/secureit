@@ -108,7 +108,7 @@ Tenant overview pages can queue a single-tenant run of the `SecureIT Production`
 
 ## Tenant overview trends
 
-Tenant overview pages include an SVG trend graph for the latest five stored reports.
+Tenant overview pages include an SVG trend graph for the latest ten stored reports.
 
 Current behavior:
 - the overview graph initially renders only the `Overall` line

@@ -420,6 +420,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_runtime_files'])
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_canonical_controls'])) {
+    $canonicalControlsSeed = '';
+    foreach ([
+        '/usr/local/share/secureit/canonical-controls.json',
+        (string) ($config['canonical_controls_example_file'] ?? ''),
+    ] as $sourcePath) {
+        if (!$sourcePath || !file_exists($sourcePath)) {
+            continue;
+        }
+        $canonicalControlsSeed = (string) file_get_contents($sourcePath);
+        break;
+    }
+
+    if (trim($canonicalControlsSeed) === '') {
+        $seedErrors[] = 'Unable to reset canonical controls because no image seed was available.';
+    } else {
+        $dir = dirname($canonicalControlsPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($canonicalControlsPath, rtrim($canonicalControlsSeed) . PHP_EOL);
+
+        $canonicalControlsVersionPath = (string) ($config['canonical_controls_version_file'] ?? '');
+        if ($canonicalControlsVersionPath !== '') {
+            $canonicalControlsVersionSeed = '';
+            foreach ([
+                '/usr/local/share/secureit/canonical-controls.version',
+            ] as $sourcePath) {
+                if (!$sourcePath || !file_exists($sourcePath)) {
+                    continue;
+                }
+                $canonicalControlsVersionSeed = trim((string) file_get_contents($sourcePath));
+                break;
+            }
+            if ($canonicalControlsVersionSeed !== '') {
+                $dir = dirname($canonicalControlsVersionPath);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0775, true);
+                }
+                file_put_contents($canonicalControlsVersionPath, $canonicalControlsVersionSeed . PHP_EOL);
+            }
+        }
+
+        $seedMessages[] = 'Canonical controls were reset from the image seed.';
+    }
+}
+
 $tenantsConfig = secureit_load_tenants();
 $tenants = $tenantsConfig['tenants'] ?? [];
 $adminConfig = file_exists($adminConfigPath) ? json_decode((string) file_get_contents($adminConfigPath), true) : [];
@@ -958,6 +1005,11 @@ ob_start();
     <form method="post">
       <button type="submit" name="seed_runtime_files" value="1">Refresh runtime files</button>
       <p class="field-note" style="margin-top:10px;">This refreshes `tenants.json`, `admin-config.json`, and `canonical-controls.json` when the image seed has changed. Re-run the diagnostics view afterwards to confirm the result.</p>
+    </form>
+
+    <form method="post" style="margin-top:12px;">
+      <button type="submit" name="reset_canonical_controls" value="1">Reset canonical controls now</button>
+      <p class="field-note" style="margin-top:10px;">This overwrites the mounted `canonical-controls.json` from the image seed, even if the volume already contains an older copy.</p>
     </form>
   </div>
 

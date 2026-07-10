@@ -1044,7 +1044,8 @@
       "title": "Unmanaged role assignments",
       "functionalArea": "Identity & Access Management",
       "frameworkMappings": [
-        "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1"
+        "Test-MtCisaUnmanagedRoleAssignments.Tests.ps1",
+        "Inspect-PartnerSupport"
       ],
       "duplicatePolicy": "single",
       "scoring": {
@@ -1084,6 +1085,45 @@
       "functionalArea": "Collaboration & Communication",
       "frameworkMappings": [
         "Test-MtCisaSpoSharingAllowedDomain.Tests.ps1"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISEXOSENDASDELEGATES",
+      "title": "Exchange mailboxes with SendAs delegates",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-EXOSendAsPermissions"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISEXOSENDONBEHALFOFDELEGATES",
+      "title": "Exchange mailboxes with SendOnBehalfOf delegates",
+      "functionalArea": "Email & Calendaring",
+      "frameworkMappings": [
+        "Inspect-EXOSendOnBehalfOf"
+      ],
+      "duplicatePolicy": "single",
+      "scoring": {
+        "weight": 1,
+        "passLogic": "direct"
+      }
+    },
+    {
+      "id": "MTCISASHAREPOINTOUTGOINGSHARINGMONITORED",
+      "title": "Outgoing sharing invitations monitored",
+      "functionalArea": "Collaboration & Communication",
+      "frameworkMappings": [
+        "Inspect-OutgoingSharingMonitored"
       ],
       "duplicatePolicy": "single",
       "scoring": {

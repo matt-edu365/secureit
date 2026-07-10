@@ -26,7 +26,6 @@
     { "inspector": "Inspect-SharepointLegacyAuthEnabled", "functionalArea": "Files, Intranet & Content Management", "runtimeFamily": "PnP" },
     { "inspector": "Inspect-SharepointModernAuthentication", "functionalArea": "Files, Intranet & Content Management", "runtimeFamily": "PnP" },
     { "inspector": "Inspect-SimPhish", "functionalArea": "Security Operations & Threat Protection", "runtimeFamily": "Exchange" },
-    { "inspector": "Inspect-TenantLicenseLevel", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Graph" },
     { "inspector": "Inspect-customDLPSITypes", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Hybrid" },
     { "inspector": "Inspect-eDiscoveryAdmins", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Exchange" }
   ]

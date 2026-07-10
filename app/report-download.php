@@ -21,7 +21,6 @@ if (!$summary) {
 
 $areaData = secureit_resolve_canonical_area_scores($tenantKey);
 $counts = secureit_check_summary_counts($areaData);
-$analysisText = secureit_tenant_analysis_text($summary, $areaData);
 $generatedAt = secureit_format_datetime($summary['generatedAt'] ?? null);
 $tenantName = trim((string) ($tenant['name'] ?? $tenantKey));
 
@@ -117,28 +116,55 @@ function secureit_report_pdf_text_width(string $text, float $size): float {
     return strlen($text) * $size * 0.52;
 }
 
-function secureit_report_pdf_start_page(array &$pages, string $tenantName, string $generatedAt, int $pageNumber): void {
-    $ops = [];
-    $ops[] = '0.00 0.39 0.37 rg';
-    $ops[] = '0 0 595 16 re f';
-    $ops[] = '0.92 0.95 0.95 rg';
-    $ops[] = '36 792 523 30 re f';
-    $ops[] = '0.85 0.90 0.90 RG';
-    $ops[] = '0.8 w';
-    $ops[] = '36 785 m 559 785 l S';
-    $ops[] = '0 0 0 rg';
-    $ops[] = 'BT /F4 18 Tf 1 0 0 1 36 804 Tm (SecureIT Report) Tj ET';
-    $tenantHeader = secureit_report_pdf_escape(secureit_report_pdf_sanitize($tenantName));
-    $ops[] = 'BT /F3 10 Tf 1 0 0 1 ' . max(36, 559 - (int) ceil(secureit_report_pdf_text_width($tenantName, 10))) . ' 805 Tm (' . $tenantHeader . ') Tj ET';
-    $ops[] = 'BT /F3 8 Tf 1 0 0 1 36 770 Tm (Generated ' . secureit_report_pdf_escape(secureit_report_pdf_sanitize($generatedAt)) . ') Tj ET';
-    $ops[] = 'BT /F3 8 Tf 1 0 0 1 504 770 Tm (Page ' . $pageNumber . ') Tj ET';
-    $ops[] = '0.88 0.91 0.91 RG';
+function secureit_report_pdf_draw_footer(array &$ops, int $pageNumber): void {
+    $ops[] = '0.85 0.89 0.89 RG';
     $ops[] = '0.7 w';
-    $ops[] = '36 756 m 559 756 l S';
+    $ops[] = '36 56 m 559 56 l S';
+    $ops[] = '0.18 0.24 0.27 rg';
+    $ops[] = 'BT /F3 7.8 Tf 1 0 0 1 36 34 Tm (helpdesk@ict365.ky) Tj ET';
+    $ops[] = 'BT /F3 7.8 Tf 1 0 0 1 238 34 Tm (+1\\(345\\) 745-0365) Tj ET';
+    $ops[] = 'BT /F3 7.8 Tf 1 0 0 1 438 34 Tm (https://ict365.ky) Tj ET';
+    $ops[] = 'BT /F3 7 Tf 1 0 0 1 527 34 Tm (Page ' . $pageNumber . ') Tj ET';
+}
+
+function secureit_report_pdf_start_page(array &$pages, string $tenantName, string $generatedAt, int $pageNumber, bool $firstPage = false): void {
+    $ops = [];
+    if ($firstPage) {
+        $ops[] = '0.00 0.39 0.37 rg';
+        $ops[] = '0 822 595 20 re f';
+        $ops[] = '0.95 0.98 0.98 rg';
+        $ops[] = '36 760 523 52 re f';
+        $ops[] = '0.00 0.39 0.37 rg';
+        $ops[] = '36 772 116 28 re f';
+        $ops[] = 'BT /F4 11 Tf 1 0 0 1 48 789 Tm (ICT365) Tj ET';
+        $ops[] = 'BT /F4 11 Tf 1 0 0 1 48 776 Tm (SecureIT) Tj ET';
+        $ops[] = '0.18 0.24 0.27 rg';
+        $ops[] = 'BT /F4 18 Tf 1 0 0 1 170 794 Tm (SecureIT Report) Tj ET';
+        $tenantHeader = secureit_report_pdf_escape(secureit_report_pdf_sanitize($tenantName));
+        $ops[] = 'BT /F3 10 Tf 1 0 0 1 170 780 Tm (' . $tenantHeader . ') Tj ET';
+        $ops[] = 'BT /F3 8 Tf 1 0 0 1 170 768 Tm (Generated ' . secureit_report_pdf_escape(secureit_report_pdf_sanitize($generatedAt)) . ') Tj ET';
+        $ops[] = '0.85 0.89 0.89 RG';
+        $ops[] = '0.8 w';
+        $ops[] = '36 752 m 559 752 l S';
+    } else {
+        $ops[] = '0.00 0.39 0.37 rg';
+        $ops[] = '0 826 595 16 re f';
+        $ops[] = '0.95 0.98 0.98 rg';
+        $ops[] = '36 790 523 22 re f';
+        $ops[] = '0.00 0.39 0.37 rg';
+        $ops[] = '36 794 34 14 re f';
+        $ops[] = 'BT /F4 7.5 Tf 1 0 0 1 40 803 Tm (ICT365) Tj ET';
+        $ops[] = '0.18 0.24 0.27 rg';
+        $tenantHeader = secureit_report_pdf_escape(secureit_report_pdf_sanitize($tenantName));
+        $ops[] = 'BT /F4 11 Tf 1 0 0 1 84 802 Tm (' . $tenantHeader . ') Tj ET';
+        $ops[] = 'BT /F3 7.5 Tf 1 0 0 1 466 802 Tm (Generated ' . secureit_report_pdf_escape(secureit_report_pdf_sanitize($generatedAt)) . ') Tj ET';
+    }
+
+    secureit_report_pdf_draw_footer($ops, $pageNumber);
 
     $pages[] = [
         'ops' => implode("\n", $ops) . "\n",
-        'cursorY' => 740,
+        'cursorY' => $firstPage ? 730 : 770,
         'pageNumber' => $pageNumber,
     ];
 }
@@ -154,19 +180,19 @@ function secureit_report_pdf_emit(array &$pages, string $command): void {
 
 function secureit_report_pdf_new_page_if_needed(array &$pages, string $tenantName, string $generatedAt): void {
     if (empty($pages)) {
-        secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, 1);
+        secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, 1, true);
     }
 }
 
 function secureit_report_pdf_break_page(array &$pages, string $tenantName, string $generatedAt): void {
     $pageNumber = count($pages) + 1;
-    secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, $pageNumber);
+    secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, $pageNumber, false);
 }
 
 function secureit_report_pdf_ensure_space(array &$pages, string $tenantName, string $generatedAt, float $needed): void {
     secureit_report_pdf_new_page_if_needed($pages, $tenantName, $generatedAt);
     $index = secureit_report_pdf_current_index($pages);
-    if (($pages[$index]['cursorY'] ?? 0) - $needed < 56) {
+    if (($pages[$index]['cursorY'] ?? 0) - $needed < 88) {
         secureit_report_pdf_break_page($pages, $tenantName, $generatedAt);
     }
 }
@@ -288,6 +314,16 @@ function secureit_report_pdf_draw_control_row(array &$pages, array $control, flo
     return $rowHeight;
 }
 
+function secureit_report_pdf_measure_control_row(array $control, array $widths): float {
+    $title = (string) ($control['title'] ?? $control['id'] ?? 'Check');
+    $details = trim((string) ($control['details'] ?? 'SecureIT reviews the matching imported report evidence and uses the result to set this check status.'));
+
+    $titleLines = secureit_report_pdf_wrapped_text_lines($title, $widths[0] - 12, 10);
+    $detailsLines = secureit_report_pdf_wrapped_text_lines($details, $widths[2] - 12, 9);
+
+    return max(30, (count($titleLines) * 12), (count($detailsLines) * 10) + 4);
+}
+
 function secureit_report_pdf_page_stream(array $page): string {
     return $page['ops'];
 }
@@ -334,7 +370,7 @@ function secureit_report_pdf_render(array $pages): string {
 }
 
 $pages = [];
-secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, 1);
+secureit_report_pdf_start_page($pages, $tenantName, $generatedAt, 1, true);
 
 $index = secureit_report_pdf_current_index($pages);
 $y = $pages[$index]['cursorY'];
@@ -342,17 +378,19 @@ $y = $pages[$index]['cursorY'];
 secureit_report_pdf_section_title($pages, 'Executive Summary');
 $index = secureit_report_pdf_current_index($pages);
 $y = $pages[$index]['cursorY'];
-$y -= secureit_report_pdf_paragraph($pages, 36, $y, 523, $analysisText, 10.5, false, [0.12, 0.18, 0.19]) + 8;
-secureit_report_pdf_text(
-    $pages,
-    36,
-    $y,
-    10,
-    'Checks: ' . $counts['total'] . '   Passed: ' . $counts['passed'] . '   Partially met: ' . $counts['partial'] . '   Failed: ' . $counts['failed'],
-    true,
-    [0.10, 0.18, 0.17]
-);
-$pages[secureit_report_pdf_current_index($pages)]['cursorY'] = $y - 22;
+
+$summaryParagraphs = [
+    'The SecureIT M365 report is a point in time snapshot designed to give organisations a clear, way to check whether their Microsoft 365 environment is configured securely.',
+    'The report is broken down into 8 functional areas which represent the core functions provided by your M365 platform. These same areas can be seen in the SecureIT portal where the data is more interactive than it is in this report.',
+    'The SecureIT tests are baselined against recognised security best practices. This report and the SecureIT portal highlight where settings are strong, where risks exist, and what should be reviewed or fixed. The automated tests act as a regular security health check for M365. They identify issues such as weak access controls, missing protections, risky configurations, and gaps in policies so you can patch these before they become real incidents.',
+    'By reviewing the results regularly, an organisation can prioritise the most important fixes, track progress, reduce avoidable risk, and demonstrate that Microsoft 365 security is being actively managed rather than checked only after a problem occurs.',
+    'Do not rely solely on this report alone, SecureIT runs regular automated tests against M365 and the portal updates this data for review whenever a test is completed, you should produce new reports regularly or work directly from your portal. Your scores can and will change over time as your tenant configuration alters and features in M365 get added or changed. We regularly introduce new checks to keep up with new and changed features in M365.',
+];
+foreach ($summaryParagraphs as $paragraph) {
+    $index = secureit_report_pdf_current_index($pages);
+    $y = $pages[$index]['cursorY'];
+    $pages[$index]['cursorY'] = $y - secureit_report_pdf_paragraph($pages, 36, $y, 523, $paragraph, 10.2, false, [0.12, 0.18, 0.19]) - 7;
+}
 
 secureit_report_pdf_section_title($pages, 'Latest Security Posture');
 $index = secureit_report_pdf_current_index($pages);
@@ -367,7 +405,7 @@ secureit_report_pdf_section_title($pages, 'Area Breakdown');
 $areas = is_array($areaData['areas'] ?? null) ? $areaData['areas'] : [];
 foreach ($areas as $area) {
     $areaName = (string) ($area['name'] ?? 'Functional area');
-    secureit_report_pdf_ensure_space($pages, $tenantName, $generatedAt, 120);
+    secureit_report_pdf_ensure_space($pages, $tenantName, $generatedAt, 140);
     $index = secureit_report_pdf_current_index($pages);
     $y = $pages[$index]['cursorY'];
     secureit_report_pdf_text($pages, 36, $y, 13, $areaName, true, [0.10, 0.18, 0.17]);
@@ -400,9 +438,8 @@ foreach ($areas as $area) {
     $pages[$index]['cursorY'] = $tableTop - 22;
     $controls = is_array($area['controls'] ?? null) ? $area['controls'] : [];
     foreach ($controls as $control) {
-        $rowHeight = secureit_report_pdf_draw_control_row($pages, $control, $pages[$index]['cursorY'], 36, $colWidths);
-        $pages[$index]['cursorY'] -= $rowHeight;
-        if ($pages[$index]['cursorY'] < 70) {
+        $rowHeight = secureit_report_pdf_measure_control_row($control, $colWidths);
+        if (($pages[$index]['cursorY'] ?? 0) - $rowHeight < 88) {
             secureit_report_pdf_break_page($pages, $tenantName, $generatedAt);
             $index = secureit_report_pdf_current_index($pages);
             $newTop = $pages[$index]['cursorY'];
@@ -411,6 +448,8 @@ foreach ($areas as $area) {
             secureit_report_pdf_draw_table_header($pages, $pages[$index]['cursorY'], 36, $colWidths);
             $pages[$index]['cursorY'] -= 22;
         }
+        $rowHeight = secureit_report_pdf_draw_control_row($pages, $control, $pages[$index]['cursorY'], 36, $colWidths);
+        $pages[$index]['cursorY'] -= $rowHeight;
     }
     $pages[$index]['cursorY'] -= 16;
 }

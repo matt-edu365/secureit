@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_latest_report']))
 
     if (!empty($dispatchResult['ok'])) {
         $workflowUrl = (string) ($dispatchResult['workflowUrl'] ?? '');
-        $message = 'Queued SecureIT Production for ' . ($tenant['name'] ?? $tenantKey) . '.';
+        $message = 'The SecureIT tests for ICT365 Ltd have been queued, these typically take 5 minutes, please be patient and refresh your portal.';
         if ($workflowUrl !== '') {
             $message .= ' Open the workflow runs page if you want to watch it progress.';
         }
@@ -593,10 +593,10 @@ ob_start();
       <?php if (!$selectedArea): ?>
         <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
           <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
-            <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap;">Run tests now</button>
+            <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap; padding:14px 18px; min-width:150px;">Run tests now</button>
           </form>
           <?php if ($summary): ?>
-            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap;">Download results</a>
+            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Download results</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>

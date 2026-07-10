@@ -586,15 +586,20 @@ ob_start();
   </article>
 
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
-    <div class="section-header" style="margin-bottom:18px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <div style="min-width:0;">
+    <div class="section-header" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:nowrap;">
+      <div style="min-width:0; flex:1 1 auto;">
         <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
         <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Summary of the latest report.'; ?></div>
       </div>
       <?php if (!$selectedArea): ?>
-        <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
-          <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap;">Run report now</button>
-        </form>
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
+          <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
+            <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap;">Run tests now</button>
+          </form>
+          <?php if ($summary): ?>
+            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap;">Download latest results</a>
+          <?php endif; ?>
+        </div>
       <?php endif; ?>
     </div>
 

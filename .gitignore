@@ -29,6 +29,7 @@ SESSION-RESUME.md
 # Published or generated sample site/report content
 deploy/maester/*/latest/
 deploy/maester/*/history/
+SecureIT Example Report Template.docx
 
 # Secrets / local-only files
 secrets/

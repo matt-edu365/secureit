@@ -588,8 +588,7 @@ ob_start();
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
     <div class="section-header" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:nowrap;">
       <div style="min-width:0; flex:1 1 auto;">
-        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
-        <div class="muted"><?php echo $selectedArea ? 'Operational snapshot for the selected functional area.' : 'Summary of the latest report.'; ?></div>
+        <h2 class="section-title" style="white-space:nowrap;"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
       </div>
       <?php if (!$selectedArea): ?>
         <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
@@ -597,7 +596,7 @@ ob_start();
             <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap;">Run tests now</button>
           </form>
           <?php if ($summary): ?>
-            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap;">Download latest results</a>
+            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap;">Download results</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>
@@ -627,8 +626,10 @@ ob_start();
           <div class="muted" style="margin-bottom:10px;">** <?php echo htmlspecialchars((string) $partialTests); ?> checks were partially met.</div>
         <?php endif; ?>
       <?php endif; ?>
-      <div class="muted" style="margin-bottom:8px;"><?php echo $selectedArea ? 'Area pass rate' : 'Pass rate'; ?></div>
-      <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
+      <?php if ($selectedArea): ?>
+        <div class="muted" style="margin-bottom:8px;">Area pass rate</div>
+      <?php endif; ?>
+      <div class="progress" aria-label="Checks passed progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
       <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>% checks passed<?php echo $selectedArea ? ' in this area' : ''; ?>, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
     <?php else: ?>
       <div class="empty-state" style="box-shadow:none;">

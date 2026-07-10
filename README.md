@@ -63,7 +63,9 @@ Runtime storage mounted into the container.
 Expected uses:
 - `tenants.json`
 - `reports/<tenant-key>/...`
-- `canonical-controls.json` if canonical scoring is enabled, although the app can also fall back to the bundled image copy for the homepage total
+- `canonical-controls.json` if canonical scoring is enabled
+
+Canonical controls are stored in the mounted `data/` volume, not in the image. The container seeds `data/canonical-controls.json` from the image copy on first boot, but a pre-existing volume file will stay in place across redeploys until it is explicitly refreshed. Use the diagnostics page to reset the file from the image seed if the live control count drifts from the current build.
 
 ## Local Docker workflow
 
@@ -134,6 +136,8 @@ Current target:
 - image published to GHCR as `ghcr.io/matt-edu365/secureit`
 - runtime on Docker or Proxmox-backed Docker host
 - public hostname `https://secureit.ict365.ky`
+
+Canonical controls follow the same pattern as tenant data: the image carries the seed copy, while `/var/www/data/canonical-controls.json` is the live runtime file. If the live control count does not match the build, overwrite the mounted file from the diagnostics reset action or replace the persistent volume copy before expecting the portal scores and emails to update.
 
 ## Working rule for future changes
 

@@ -18,7 +18,9 @@
 - Runtime data root: `/var/www/data`
 - Tenant metadata file: `/var/www/data/tenants.json`
 - Report bundle root: `/var/www/data/reports`
-- Canonical controls file: `/var/www/data/canonical-controls.json` (optional override via `SECUREIT_CANONICAL_CONTROLS_FILE`; Previous behaviour was to fall back to the bundled image copy if the runtime file was missing or stale)
+- Canonical controls file: `/var/www/data/canonical-controls.json` (optional override via `SECUREIT_CANONICAL_CONTROLS_FILE`)
+- Seed copy in image: `/usr/local/share/secureit/canonical-controls.json`
+- The runtime file lives on the persistent `secureit_data` volume, so it can survive container rebuilds and redeploys. The container seeds it on boot when missing, but an existing file is not automatically replaced unless the diagnostics reset action is used or the volume copy is removed.
 - Entra runtime variables must be supplied by the Portainer stack or host environment
 - Key Vault runtime variables for shared component storage:
   - `SECUREIT_KEY_VAULT_TENANT_ID`
@@ -42,6 +44,7 @@
 - The host port is `8089` to avoid colliding with the existing `8088` binding used by the Temporal UI in the Postiz stack.
 - Cloudflare Tunnel should publish `secureit.ict365.ky` to `http://192.168.36.40:8089` when the route is added.
 - Runtime data belongs on the Docker host volume, not inside the image.
+- When the canonical control count looks stale after a new image deploy, refresh `/var/www/data/canonical-controls.json` from the diagnostics page or clear the volume copy so the container reseeds it from the image.
 - The live container should not mount `.local/identity-seeds.json`; `fab@local` and `con@local` are localhost-only development identities.
 - The deployment record still needs explicit approval evidence and a published monitor outcome to be considered fully compliant.
 - If `ghcr.io/matt-edu365/secureit:latest` returns `unauthorized`, temporarily point `SECUREIT_IMAGE` at a host-local image tag and set `SECUREIT_PULL_POLICY=never` until registry access is fixed.
@@ -69,3 +72,4 @@
 - Remove the stack from the Docker host with the same deployment path used for apply.
 - Remove the Cloudflare route if it was published.
 - Keep `secureit_data` unless data removal is intentional.
+- If control counts drift again in future, check the mounted `canonical-controls.json` before checking the image. The volume copy is the source of truth for portal scoring.

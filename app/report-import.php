@@ -205,6 +205,10 @@ try {
     if (!file_exists($latestSummary)) {
         throw new RuntimeException('The imported bundle does not contain latest/summary.json.');
     }
+    $importedSummary = json_decode((string) file_get_contents($latestSummary), true);
+    if (!is_array($importedSummary)) {
+        $importedSummary = [];
+    }
 
     $destinationRoot = secureit_reports_root();
     $tenantDestination = $destinationRoot . '/' . $tenantKey;
@@ -228,6 +232,8 @@ try {
         'status' => 'skipped',
         'message' => 'No report email was sent.',
         'recipientMailbox' => '',
+        'bundleTestTotal' => (int) ($importedSummary['total'] ?? 0),
+        'bundleTestProfile' => trim((string) ($importedSummary['testProfile'] ?? '')),
     ];
     $tenant = secureit_find_tenant($tenantKey);
     $requestedRecipientMailbox = trim((string) secureit_request_header_value([
@@ -305,6 +311,9 @@ try {
                 'mailTenantIdSource' => $mailTenantIdSource,
                 'graphRequestId' => (string) ($mailResponse['request-id'] ?? ($mailResponse['headers']['request-id'] ?? '')),
                 'graphClientRequestId' => (string) ($mailResponse['clientRequestId'] ?? ''),
+                'bundleTestTotal' => (int) ($importedSummary['total'] ?? 0),
+                'bundleTestProfile' => trim((string) ($importedSummary['testProfile'] ?? '')),
+                'scoredControlTotal' => (int) ($counts['total'] ?? 0),
             ];
         } catch (Throwable $exception) {
             $notification = [
@@ -312,6 +321,8 @@ try {
                 'message' => 'The report was imported, but the HTML notification could not be sent: ' . $exception->getMessage(),
                 'recipientMailbox' => $recipientMailbox,
                 'mailTenantIdSource' => $mailTenantIdSource,
+                'bundleTestTotal' => (int) ($importedSummary['total'] ?? 0),
+                'bundleTestProfile' => trim((string) ($importedSummary['testProfile'] ?? '')),
             ];
         }
     }
@@ -323,6 +334,8 @@ try {
         'reportRoot' => $tenantDestination,
         'latestSummary' => 'latest/summary.json',
         'latestReport' => 'latest/index.html',
+        'bundleTestTotal' => (int) ($importedSummary['total'] ?? 0),
+        'bundleTestProfile' => trim((string) ($importedSummary['testProfile'] ?? '')),
         'historyImported' => is_dir($historySource),
         'notification' => $notification,
     ]);

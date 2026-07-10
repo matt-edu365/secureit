@@ -734,6 +734,7 @@ if (-not $testResults) {
     $summary = [ordered]@{
         tenantKey = $TenantKey
         tenantName = $TenantName
+        testProfile = $TestProfile
         generatedAt = (Get-Date).ToString('o')
         timestamp = $timestamp
         total = ($summaryMap['passed'] + $summaryMap['failed'] + $summaryMap['investigate'] + $summaryMap['skipped'] + $summaryMap['error'] + $summaryMap['not run'])
@@ -782,6 +783,7 @@ if ($WebsiteBaseUrl) {
 $summary = [ordered]@{
     tenantKey = $TenantKey
     tenantName = $TenantName
+    testProfile = $TestProfile
     generatedAt = (Get-Date).ToString('o')
     timestamp = $timestamp
     total = $total

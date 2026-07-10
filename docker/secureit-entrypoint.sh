@@ -11,17 +11,7 @@ if [ -f "$seed_file" ]; then
     if [ ! -s "$target_file" ]; then
         should_seed=1
     else
-        current_count="$(php -r '
-$path = $argv[1];
-$data = @json_decode(@file_get_contents($path), true);
-if (!is_array($data) || !is_array($data["controls"] ?? null)) {
-    echo 0;
-    exit(0);
-}
-echo count($data["controls"]);
-' "$target_file" 2>/dev/null || echo 0)"
-
-        if [ "${current_count:-0}" -le 0 ]; then
+        if ! cmp -s "$seed_file" "$target_file"; then
             should_seed=1
         fi
     fi

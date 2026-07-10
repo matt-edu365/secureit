@@ -361,29 +361,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_runtime_files'])
         $createdFiles[] = 'admin-config.json';
     }
 
-    if (!file_exists($canonicalControlsPath)) {
-        $canonicalControlsSeed = '';
-        foreach ([
-            '/usr/local/share/secureit/canonical-controls.json',
-            (string) ($config['canonical_controls_example_file'] ?? ''),
-        ] as $sourcePath) {
-            if (!$sourcePath || !file_exists($sourcePath)) {
-                continue;
-            }
-            $canonicalControlsSeed = (string) file_get_contents($sourcePath);
-            break;
+    $canonicalControlsSeed = '';
+    foreach ([
+        '/usr/local/share/secureit/canonical-controls.json',
+        (string) ($config['canonical_controls_example_file'] ?? ''),
+    ] as $sourcePath) {
+        if (!$sourcePath || !file_exists($sourcePath)) {
+            continue;
         }
+        $canonicalControlsSeed = (string) file_get_contents($sourcePath);
+        break;
+    }
 
-        if (trim($canonicalControlsSeed) !== '') {
+    if (trim($canonicalControlsSeed) !== '') {
+        $currentCanonicalControls = file_exists($canonicalControlsPath) ? (string) file_get_contents($canonicalControlsPath) : '';
+        if (trim($currentCanonicalControls) === '' || $currentCanonicalControls !== rtrim($canonicalControlsSeed) . PHP_EOL) {
             $dir = dirname($canonicalControlsPath);
             if (!is_dir($dir)) {
                 mkdir($dir, 0775, true);
             }
             file_put_contents($canonicalControlsPath, rtrim($canonicalControlsSeed) . PHP_EOL);
             $createdFiles[] = 'canonical-controls.json';
-        } else {
-            $seedErrors[] = 'canonical-controls.json could not be seeded because no source template was available.';
         }
+    } else {
+        $seedErrors[] = 'canonical-controls.json could not be seeded because no source template was available.';
     }
 
     if ($createdFiles !== []) {
@@ -812,6 +813,8 @@ $rawLines[] = 'Tenant count: ' . count($tenants);
 $rawLines[] = secureit_diag_path_line('Reports root', (string) $config['reports_root']);
 $rawLines[] = secureit_diag_path_line('Admin config', $adminConfigPath);
 $rawLines[] = secureit_diag_path_line('Canonical controls', (string) $config['canonical_controls_file']);
+$rawLines[] = secureit_diag_path_line('Canonical controls loaded from', secureit_canonical_controls_loaded_path());
+$rawLines[] = secureit_diag_json_line('Canonical control count', secureit_total_canonical_control_count());
 $rawLines[] = secureit_diag_path_line('Local identity seeds', (string) ($config['identity_seeds_file'] ?? ''));
 $rawLines[] = '';
 $rawLines[] = '[Application registry]';
@@ -909,9 +912,11 @@ ob_start();
     <div class="section-header" style="margin-bottom:12px;">
       <div>
         <h3 class="section-title" style="font-size:1.35rem;">Seed runtime files</h3>
-        <div class="muted">Create the mounted JSON files only if they are missing, then re-check after a redeploy.</div>
+        <div class="muted">Refresh the mounted JSON files from the image seed so redeploys pick up the latest canonical controls.</div>
       </div>
     </div>
+
+    <div class="field-note" style="margin:0 0 14px;">Loaded canonical controls from <code><?php echo htmlspecialchars(secureit_canonical_controls_loaded_path() !== '' ? secureit_canonical_controls_loaded_path() : '[not loaded]'); ?></code>. Current control count: <strong><?php echo htmlspecialchars((string) secureit_total_canonical_control_count()); ?></strong>.</div>
 
     <?php foreach ($seedErrors as $error): ?>
       <div class="error" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
@@ -922,8 +927,8 @@ ob_start();
     <?php endforeach; ?>
 
     <form method="post">
-      <button type="submit" name="seed_runtime_files" value="1">Create missing files</button>
-      <p class="field-note" style="margin-top:10px;">This creates `tenants.json`, `admin-config.json`, and `canonical-controls.json` if they do not already exist. Re-run the diagnostics view afterwards to confirm the result.</p>
+      <button type="submit" name="seed_runtime_files" value="1">Refresh runtime files</button>
+      <p class="field-note" style="margin-top:10px;">This refreshes `tenants.json`, `admin-config.json`, and `canonical-controls.json` when the image seed has changed. Re-run the diagnostics view afterwards to confirm the result.</p>
     </form>
   </div>
 

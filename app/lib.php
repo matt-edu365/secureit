@@ -1601,7 +1601,7 @@ function secureit_resolve_login_route(string $email): array {
     ];
 }
 
-function secureit_load_canonical_controls(): array {
+function secureit_canonical_controls_candidate_paths(): array {
     $config = secureit_config();
     $paths = [
         $config['canonical_controls_file'] ?? '',
@@ -1609,8 +1609,24 @@ function secureit_load_canonical_controls(): array {
         $config['canonical_controls_example_file'] ?? '',
     ];
 
-    foreach ($paths as $path) {
-        if (!$path || !file_exists($path)) {
+    $paths = array_values(array_filter(array_map(static fn($path): string => (string) $path, $paths), static fn(string $path): bool => $path !== ''));
+
+    return array_values(array_unique($paths));
+}
+
+function secureit_canonical_controls_loaded_path(): string {
+    foreach (secureit_canonical_controls_candidate_paths() as $path) {
+        if (file_exists($path)) {
+            return $path;
+        }
+    }
+
+    return '';
+}
+
+function secureit_load_canonical_controls(): array {
+    foreach (secureit_canonical_controls_candidate_paths() as $path) {
+        if (!file_exists($path)) {
             continue;
         }
         $data = json_decode(file_get_contents($path), true);
@@ -1649,18 +1665,10 @@ function secureit_load_canonical_controls(): array {
 }
 
 function secureit_total_canonical_control_count(): int {
-    $config = secureit_config();
-    $paths = [
-        $config['canonical_controls_file'] ?? '',
-        '/usr/local/share/secureit/canonical-controls.json',
-        $config['canonical_controls_example_file'] ?? '',
-    ];
-
-    foreach ($paths as $path) {
-        if (!$path || !file_exists($path)) {
+    foreach (secureit_canonical_controls_candidate_paths() as $path) {
+        if (!file_exists($path)) {
             continue;
         }
-
         $data = json_decode(file_get_contents($path), true);
         if (!is_array($data)) {
             continue;

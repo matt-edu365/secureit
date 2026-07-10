@@ -51,6 +51,7 @@ on:
           - graph-baseline
           - light
           - exchange-online
+          - secureit-365inspect
           - full
 
 jobs:

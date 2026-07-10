@@ -39,6 +39,7 @@ secrets/
 *.pem
 .env
 .env.*
+~$*.docx
 
 # PHP / Apache noise
 app/.phpunit.result.cache

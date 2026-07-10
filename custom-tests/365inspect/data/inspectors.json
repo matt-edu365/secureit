@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "profile": "secureit-365inspect",
+  "inspectors": [
+    { "inspector": "Inspect-ADFS-Configuration", "functionalArea": "Identity & Access Management", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-AZPSAssignment", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-AZPSModules", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-DomainExpiration", "functionalArea": "Security Operations & Threat Protection", "runtimeFamily": "External" },
+    { "inspector": "Inspect-EXOFullAccess", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-EXOHiddenMailboxes", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-EXOSendAsPermissions", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-EXOSendOnBehalfOf", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-EmailVerifiedUserCreation", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-ExchangeMobilePolicy", "functionalArea": "Endpoint & Device Management", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-Federation", "functionalArea": "Identity & Access Management", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-FederationTrust", "functionalArea": "Identity & Access Management", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-LargeAttachmentBlockingRule", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-LinkedInConnection", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-MSOLPowerShell", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-MSTeamsLinkPreview", "functionalArea": "Collaboration & Communication", "runtimeFamily": "Teams" },
+    { "inspector": "Inspect-MailFlowRules", "functionalArea": "Email & Calendaring", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-MailboxesWithInternalForwarding", "functionalArea": "Email & Calendaring", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-OfficeMessageEncryption", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-OutgoingSharingMonitored", "functionalArea": "Files, Intranet & Content Management", "runtimeFamily": "PnP" },
+    { "inspector": "Inspect-PartnerSupport", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-SharepointLegacyAuthEnabled", "functionalArea": "Files, Intranet & Content Management", "runtimeFamily": "PnP" },
+    { "inspector": "Inspect-SharepointModernAuthentication", "functionalArea": "Files, Intranet & Content Management", "runtimeFamily": "PnP" },
+    { "inspector": "Inspect-SimPhish", "functionalArea": "Security Operations & Threat Protection", "runtimeFamily": "Exchange" },
+    { "inspector": "Inspect-TenantLicenseLevel", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Graph" },
+    { "inspector": "Inspect-customDLPSITypes", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Hybrid" },
+    { "inspector": "Inspect-eDiscoveryAdmins", "functionalArea": "Compliance, Governance & Data Protection", "runtimeFamily": "Exchange" }
+  ]
+}

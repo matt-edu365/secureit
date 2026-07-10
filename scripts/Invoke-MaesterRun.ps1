@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online')]
+    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online','secureit-365inspect')]
     [string]$TestProfile = 'light'
 )
 
@@ -132,6 +132,16 @@ function Get-MaesterSelectedTestsPath {
         [Parameter(Mandatory = $true)][string]$Profile,
         [Parameter(Mandatory = $true)][string]$WorkingRoot
     )
+    $repoRoot = Split-Path -Parent $PSScriptRoot
+    $customTestsRoot = Join-Path $repoRoot 'custom-tests/365inspect'
+
+    if ($Profile -eq 'secureit-365inspect') {
+        $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
+        Ensure-DirectoryClean -Path $selectedRoot
+        Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
+        Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
+        return $selectedRoot
+    }
 
     if ($Profile -eq 'full') {
         return $TestsRoot
@@ -434,10 +444,39 @@ function Get-MaesterSelectedTestsPath {
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
     }
 
+    if ($Profile -eq 'secureit-full') {
+        Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
+    }
+
     Write-Host "Selected $($matchedFiles.Count) Maester test files for profile '$Profile'."
     $matchedFiles | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host " - $_" }
 
     return $selectedRoot
+}
+
+function Copy-SecureItCustomTests {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourceRoot,
+        [Parameter(Mandatory = $true)][string]$DestinationRoot,
+        [Parameter(Mandatory = $true)][string]$RepoRoot
+    )
+
+    if (-not (Test-Path -LiteralPath $SourceRoot)) {
+        throw "SecureIT custom tests root was not found: $SourceRoot"
+    }
+
+    $customFiles = Get-ChildItem -Path $SourceRoot -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match '\.Tests\.ps1$' -or $_.Name -match '\.ps1$' -or $_.Name -match '\.psm1$' -or $_.Name -match '\.json$' -or $_.Name -match '\.md$'
+        }
+
+    foreach ($file in $customFiles) {
+        $relativePath = [System.IO.Path]::GetRelativePath($RepoRoot, $file.FullName)
+        $destinationPath = Join-Path $DestinationRoot $relativePath
+        $destinationDir = Split-Path -Parent $destinationPath
+        New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
+    }
 }
 
 function Get-MaesterTestsPath {

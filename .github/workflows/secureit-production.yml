@@ -62,6 +62,7 @@ on:
           - graph-baseline
           - light
           - exchange-online
+          - secureit-365inspect
           - full
   schedule:
     - cron: '0 3 * * 1'

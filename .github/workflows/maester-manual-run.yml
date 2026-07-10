@@ -41,19 +41,15 @@ on:
         required: false
         default: ""
       test_profile:
-        description: Test profile to run (client-secret-full is the 83-check baseline; secureit-full includes the 365Inspect bundle)
+        description: Test profile to run (Maester-83 is the legacy 83-check run; SecureIT-Production-101 includes the 365Inspect bundle)
         required: true
-        default: client-secret-full
+        default: SecureIT-Production-101
         type: choice
         options:
-          - client-secret-baseline
-          - client-secret-full
-          - graph-baseline
-          - light
-          - exchange-online
-          - secureit-365inspect
-          - secureit-full
-          - full
+          - Maester-83
+          - 365Inspect-18
+          - Certificate-Auth-Test
+          - SecureIT-Production-101
 
 jobs:
   run-assessment:

@@ -54,17 +54,13 @@ on:
       test_profile:
         description: Test profile to run
         required: true
-        default: client-secret-full
+        default: SecureIT-Production-101
         type: choice
         options:
-          - client-secret-baseline
-          - client-secret-full
-          - graph-baseline
-          - light
-          - exchange-online
-          - secureit-365inspect
-          - secureit-full
-          - full
+          - Maester-83
+          - 365Inspect-18
+          - Certificate-Auth-Test
+          - SecureIT-Production-101
   schedule:
     - cron: '0 3 * * 1'
 
@@ -270,7 +266,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
     env:
       CONFIG_PATH: config/tenants.json
-      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'secureit-full' }}
+      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'SecureIT-Production-101' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

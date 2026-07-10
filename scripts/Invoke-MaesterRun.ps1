@@ -13,8 +13,8 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('full','light','graph-baseline','client-secret-baseline','client-secret-full','exchange-online','secureit-365inspect','secureit-full')]
-    [string]$TestProfile = 'light'
+    [ValidateSet('Maester-83','365Inspect-18','Certificate-Auth-Test','SecureIT-Production-101')]
+    [string]$TestProfile = 'Maester-83'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -135,16 +135,12 @@ function Get-MaesterSelectedTestsPath {
     $repoRoot = Split-Path -Parent $PSScriptRoot
     $customTestsRoot = Join-Path $repoRoot 'custom-tests/365inspect'
 
-    if ($Profile -eq 'secureit-365inspect') {
+    if ($Profile -eq '365Inspect-18') {
         $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
         Ensure-DirectoryClean -Path $selectedRoot
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
         Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
         return $selectedRoot
-    }
-
-    if ($Profile -eq 'full') {
-        return $TestsRoot
     }
 
     $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
@@ -156,75 +152,8 @@ function Get-MaesterSelectedTestsPath {
             $_.Name -notmatch '^(Failure|Help|Module|Manifest|PSScriptAnalyzer)\.Tests\.ps1$'
         }
 
-    $baselineExcludedPathPatterns = @(
-        '[\\/]Maester[\\/]AzureDevOps[\\/]',
-        '[\\/]Maester[\\/]Teams[\\/]',
-        '[\\/]Maester[\\/]AIAgent[\\/]',
-        '[\\/]Maester[\\/]Azure[\\/]',
-        '[\\/]cis[\\/]Test-MtCisAttachmentFilterComprehensive\.Tests\.ps1$',
-        '[\\/]cis[\\/]Test-MtCisAttachmentFilter\.Tests\.ps1$',
-        '[\\/]cis[\\/]Test-MtCisAuditLogSearch\.Tests\.ps1$',
-        '[\\/]cisa[\\/]entra[\\/]Test-MtCisaDiagnosticSettings\.Tests\.ps1$'
-    )
-
-    $baselineExcludedNamePatterns = @(
-        '^AZDO\.',
-        '^MT\.1037:',
-        '^MT\.1042:',
-        '^MT\.1046:',
-        '^MT\.1047:',
-        '^MT\.1048:',
-        '^MT\.1050:',
-        '^MT\.1100:',
-        '^MT\.1111:',
-        '^MT\.1114:',
-        '^MT\.1115:',
-        '^MT\.1116:',
-        '^MT\.1117:',
-        '^MT\.1118:',
-        '^MT\.1119:',
-        '^MT\.1120:',
-        '^MT\.1121:',
-        '^MT\.1122:',
-        '^CISA\.MS\.AAD\.5\.4:',
-        '^EIDSCA\.CP01:'
-    )
-
     $profilePatterns = @{
-        'light' = @(
-            'conditional access',
-            'mfa',
-            'security default',
-            'entra',
-            'app registration',
-            'privileged',
-            'directory',
-            'tenant',
-            'forms',
-            'sharepoint',
-            'intune',
-            'defender'
-        )
-        'graph-baseline' = @(
-            'conditional access',
-            'mfa',
-            'entra',
-            'app registration',
-            'privileged',
-            'directory',
-            'tenant',
-            'forms',
-            'sharepoint',
-            'intune',
-            'defender',
-            'identity',
-            'graph',
-            'cisa',
-            'eidsca',
-            'authentication method',
-            'onpremisessynchronization'
-        )
-        'exchange-online' = @(
+        'Certificate-Auth-Test' = @(
             'exchange',
             'exo',
             'mailbox',
@@ -245,43 +174,9 @@ function Get-MaesterSelectedTestsPath {
         )
     }
 
-    if ($Profile -in @('client-secret-baseline','client-secret-full','secureit-full')) {
+    if ($Profile -in @('Maester-83','SecureIT-Production-101')) {
         $allowLists = @{
-            'client-secret-baseline' = @(
-                'Test-AppManagementPolicies.Tests.ps1',
-                'Test-AuthenticationMethodBaseline.Tests.ps1',
-                'Test-Groups.Tests.ps1',
-                'Test-MtEntraDeviceRegistrationPolicy.Tests.ps1',
-                'Test-MtSecurityGroupCreationRestricted.Tests.ps1',
-                'Test-MtTenantCreationRestricted.Tests.ps1',
-                'Test-MtCisAdminConsentWorkflowEnabled.Tests.ps1',
-                'Test-MtCisCreateTenantDisallowed.Tests.ps1',
-                'Test-MtCisFormsPhishingProtectionEnabled.Tests.ps1',
-                'Test-MtCisThirdPartyApplicationsDisallowed.Tests.ps1',
-                'Test-MtCisWeakAuthenticationMethodsDisabled.Tests.ps1',
-                'Test-MtCisaAppAdminConsent.Tests.ps1',
-                'Test-MtCisaAppGroupOwnerConsent.Tests.ps1',
-                'Test-MtCisaAppRegistration.Tests.ps1',
-                'Test-MtCisaAppUserConsent.Tests.ps1',
-                'Test-MtCisaAuthenticatorContext.Tests.ps1',
-                'Test-MtCisaBlockHighRiskSignIns.Tests.ps1',
-                'Test-MtCisaBlockHighRiskUsers.Tests.ps1',
-                'Test-MtCisaBlockLegacyAuth.Tests.ps1',
-                'Test-MtCisaCloudGlobalAdmin.Tests.ps1',
-                'Test-MtCisaCrossTenantInboundDefault.Tests.ps1',
-                'Test-MtCisaGlobalAdminCount.Tests.ps1',
-                'Test-MtCisaGlobalAdminRatio.Tests.ps1',
-                'Test-MtCisaGuestInvitation.Tests.ps1',
-                'Test-MtCisaGuestUserAccess.Tests.ps1',
-                'Test-MtCisaMethodsMigration.Tests.ps1',
-                'Test-MtCisaMfa.Tests.ps1',
-                'Test-MtCisaNotifyHighRiskUsers.Tests.ps1',
-                'Test-MtCisaPasswordExpiration.Tests.ps1',
-                'Test-MtCisaPhishResistant.Tests.ps1',
-                'Test-MtCisaPrivilegedPhishResistant.Tests.ps1',
-                'Test-MtCisaWeakFactor.Tests.ps1'
-            )
-            'client-secret-full' = @(
+            'Maester-83' = @(
                 'Test-EIDSCA.Generated.Tests.ps1',
                 'Test-MtMdeAntivirusPolicy.Tests.ps1',
                 'Test-MtMdiHealthIssues.Tests.ps1',
@@ -368,13 +263,12 @@ function Get-MaesterSelectedTestsPath {
             )
         }
 
-        $allowLists['secureit-full'] = $allowLists['client-secret-full']
+        $allowLists['SecureIT-Production-101'] = $allowLists['Maester-83']
 
         $allowList = $allowLists[$Profile]
         $missingMessages = @{
-            'client-secret-baseline' = 'Baseline allowlist file not found in installed Maester tests'
-            'client-secret-full' = 'Client-secret full allowlist file not found in installed Maester tests'
-            'secureit-full' = 'SecureIT full allowlist file not found in installed Maester tests'
+            'Maester-83' = 'Maester-83 allowlist file not found in installed Maester tests'
+            'SecureIT-Production-101' = 'SecureIT-Production-101 allowlist file not found in installed Maester tests'
         }
 
         $matchedFiles = foreach ($name in $allowList) {
@@ -412,22 +306,6 @@ function Get-MaesterSelectedTestsPath {
                 continue
             }
 
-            if ($Profile -in @('light','graph-baseline')) {
-                if ($haystacks -match 'exchange|exo|mailbox|transport|accepteddomain|dkim|dmarc|spf|safe\s*link|safe\s*attachment|anti-phish|anti spam|outbound spam|inbound spam|quarantine|orca|cisa/exchange') {
-                    continue
-                }
-            }
-
-            if ($Profile -eq 'graph-baseline') {
-                if ($baselineExcludedPathPatterns | Where-Object { $file.FullName -match $_ }) {
-                    continue
-                }
-
-                if ($baselineExcludedNamePatterns | Where-Object { $content -match $_ }) {
-                    continue
-                }
-            }
-
             $file
         }
     }
@@ -447,7 +325,7 @@ function Get-MaesterSelectedTestsPath {
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
     }
 
-    if ($Profile -eq 'secureit-full') {
+    if ($Profile -eq 'SecureIT-Production-101') {
         Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
     }
@@ -741,7 +619,7 @@ Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
 Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
-$requireExchangeOnline = $TestProfile -eq 'exchange-online'
+$requireExchangeOnline = $TestProfile -eq 'Certificate-Auth-Test'
 Connect-MaesterTenant -TenantId $TenantId -TenantDomain $TenantDomain -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
 
 $testsPath = Get-MaesterTestsPath
@@ -756,7 +634,7 @@ $invokeParams = @{
     Path = $selectedTestsPath
     PassThru = $true
 }
-if ($TestProfile -in @('light','graph-baseline','client-secret-baseline','client-secret-full','secureit-full')) {
+if ($TestProfile -in @('Maester-83','SecureIT-Production-101','Certificate-Auth-Test')) {
     $invokeParams['ExcludeTag'] = @('Preview')
 }
 try {

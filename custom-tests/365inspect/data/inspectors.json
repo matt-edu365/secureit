@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "profile": "secureit-365inspect",
+  "profile": "365Inspect-18",
   "inspectors": [
     { "inspector": "Inspect-ADFS-Configuration", "functionalArea": "Identity & Access Management", "runtimeFamily": "Hybrid" },
     { "inspector": "Inspect-AZPSAssignment", "functionalArea": "Identity & Access Management", "runtimeFamily": "Graph" },

@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_latest_report']))
         'tenant_domain' => trim((string) ($tenant['tenantDomain'] ?? '')),
         'm365_tenant_name' => trim((string) ($tenant['m365TenantName'] ?? '')),
         'email_to' => trim((string) ($tenant['emailTo'] ?? '')),
-        'test_profile' => 'secureit-full',
+        'test_profile' => 'SecureIT-Production-101',
     ];
     $dispatchInputs['report_base_url'] = trim((string) ($tenant['reportBaseUrl'] ?? ''));
     if ($dispatchInputs['report_base_url'] === '') {

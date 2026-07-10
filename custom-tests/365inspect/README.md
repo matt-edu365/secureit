@@ -2,7 +2,7 @@
 
 This folder holds the repo-owned integration layer for the 365Inspect inspector set.
 
-Stage 1 adds the new `secureit-365inspect` profile and a repo-owned mirror of the 26 non-duplicate 365Inspect inspectors under `inspectors/`.
+Stage 1 adds the new `365Inspect-18` profile and a repo-owned mirror of the 26 non-duplicate 365Inspect inspectors under `inspectors/`.
 
 Of those checks, 18 are now mapped into the SecureIT scoring model and included in the production run. The remaining checks stay in the raw bundle for now so they can be reviewed without distorting the portal posture.
 

@@ -103,7 +103,7 @@ jobs:
         env:
           PSModulePath: ${{ env.PSMODULEPATH_ROOT }}
         run: |
-          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID" -ClientId "$env:AZURE_CLIENT_ID" -AuthMode "$env:MAESTER_AUTH_MODE" -CertificateBase64 "$env:AZURE_CLIENT_CERTIFICATE_B64" -CertificatePassword "$env:AZURE_CLIENT_CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH"
+          ./scripts/Invoke-MaesterRun.ps1 -TenantKey "$env:TENANT_KEY" -TenantName "$env:TENANT_NAME" -TenantId "$env:AZURE_TENANT_ID" -ClientId "$env:AZURE_CLIENT_ID" -AuthMode "$env:MAESTER_AUTH_MODE" -CertificateBase64 "$env:AZURE_CLIENT_CERTIFICATE_B64" -CertificatePassword "$env:AZURE_CLIENT_CERTIFICATE_PASSWORD" -WebsiteBaseUrl "$env:REPORT_BASE_URL" -ConfigPath "$env:CONFIG_PATH" -TestProfile "Certificate-Auth-Test"
 
       - name: Upload workflow artifacts
         if: always()

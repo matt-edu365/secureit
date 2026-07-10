@@ -234,7 +234,48 @@ function secureit_series_points(array $series): array {
         }
     }
 
+    $indexedPoints = [];
+    foreach ($points as $index => $point) {
+        $indexedPoints[] = [
+            'index' => $index,
+            'point' => $point,
+        ];
+    }
+    usort($indexedPoints, static function (array $left, array $right): int {
+        $leftDate = (string) ($left['point']['generatedAt'] ?? '');
+        $rightDate = (string) ($right['point']['generatedAt'] ?? '');
+        $leftTimestamp = secureit_graph_point_timestamp($leftDate);
+        $rightTimestamp = secureit_graph_point_timestamp($rightDate);
+        if ($leftTimestamp !== null && $rightTimestamp !== null && $leftTimestamp !== $rightTimestamp) {
+            return $leftTimestamp <=> $rightTimestamp;
+        }
+        if ($leftDate === $rightDate) {
+            return $left['index'] <=> $right['index'];
+        }
+        if ($leftDate === '') {
+            return 1;
+        }
+        if ($rightDate === '') {
+            return -1;
+        }
+        return strcmp($leftDate, $rightDate);
+    });
+
+    $points = array_map(static fn (array $item): array => $item['point'], $indexedPoints);
+
     return $points;
+}
+
+function secureit_graph_point_timestamp(string $value): ?int {
+    if ($value === '') {
+        return null;
+    }
+
+    try {
+        return (new DateTimeImmutable($value))->getTimestamp();
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 function secureit_graph_axis_date(?string $value): string {
@@ -735,8 +776,7 @@ ob_start();
               <tr>
                 <th>Check</th>
                 <th>Status</th>
-                <th>Weight</th>
-                <th>Matched checks</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -754,28 +794,13 @@ ob_start();
                 ?>
                 <tr>
                   <td>
-                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong><br>
-                    <span class="muted"><?php echo htmlspecialchars($control['description'] ?? ''); ?></span>
+                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
                   </td>
                   <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars(ucfirst($controlStatus)); ?></span></td>
-                  <td><?php echo htmlspecialchars((string) ($control['weight'] ?? 1)); ?></td>
                   <td>
-                    <?php if (!empty($control['matchedTests'])): ?>
-                      <div class="muted" style="font-size:0.92rem;">
-                        <?php
-                          $matchedLabels = [];
-                          foreach (array_slice($control['matchedTests'], 0, 6) as $test) {
-                              $matchedLabels[] = $test['id'] . ' (' . ucfirst((string) ($test['result'] ?? 'unknown')) . ')';
-                          }
-                          echo htmlspecialchars(implode(', ', $matchedLabels));
-                        ?>
-                      </div>
-                      <?php if (count($control['matchedTests']) > 6): ?>
-                        <div class="muted" style="font-size:0.88rem; margin-top:4px;">+<?php echo htmlspecialchars((string) (count($control['matchedTests']) - 6)); ?> more checks</div>
-                      <?php endif; ?>
-                    <?php else: ?>
-                      <span class="muted">No matched checks</span>
-                    <?php endif; ?>
+                    <div class="muted" style="font-size:0.94rem; line-height:1.55;">
+                      <?php echo htmlspecialchars($control['details'] ?? 'SecureIT reviews the matching imported report evidence and uses the result to set this check status.'); ?>
+                    </div>
                   </td>
                 </tr>
               <?php endforeach; ?>

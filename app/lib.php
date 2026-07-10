@@ -1853,6 +1853,136 @@ function secureit_evaluate_control_status(array $matchedTests, string $passLogic
     }
 }
 
+function secureit_control_test_label(array $test): string {
+    $title = trim((string) ($test['title'] ?? ''));
+    if ($title !== '') {
+        return $title;
+    }
+
+    $id = trim((string) ($test['id'] ?? ''));
+    if ($id === '') {
+        return 'a mapped check';
+    }
+
+    $label = preg_replace('/^Test[-_.]?/i', '', $id) ?? $id;
+    $label = preg_replace('/\.Tests\.ps1$/i', '', $label) ?? $label;
+    $label = preg_replace('/([a-z])([A-Z])/', '$1 $2', $label) ?? $label;
+    $label = str_replace(['.', '_', '-'], ' ', $label);
+    $label = trim((string) preg_replace('/\s+/', ' ', $label));
+
+    return $label !== '' ? $label : $id;
+}
+
+function secureit_compact_detail_list(array $labels, int $limit = 3): string {
+    $uniqueLabels = [];
+    foreach ($labels as $label) {
+        $label = trim((string) $label);
+        if ($label !== '') {
+            $uniqueLabels[$label] = true;
+        }
+    }
+
+    $labels = array_keys($uniqueLabels);
+    $count = count($labels);
+    if ($count === 0) {
+        return '';
+    }
+
+    if ($count === 1) {
+        return $labels[0];
+    }
+
+    if ($count === 2) {
+        return $labels[0] . ' and ' . $labels[1];
+    }
+
+    $visible = array_slice($labels, 0, max(2, $limit));
+    $remaining = $count - count($visible);
+    if ($remaining > 0) {
+        return implode(', ', $visible) . ', and ' . $remaining . ' more related test' . ($remaining === 1 ? '' : 's');
+    }
+
+    $last = array_pop($visible);
+    return implode(', ', $visible) . ', and ' . $last;
+}
+
+function secureit_load_control_details_catalog(): array {
+    static $catalog = null;
+    if (is_array($catalog)) {
+        return $catalog;
+    }
+
+    $path = __DIR__ . '/control-details.php';
+    $data = file_exists($path) ? require $path : [];
+    $catalog = [];
+    if (is_array($data)) {
+        foreach ($data as $key => $entry) {
+            $normalisedKey = secureit_normalise_mapping_id((string) $key);
+            if ($normalisedKey !== '' && is_array($entry)) {
+                $catalog[$normalisedKey] = $entry;
+            }
+        }
+    }
+
+    return $catalog;
+}
+
+function secureit_format_control_detail_entry(array $entry): string {
+    $inspect = trim((string) ($entry['inspect'] ?? 'the relevant Microsoft 365 setting'));
+    $pass = trim((string) ($entry['pass'] ?? 'the setting matches the expected secure configuration'));
+    $fail = trim((string) ($entry['fail'] ?? 'the setting is missing, too broad, or does not match the expected secure configuration'));
+    $why = trim((string) ($entry['why'] ?? 'this setting affects the tenant security posture'));
+
+    return 'Inspects ' . $inspect . '. It passes when ' . $pass . '; it fails when ' . $fail . '. This matters because ' . $why . '.';
+}
+
+function secureit_control_detail_catalog_entry(array $control): ?array {
+    $catalog = secureit_load_control_details_catalog();
+    $candidateKeys = [
+        secureit_normalise_mapping_id((string) ($control['id'] ?? '')),
+    ];
+
+    foreach (($control['matchedTests'] ?? []) as $test) {
+        if (!is_array($test)) {
+            continue;
+        }
+        $testId = secureit_normalise_mapping_id((string) ($test['id'] ?? ''));
+        if ($testId !== '') {
+            $candidateKeys[] = $testId;
+            $candidateKeys[] = secureit_normalise_mapping_id(preg_replace('/^TEST[-_.]?/i', '', preg_replace('/\.TESTS\.PS1$/i', '', $testId)) ?? $testId);
+        }
+    }
+
+    foreach (($control['frameworkMappings'] ?? []) as $mapping) {
+        $mappingId = secureit_normalise_mapping_id((string) $mapping);
+        if ($mappingId !== '') {
+            $candidateKeys[] = $mappingId;
+        }
+    }
+
+    foreach ($candidateKeys as $key) {
+        if ($key !== '' && isset($catalog[$key])) {
+            return $catalog[$key];
+        }
+    }
+
+    return null;
+}
+
+function secureit_control_details_for_resolved_control(array $control): string {
+    $title = trim((string) ($control['title'] ?? $control['id'] ?? 'this SecureIT control'));
+    if ($title === '') {
+        $title = 'this SecureIT control';
+    }
+
+    $entry = secureit_control_detail_catalog_entry($control);
+    if (is_array($entry)) {
+        return secureit_format_control_detail_entry($entry);
+    }
+
+    return 'Inspects the Microsoft 365 setting or policy behind "' . $title . '". It passes when the setting matches the expected secure configuration; it fails when the setting is missing, too broad, or not applied as expected. This matters because the setting contributes to the tenant security posture and should be clear enough to review with the customer.';
+}
+
 function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, ?array $summary): array {
     $mapping = secureit_load_canonical_controls();
 
@@ -1958,10 +2088,8 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
         }
         $matchedIds = array_values(array_unique($matchedIds));
 
-        $status = secureit_evaluate_control_status(
-            $matchedTests,
-            (string) (($control['scoring']['passLogic'] ?? 'direct'))
-        );
+        $passLogic = (string) (($control['scoring']['passLogic'] ?? 'direct'));
+        $status = secureit_evaluate_control_status($matchedTests, $passLogic);
 
         $areas[$area]['controlsTotal']++;
         if ($status === 'pass') {
@@ -1974,7 +2102,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             $areas[$area]['controlsFailing']++;
         }
 
-        $areas[$area]['controls'][] = [
+        $resolvedControl = [
             'id' => $control['id'] ?? '',
             'title' => $control['title'] ?? '',
             'description' => $control['description'] ?? '',
@@ -1983,7 +2111,10 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             'matchedIds' => $matchedIds,
             'matchedTests' => $matchedTests,
             'weight' => (int) (($control['scoring']['weight'] ?? 1)),
+            'passLogic' => $passLogic,
         ];
+        $resolvedControl['details'] = secureit_control_details_for_resolved_control($resolvedControl);
+        $areas[$area]['controls'][] = $resolvedControl;
 
         foreach ($matchedTests as $test) {
             $testId = secureit_normalise_mapping_id((string) ($test['id'] ?? ''));

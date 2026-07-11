@@ -782,15 +782,18 @@ ob_start();
               <tr>
                 <th>Check</th>
                 <th>
-                  <details class="status-filter-menu" data-status-filter-menu style="display:inline-block; position:relative;">
-                    <summary style="cursor:pointer; list-style:none; font:inherit; display:inline-flex; align-items:center; gap:6px;">Status</summary>
-                    <div class="status-filter-panel" role="menu" aria-label="Filter check status" style="margin-top:8px; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#ffffff; border:1px solid #dbe8e2; border-radius:8px; box-shadow:0 10px 22px rgba(15, 23, 42, 0.10); min-width:160px;">
-                      <label><input type="checkbox" data-status-filter-option="all" checked> All</label>
-                      <label><input type="checkbox" data-status-filter-option="pass" checked> Pass</label>
-                      <label><input type="checkbox" data-status-filter-option="partial" checked> Partial</label>
-                      <label><input type="checkbox" data-status-filter-option="fail" checked> Fail</label>
-                      <label><input type="checkbox" data-status-filter-option="unmapped" checked> Unmapped</label>
-                      <label><input type="checkbox" data-status-filter-option="unknown" checked> Unknown</label>
+                  <details class="status-filter-menu" data-status-filter-menu>
+                    <summary class="status-filter-trigger" aria-label="Filter checks by status">
+                      <span>Status</span>
+                      <span class="status-filter-caret" aria-hidden="true"></span>
+                    </summary>
+                    <div class="status-filter-panel" role="menu" aria-label="Filter check status">
+                      <label class="status-filter-option status-filter-option-all"><input type="checkbox" data-status-filter-option="all" checked><span class="status-filter-option-label">All values</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="pass" checked><span class="status-filter-dot status-filter-dot-pass" aria-hidden="true"></span><span class="status-filter-option-label">Pass</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="partial" checked><span class="status-filter-dot status-filter-dot-partial" aria-hidden="true"></span><span class="status-filter-option-label">Partial</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="fail" checked><span class="status-filter-dot status-filter-dot-fail" aria-hidden="true"></span><span class="status-filter-option-label">Fail</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="unmapped" checked><span class="status-filter-dot status-filter-dot-unmapped" aria-hidden="true"></span><span class="status-filter-option-label">Unmapped</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="unknown" checked><span class="status-filter-dot status-filter-dot-unknown" aria-hidden="true"></span><span class="status-filter-option-label">Unknown</span></label>
                     </div>
                   </details>
                 </th>
@@ -961,6 +964,7 @@ ob_start();
       return;
     }
 
+    const tableWrap = menu.closest('.table-wrap');
     const allOption = menu.querySelector('input[type="checkbox"][data-status-filter-option="all"]');
     const options = Array.from(menu.querySelectorAll('input[type="checkbox"][data-status-filter-option]'));
     const rows = Array.from(table.querySelectorAll('tbody tr[data-status-value]'));
@@ -1009,6 +1013,36 @@ ob_start();
         syncAll();
         applyFilter();
       });
+    });
+
+    menu.addEventListener('toggle', () => {
+      if (menu.open) {
+        document.querySelectorAll('[data-status-filter-menu][open]').forEach((otherMenu) => {
+          if (otherMenu !== menu) {
+            otherMenu.open = false;
+          }
+        });
+      }
+      if (tableWrap) {
+        tableWrap.classList.toggle('has-open-status-filter', menu.open);
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (menu.open && !menu.contains(event.target)) {
+        menu.open = false;
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !menu.open) {
+        return;
+      }
+      menu.open = false;
+      const summary = menu.querySelector('summary');
+      if (summary) {
+        summary.focus();
+      }
     });
 
     applyFilter();

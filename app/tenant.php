@@ -788,7 +788,6 @@ ob_start();
                       <span class="status-filter-caret" aria-hidden="true"></span>
                     </summary>
                     <div class="status-filter-panel" role="menu" aria-label="Filter check status">
-                      <label class="status-filter-option status-filter-option-all"><input type="checkbox" data-status-filter-option="all" checked><span class="status-filter-option-label">All values</span></label>
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="pass" checked><span class="status-filter-dot status-filter-dot-pass" aria-hidden="true"></span><span class="status-filter-option-label">Pass</span></label>
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="partial" checked><span class="status-filter-dot status-filter-dot-partial" aria-hidden="true"></span><span class="status-filter-option-label">Partial</span></label>
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="fail" checked><span class="status-filter-dot status-filter-dot-fail" aria-hidden="true"></span><span class="status-filter-option-label">Fail</span></label>
@@ -965,52 +964,24 @@ ob_start();
     }
 
     const tableWrap = menu.closest('.table-wrap');
-    const allOption = menu.querySelector('input[type="checkbox"][data-status-filter-option="all"]');
     const options = Array.from(menu.querySelectorAll('input[type="checkbox"][data-status-filter-option]'));
     const rows = Array.from(table.querySelectorAll('tbody tr[data-status-value]'));
 
     function applyFilter() {
       const activeValues = new Set(
         options
-          .filter((checkbox) => checkbox !== allOption && checkbox.checked)
+          .filter((checkbox) => checkbox.checked)
           .map((checkbox) => normalizeStatus(checkbox.dataset.statusFilterOption))
       );
-      const showAll = !!allOption && allOption.checked;
 
       rows.forEach((row) => {
         const rowValue = normalizeStatus(row.dataset.statusValue);
-        row.style.display = showAll || activeValues.has(rowValue) ? '' : 'none';
-      });
-    }
-
-    function syncAll() {
-      if (!allOption) {
-        return;
-      }
-
-      const nonAll = options.filter((checkbox) => checkbox !== allOption);
-      allOption.checked = nonAll.every((checkbox) => checkbox.checked);
-    }
-
-    if (allOption) {
-      allOption.addEventListener('change', () => {
-        const checked = allOption.checked;
-        options.forEach((checkbox) => {
-          if (checkbox === allOption) {
-            return;
-          }
-          checkbox.checked = checked;
-        });
-        applyFilter();
+        row.style.display = activeValues.has(rowValue) ? '' : 'none';
       });
     }
 
     options.forEach((checkbox) => {
-      if (checkbox === allOption) {
-        return;
-      }
       checkbox.addEventListener('change', () => {
-        syncAll();
         applyFilter();
       });
     });

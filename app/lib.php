@@ -3207,7 +3207,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       top: calc(100% + 12px);
       z-index: 90;
       display: grid;
-      gap: 4px;
+      gap: 2px;
       min-width: 196px;
       padding: 10px;
       background: #ffffff;
@@ -3235,8 +3235,8 @@ function secureit_render_shell(string $title, string $content, array $options = 
       display: flex;
       align-items: center;
       gap: 10px;
-      min-height: 36px;
-      padding: 8px 10px;
+      min-height: 28px;
+      padding: 4px 10px;
       border-radius: 10px;
       color: #183b36;
       cursor: pointer;
@@ -3254,12 +3254,6 @@ function secureit_render_shell(string $title, string $content, array $options = 
       margin: 0;
       accent-color: var(--brand);
       flex: 0 0 auto;
-    }
-    .status-filter-option-all {
-      margin-bottom: 5px;
-      padding-bottom: 11px;
-      border-bottom: 1px solid var(--line);
-      border-radius: 10px 10px 6px 6px;
     }
     .status-filter-dot {
       width: 9px;

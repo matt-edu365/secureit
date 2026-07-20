@@ -282,6 +282,8 @@ try {
                 'partial' => $counts['partial'],
                 'failed' => $counts['failed'],
                 'passRate' => $counts['passRate'],
+                'statusLabel' => $counts['riskLevel'],
+                'statusTone' => $counts['riskTone'],
             ];
             $bodyContent = secureit_mail_build_overview_html($overviewStats, [
                 'brandLabel' => 'SecureIT report delivery',

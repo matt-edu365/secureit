@@ -127,9 +127,21 @@ Functional-area views also show a single-area trend graph below the checks table
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.
 
+The version 2 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
+
+Area and overall scores use the same calculation:
+- pass = `1`
+- partial = `0.5`
+- fail = `0`
+- not applicable, not run, skipped, unmapped, unknown, and error results are excluded from the denominator
+
+Each resolved control also carries structured customer guidance: an issue description, security impact, recommended action, and ordered GUI, PowerShell, review, or verification steps. Failed and partially met controls render the complete guidance in tenant views and downloadable PDFs.
+
 Key files:
 - `config/canonical-controls.example.json`
 - `shared/functional-areas.php`
+- `app/control-details.php`
+- `app/control-remediation.php`
 
 ## Deployment direction
 

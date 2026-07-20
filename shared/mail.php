@@ -167,7 +167,7 @@ function secureit_mail_build_overview_html(array $stats, array $meta = []): stri
         . '<td valign="middle" align="right"><div style="display:inline-block; font-size:14px; line-height:1.3; font-weight:800; color:' . secureit_mail_escape($statusColors['text']) . '; background:' . secureit_mail_escape($statusColors['background']) . '; border:1px solid rgba(0,0,0,0.05); border-radius:999px; padding:6px 12px;">' . secureit_mail_escape((string) $stats['statusLabel']) . '</div></td>'
         . '</tr></table>'
         . '<div style="margin-top:10px; height:12px; background:#d9ebe6; border-radius:999px; overflow:hidden;"><div style="width:' . (int) $stats['passRate'] . '%; height:12px; background:linear-gradient(90deg,#0f766e 0%, #2f8f84 100%); border-radius:999px;"></div></div>'
-        . '<div style="margin-top:8px; font-size:13px; line-height:1.5; color:#4f645f;">' . (int) $stats['passRate'] . '% of the checks passed in this sample overview. ' . secureit_mail_escape(sprintf('%d passed, %d partially met, %d failed.', $stats['passed'], $stats['partial'], $stats['failed'])) . '</div>'
+        . '<div style="margin-top:8px; font-size:13px; line-height:1.5; color:#4f645f;">SecureIT score: ' . (int) $stats['passRate'] . '%, based on assessed controls. ' . secureit_mail_escape(sprintf('%d passed, %d partially met, %d failed.', $stats['passed'], $stats['partial'], $stats['failed'])) . '</div>'
         . '</div>'
         . '<div style="margin-top:16px; padding:18px; border-radius:18px; background:#102d2a; color:#edf7f4;">'
         . '<div style="font-size:12px; line-height:1.3; letter-spacing:0.12em; text-transform:uppercase; color:#9ed8cf; font-weight:700;">Summary</div>'

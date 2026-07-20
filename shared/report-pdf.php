@@ -27,7 +27,7 @@ function secureit_report_status_key(string $status): string {
         'pass', 'passed', 'healthy' => 'pass',
         'partial', 'partially met', 'watch' => 'partial',
         'fail', 'failed', 'needs attention' => 'fail',
-        'unmapped', 'not assessed', 'no data' => 'unmapped',
+        'unmapped', 'not assessed', 'no data', 'not_applicable', 'not applicable', 'not_run', 'not run', 'skipped', 'error', 'unknown' => 'unmapped',
         default => 'unknown',
     };
 }
@@ -64,7 +64,7 @@ function secureit_report_area_description(string $areaName): string {
 function secureit_report_area_insight(array $area): string {
     $failed = (int) ($area['controlsFailing'] ?? 0);
     $partial = (int) ($area['controlsPartial'] ?? 0);
-    $unmapped = (int) ($area['controlsUnmapped'] ?? 0);
+    $unmapped = (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
     $passed = (int) ($area['controlsPassing'] ?? 0);
 
     if ($failed > 0) {
@@ -84,7 +84,7 @@ function secureit_report_area_insight(array $area): string {
     }
 
     if ($unmapped > 0) {
-        return $unmapped . ' ' . ($unmapped === 1 ? 'control has' : 'controls have') . ' no result in the latest assessment. Review assessment coverage before treating this area as complete.';
+        return $unmapped . ' ' . ($unmapped === 1 ? 'control has' : 'controls have') . ' no scoreable result in the latest assessment. Review assessment coverage before treating this area as complete.';
     }
 
     return 'No controls are currently available for assessment in this functional area.';
@@ -182,7 +182,31 @@ function secureit_report_top_priorities(array $areas, int $limit = 5): array {
     return array_slice($priorities, 0, max(0, $limit));
 }
 
-function secureit_report_control_table(string $heading, string $intro, array $controls, bool $breakBefore = false): string {
+function secureit_report_control_guidance_html(array $control): string {
+    $guidance = is_array($control['guidance'] ?? null) ? $control['guidance'] : [];
+    $issue = trim((string) ($guidance['issue'] ?? $control['details'] ?? 'This control did not meet the expected SecureIT baseline.'));
+    $impact = trim((string) ($guidance['impact'] ?? 'The result can affect the tenant security posture.'));
+    $recommendedAction = trim((string) ($guidance['recommendedAction'] ?? 'Review and correct the related Microsoft 365 configuration.'));
+    $steps = is_array($guidance['steps'] ?? null) ? $guidance['steps'] : [];
+
+    $html = '<p class="guidance-block"><strong>Issue and impact:</strong> ' . secureit_report_escape(trim($issue . ' ' . $impact)) . '</p>';
+    $html .= '<p class="guidance-block"><strong>Recommended action:</strong> ' . secureit_report_escape($recommendedAction) . '</p>';
+    if ($steps !== []) {
+        $html .= '<ol class="guidance-steps">';
+        foreach ($steps as $step) {
+            if (!is_array($step) || trim((string) ($step['instruction'] ?? '')) === '') {
+                continue;
+            }
+            $html .= '<li><strong>' . secureit_report_escape((string) ($step['method'] ?? 'Action')) . ':</strong> '
+                . secureit_report_escape((string) $step['instruction']) . '</li>';
+        }
+        $html .= '</ol>';
+    }
+
+    return $html;
+}
+
+function secureit_report_control_table(string $heading, string $intro, array $controls, bool $breakBefore = false, bool $includeRemediation = false): string {
     if ($controls === []) {
         return '';
     }
@@ -191,11 +215,13 @@ function secureit_report_control_table(string $heading, string $intro, array $co
     foreach ($controls as $control) {
         $title = (string) ($control['title'] ?? $control['id'] ?? 'Control');
         $status = secureit_report_status_key((string) ($control['status'] ?? ''));
-        $details = trim((string) ($control['details'] ?? 'SecureIT reviews the available report evidence and uses it to determine this control status.'));
+        $details = $includeRemediation
+            ? secureit_report_control_guidance_html($control)
+            : '<p class="guidance-block">The latest assessment returned no scoreable evidence for this control. It is excluded from the score until a pass, partial, or fail result is available.</p>';
         $rows .= '<tr>';
         $rows .= '<td class="control-title">' . secureit_report_escape($title) . '</td>';
         $rows .= '<td><span class="table-status status-' . secureit_report_escape($status) . '">' . secureit_report_escape(secureit_report_status_label($status)) . '</span></td>';
-        $rows .= '<td>' . secureit_report_escape($details) . '</td>';
+        $rows .= '<td>' . $details . '</td>';
         $rows .= '</tr>';
     }
 
@@ -205,7 +231,7 @@ function secureit_report_control_table(string $heading, string $intro, array $co
         . '<h3>' . secureit_report_escape($heading) . '</h3>'
         . '<p class="group-intro">' . secureit_report_escape($intro) . '</p>'
         . '<table class="control-table">'
-        . '<thead><tr><th class="col-control">Test name</th><th class="col-status">Status</th><th class="col-description">Description</th></tr></thead>'
+        . '<thead><tr><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">' . ($includeRemediation ? 'Issue, impact and recommended action' : 'Assessment detail') . '</th></tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table></div>';
 }
@@ -238,12 +264,13 @@ function secureit_report_passing_summary(array $controls): string {
 function secureit_report_build_html(string $tenantName, string $generatedAt, array $summary, array $areaData, array $counts): string {
     $areas = array_values(array_filter($areaData['areas'] ?? [], 'is_array'));
     $runDate = secureit_format_date_only($summary['generatedAt'] ?? null);
-    $score = (int) ($counts['passRate'] ?? 0);
-    $overallStatus = secureit_functional_area_status_from_score(($counts['total'] ?? 0) > 0 ? $score : null);
+    $score = is_numeric($counts['score'] ?? null) ? (int) $counts['score'] : null;
+    $scoreLabel = $score === null ? 'N/A' : $score . '%';
+    $overallStatus = secureit_functional_area_status_from_score($score);
     $strongest = secureit_report_ranked_area($areas, true);
     $weakest = secureit_report_ranked_area($areas, false);
     $priorities = secureit_report_top_priorities($areas);
-    $unmapped = (int) ($counts['unmapped'] ?? 0);
+    $unmapped = (int) ($counts['notAssessed'] ?? $counts['unmapped'] ?? 0);
     $reportMonth = $runDate !== 'Not available' ? date('F Y', strtotime((string) ($summary['generatedAt'] ?? 'now'))) : date('F Y');
     $logoDataUri = secureit_report_logo_data_uri();
 
@@ -350,6 +377,11 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .control-table .col-status { width: 13%; }
     .control-table .col-description { width: 59.5%; }
     .control-title { color: #0e2841 !important; font-weight: 700; }
+    .guidance-block { margin: 0 0 4pt; }
+    .guidance-block:last-child { margin-bottom: 0; }
+    .guidance-block strong, .guidance-steps strong { color: #0e2841; }
+    .guidance-steps { margin: 4pt 0 0 14pt; padding: 0; }
+    .guidance-steps li { margin-bottom: 3pt; padding-left: 2pt; }
     .table-status { font-size: 7.5pt; font-weight: 700; }
     .status-pass { color: #008443; }
     .status-partial { color: #a66a00; }
@@ -391,8 +423,8 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     <p class="section-lead">SecureIT provides a point-in-time view of how this Microsoft 365 tenant aligns with the security controls assessed during the latest run. Results are organised into eight functional areas so that strengths, gaps, and remediation priorities are easy to identify.</p>
 
     <table class="posture-table"><tr>
-      <td class="posture-score"><strong><?php echo $score; ?>%</strong><span>OVERALL SCORE</span></td>
-      <td class="posture-copy"><strong><?php echo secureit_report_escape((string) ($overallStatus['status'] ?? 'No data')); ?></strong>The latest assessment ran on <?php echo secureit_report_escape($runDate); ?> and covered <?php echo (int) ($counts['total'] ?? 0); ?> SecureIT controls.</td>
+      <td class="posture-score"><strong><?php echo secureit_report_escape($scoreLabel); ?></strong><span>OVERALL SCORE</span></td>
+      <td class="posture-copy"><strong><?php echo secureit_report_escape((string) ($overallStatus['status'] ?? 'No data')); ?></strong>The latest assessment ran on <?php echo secureit_report_escape($runDate); ?> and returned scoreable evidence for <?php echo (int) ($counts['assessed'] ?? 0); ?> of <?php echo (int) ($counts['total'] ?? 0); ?> SecureIT controls.</td>
     </tr></table>
 
     <table class="metric-table"><tr>
@@ -419,13 +451,13 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     <?php endif; ?>
 
     <?php if ($unmapped > 0): ?>
-      <div class="notice"><strong>Assessment coverage:</strong> <?php echo $unmapped; ?> <?php echo $unmapped === 1 ? 'control has' : 'controls have'; ?> no result in the latest run. These are shown as &quot;Not assessed&quot; and are not treated as passes.</div>
+      <div class="notice"><strong>Assessment coverage:</strong> <?php echo $unmapped; ?> <?php echo $unmapped === 1 ? 'control has' : 'controls have'; ?> no scoreable result in the latest run. These are shown as &quot;Not assessed&quot; and are excluded from the score.</div>
     <?php endif; ?>
   </section>
 
   <section class="area-overview">
     <h1>Area breakdown</h1>
-    <p class="section-lead">The eight functional areas below mirror the SecureIT portal. Scores reflect the controls mapped to each area in the latest assessment.</p>
+    <p class="section-lead">The eight functional areas below mirror the SecureIT portal. Scores use assessed controls only; controls that were skipped, not run, not applicable, unmapped, or errored are shown as not assessed and excluded from the denominator.</p>
     <table class="area-grid">
       <?php foreach (array_chunk($areas, 2) as $areaRow): ?>
         <tr>
@@ -436,7 +468,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
               <span class="area-score"><?php echo secureit_report_escape(secureit_report_area_score($area)); ?></span>
               <span class="area-status tone-<?php echo $tone; ?>"><?php echo secureit_report_escape((string) ($area['status'] ?? 'No data')); ?></span>
               <table class="area-bar"><tr><td class="bar-<?php echo $tone; ?>" style="width:<?php echo $areaScore; ?>%"></td><td style="width:<?php echo 100 - $areaScore; ?>%"></td></tr></table>
-              <div class="area-counts"><?php echo (int) ($area['controlsPassing'] ?? 0); ?> passed &nbsp; <?php echo (int) ($area['controlsPartial'] ?? 0); ?> partial &nbsp; <?php echo (int) ($area['controlsFailing'] ?? 0); ?> failed &nbsp; <?php echo (int) ($area['controlsUnmapped'] ?? 0); ?> not assessed</div>
+              <div class="area-counts"><?php echo (int) ($area['controlsPassing'] ?? 0); ?> passed &nbsp; <?php echo (int) ($area['controlsPartial'] ?? 0); ?> partial &nbsp; <?php echo (int) ($area['controlsFailing'] ?? 0); ?> failed &nbsp; <?php echo (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0); ?> not assessed</div>
             </td>
           <?php endforeach; ?>
           <?php if (count($areaRow) === 1): ?><td></td><?php endif; ?>
@@ -467,18 +499,20 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
         <td class="area-metric"><strong><?php echo (int) ($area['controlsTotal'] ?? 0); ?></strong><span>Total controls</span></td>
         <td class="area-metric"><strong><?php echo (int) ($area['controlsPassing'] ?? 0); ?></strong><span>Passed</span></td>
         <td class="area-metric"><strong><?php echo (int) ($area['controlsPartial'] ?? 0) + (int) ($area['controlsFailing'] ?? 0); ?></strong><span>Need follow-up</span></td>
-        <td class="area-metric"><strong><?php echo (int) ($area['controlsUnmapped'] ?? 0); ?></strong><span>Not assessed</span></td>
+        <td class="area-metric"><strong><?php echo (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0); ?></strong><span>Not assessed</span></td>
       </tr></table>
 
       <?php
         echo secureit_report_control_table(
             'Action required',
             'Failed and partially met controls are listed first so remediation work is immediately visible.',
-            $groups['attention']
+            $groups['attention'],
+            false,
+            true
         );
         echo secureit_report_control_table(
             'Assessment coverage gaps',
-            'These controls had no mapped result in the latest run and should be reviewed for assessment coverage.',
+            'These controls were not applicable, not run, skipped, unmapped, unknown, or errored in the latest run and are excluded from the score.',
             $groups['coverage'],
             $groups['attention'] !== []
         );

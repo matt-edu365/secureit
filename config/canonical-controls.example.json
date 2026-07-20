@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "description": "Canonical SecureIT control mapping for Maester-derived checks. Use this to collapse duplicate framework checks into one customer-facing control and to map controls into SecureIT functional areas.",
   "functionalAreas": [
     "Identity & Access Management",
@@ -22,7 +22,7 @@
       ],
       "duplicatePolicy": "collapse",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "any-pass-no-fail-review",
         "notes": "Treat overlapping policy-framework checks as a single SecureIT control to avoid double counting."
       }
@@ -38,7 +38,7 @@
       ],
       "duplicatePolicy": "collapse",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass",
         "notes": "Different frameworks express count and ratio variants of the same privileged access hygiene theme."
       }
@@ -52,7 +52,7 @@
       ],
       "duplicatePolicy": "single",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "direct"
       }
     },
@@ -67,7 +67,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -86,7 +86,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -106,7 +106,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -131,7 +131,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -158,7 +158,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -174,7 +174,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 2,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -195,7 +195,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -224,7 +224,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -233,7 +233,6 @@
       "title": "Defender and exposure posture is healthy",
       "functionalArea": "Security Operations & Threat Protection",
       "frameworkMappings": [
-        "MT.1059.*",
         "MT.1085",
         "MT.1086",
         "MT.1087",
@@ -257,7 +256,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -273,7 +272,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 2,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -288,7 +287,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -317,7 +316,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 3,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -331,7 +330,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 2,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     },
@@ -349,7 +348,7 @@
       ],
       "duplicatePolicy": "group-related",
       "scoring": {
-        "weight": 2,
+        "weight": 1,
         "passLogic": "majority-pass"
       }
     }

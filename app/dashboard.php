@@ -74,9 +74,15 @@ ob_start();
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['partial']); ?></strong><span>Partially met</span></div>
               <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $counts['failed']); ?></strong><span>Failed</span></div>
             </div>
-            <div class="muted" style="margin-bottom:8px;">Pass rate</div>
-            <div class="progress" aria-label="Pass rate progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $counts['passRate']); ?>%"></div></div>
-            <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) $counts['passRate']); ?>% of checks passed in the last run.</div>
+            <div class="muted" style="margin-bottom:8px;">SecureIT score</div>
+            <div class="progress" aria-label="SecureIT score progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($counts['score'] ?? 0)); ?>%"></div></div>
+            <div class="muted" style="margin-top:8px; margin-bottom:14px;">
+              <?php if (($counts['score'] ?? null) !== null): ?>
+                <?php echo htmlspecialchars((string) $counts['score']); ?>% based on assessed controls in the last run.
+              <?php else: ?>
+                No controls returned a scoreable result in the last run.
+              <?php endif; ?>
+            </div>
             <div class="inline-links" style="margin-top:auto;">
               <a class="textlink" href="tenant.php?tenant=<?php echo rawurlencode($tenantKey); ?>">Open tenant page</a>
               <a class="textlink" href="<?php echo htmlspecialchars($tenantKey); ?>/latest/index.html">Open latest report</a>

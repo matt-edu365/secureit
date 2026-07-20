@@ -35,16 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_latest_report']))
     $dispatchResult = secureit_github_dispatch_workflow($dispatchInputs);
 
     if (!empty($dispatchResult['ok'])) {
-        $workflowUrl = (string) ($dispatchResult['workflowUrl'] ?? '');
         $message = 'The SecureIT tests for ICT365 Ltd have been queued, these typically take 5 minutes, please be patient and refresh your portal.';
-        if ($workflowUrl !== '') {
-            $message .= ' Open the workflow runs page if you want to watch it progress.';
-        }
 
         secureit_flash_set('tenant_manual_report_run', [
             'ok' => true,
             'message' => $message,
-            'workflowUrl' => $workflowUrl,
         ]);
     } else {
         secureit_flash_set('tenant_manual_report_run', [
@@ -101,6 +96,44 @@ function secureit_functional_area_partial_test_count(array $area): int {
     }
 
     return count($partialTests);
+}
+
+function secureit_tenant_control_guidance_html(array $control): string {
+    $status = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+    $guidance = is_array($control['guidance'] ?? null) ? $control['guidance'] : [];
+    $issue = trim((string) ($guidance['issue'] ?? $control['details'] ?? 'This control did not meet the expected SecureIT baseline.'));
+    $impact = trim((string) ($guidance['impact'] ?? 'The result should be reviewed to understand its effect on the tenant security posture.'));
+    $recommendedAction = trim((string) ($guidance['recommendedAction'] ?? 'Review the control and update the related Microsoft 365 configuration.'));
+    $steps = is_array($guidance['steps'] ?? null) ? $guidance['steps'] : [];
+
+    ob_start();
+    ?>
+    <div class="control-guidance">
+      <?php if ($status === 'pass'): ?>
+        <div class="control-guidance-result"><strong>No remediation required.</strong> The latest evidence meets this control.</div>
+        <div><strong>Control context</strong></div>
+        <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
+      <?php elseif (!in_array($status, ['fail', 'partial'], true)): ?>
+        <div class="control-guidance-result"><strong>Not scored.</strong> The latest assessment returned no scoreable evidence for this control.</div>
+        <div><strong>Control context</strong></div>
+        <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
+      <?php else: ?>
+        <div><strong>Issue and impact</strong></div>
+        <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
+        <div><strong>Recommended action</strong></div>
+        <p><?php echo htmlspecialchars($recommendedAction); ?></p>
+        <?php if ($steps !== []): ?>
+          <ol class="control-guidance-steps">
+            <?php foreach ($steps as $step): ?>
+              <?php if (!is_array($step) || trim((string) ($step['instruction'] ?? '')) === '') { continue; } ?>
+              <li><span class="control-guidance-method"><?php echo htmlspecialchars((string) ($step['method'] ?? 'Action')); ?></span><?php echo htmlspecialchars((string) $step['instruction']); ?></li>
+            <?php endforeach; ?>
+          </ol>
+        <?php endif; ?>
+      <?php endif; ?>
+    </div>
+    <?php
+    return (string) ob_get_clean();
 }
 
 function secureit_history_row_area_data(array $item): array {
@@ -161,7 +194,7 @@ function secureit_tenant_history_series(array $history): array {
         $overallCounts = secureit_check_summary_counts($rowAreaData);
         $series['overall']['points'][] = [
             'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
-            'score' => (int) ($overallCounts['passRate'] ?? 0),
+            'score' => $overallCounts['score'] !== null ? (int) $overallCounts['score'] : null,
         ];
 
         foreach (($rowAreaData['areas'] ?? []) as $area) {
@@ -437,16 +470,17 @@ function secureit_functional_area_analysis_text(array $area): string {
     $controlsPassing = (int) ($area['controlsPassing'] ?? 0);
     $controlsPartial = (int) ($area['controlsPartial'] ?? 0);
     $controlsFailing = (int) ($area['controlsFailing'] ?? 0);
+    $controlsNotAssessed = (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
     $testsTotal = (int) ($area['testsTotal'] ?? 0);
     $testsPassed = (int) ($area['testsPassed'] ?? 0);
     $testsFailed = (int) ($area['testsFailed'] ?? 0);
-    $testsSkipped = (int) ($area['testsSkipped'] ?? 0);
+    $testsNotAssessed = (int) ($area['testsNotAssessed'] ?? $area['testsSkipped'] ?? 0);
 
     $summary = [];
     $summary[] = sprintf(
-        'This area scores %s across %d checks.',
+        'This area scores %s across %d assessed checks.',
         $score !== null ? (string) $score . '%' : 'unavailable',
-        $controlsTotal
+        $controlsPassing + $controlsPartial + $controlsFailing
     );
     $summary[] = sprintf(
         '%d checks passed, %d were partially met, and %d failed.',
@@ -455,13 +489,22 @@ function secureit_functional_area_analysis_text(array $area): string {
         $controlsFailing
     );
 
+    if ($controlsNotAssessed > 0) {
+        $summary[] = sprintf(
+            '%d additional %s not assessed and %s excluded from the score.',
+            $controlsNotAssessed,
+            $controlsNotAssessed === 1 ? 'check was' : 'checks were',
+            $controlsNotAssessed === 1 ? 'was' : 'were'
+        );
+    }
+
     if ($testsTotal > 0) {
         $summary[] = sprintf(
-            'Those checks are backed by %d underlying assessment items with %d passed, %d failed, and %d skipped.',
+            'Those checks are backed by %d underlying assessment items with %d passed, %d failed, and %d not assessed.',
             $testsTotal,
             $testsPassed,
             $testsFailed,
-            $testsSkipped
+            $testsNotAssessed
         );
     }
 
@@ -605,15 +648,14 @@ ob_start();
     <?php if (is_array($manualReportRunNotice ?? null)): ?>
       <div class="<?php echo !empty($manualReportRunNotice['ok']) ? 'success' : 'error'; ?>" style="margin-bottom:16px;">
         <?php echo htmlspecialchars((string) ($manualReportRunNotice['message'] ?? '')); ?>
-        <?php if (!empty($manualReportRunNotice['workflowUrl'])): ?>
-          <div style="margin-top:8px;">
-            <a class="textlink" href="<?php echo htmlspecialchars((string) $manualReportRunNotice['workflowUrl']); ?>">Open GitHub workflow runs</a>
-          </div>
-        <?php endif; ?>
       </div>
     <?php endif; ?>
 
     <?php if ($summary): ?>
+      <?php
+        $displayScore = $selectedArea ? ($selectedArea['score'] ?? null) : ($counts['score'] ?? null);
+        $displayScoreWidth = $displayScore !== null ? max(0, min(100, (int) $displayScore)) : 0;
+      ?>
       <div class="stats-row" style="margin-bottom:14px;">
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Checks</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
@@ -626,11 +668,15 @@ ob_start();
           <div class="muted" style="margin-bottom:10px;">** <?php echo htmlspecialchars((string) $partialTests); ?> checks were partially met.</div>
         <?php endif; ?>
       <?php endif; ?>
-      <?php if ($selectedArea): ?>
-        <div class="muted" style="margin-bottom:8px;">Area pass rate</div>
-      <?php endif; ?>
-      <div class="progress" aria-label="Checks passed progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>%"></div></div>
-      <div class="muted" style="margin-top:8px; margin-bottom:14px;"><?php echo htmlspecialchars((string) ($selectedArea && (($selectedArea['controlsTotal'] ?? 0) > 0) ? round((($selectedArea['controlsPassing'] ?? 0) / max(1, (int) ($selectedArea['controlsTotal'] ?? 0))) * 100) : $counts['passRate'])); ?>% checks passed<?php echo $selectedArea ? ' in this area' : ''; ?>, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.</div>
+      <div class="muted" style="margin-bottom:8px;"><?php echo $selectedArea ? 'Area score' : 'Overall score'; ?></div>
+      <div class="progress" aria-label="SecureIT score progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $displayScoreWidth); ?>%"></div></div>
+      <div class="muted" style="margin-top:8px; margin-bottom:14px;">
+        <?php if ($displayScore !== null): ?>
+          <?php echo htmlspecialchars((string) $displayScore); ?>% SecureIT score<?php echo $selectedArea ? ' in this area' : ''; ?>, based only on assessed controls, on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.
+        <?php else: ?>
+          Score unavailable because no controls returned a scoreable result on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.
+        <?php endif; ?>
+      </div>
     <?php else: ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No published report yet.</strong>
@@ -791,12 +837,11 @@ ob_start();
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="pass" checked><span class="status-filter-dot status-filter-dot-pass" aria-hidden="true"></span><span class="status-filter-option-label">Pass</span></label>
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="partial" checked><span class="status-filter-dot status-filter-dot-partial" aria-hidden="true"></span><span class="status-filter-option-label">Partial</span></label>
                       <label class="status-filter-option"><input type="checkbox" data-status-filter-option="fail" checked><span class="status-filter-dot status-filter-dot-fail" aria-hidden="true"></span><span class="status-filter-option-label">Fail</span></label>
-                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="unmapped" checked><span class="status-filter-dot status-filter-dot-unmapped" aria-hidden="true"></span><span class="status-filter-option-label">Unmapped</span></label>
-                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="unknown" checked><span class="status-filter-dot status-filter-dot-unknown" aria-hidden="true"></span><span class="status-filter-option-label">Unknown</span></label>
+                      <label class="status-filter-option"><input type="checkbox" data-status-filter-option="not_assessed" checked><span class="status-filter-dot status-filter-dot-unmapped" aria-hidden="true"></span><span class="status-filter-option-label">Not assessed</span></label>
                     </div>
                   </details>
                 </th>
-                <th>Details</th>
+                <th>Issue, impact and recommended action</th>
               </tr>
             </thead>
             <tbody>
@@ -815,16 +860,26 @@ ob_start();
                   if ($controlStatusFilterValue === '') {
                       $controlStatusFilterValue = 'unknown';
                   }
+                  if (!in_array($controlStatusFilterValue, ['pass', 'partial', 'fail'], true)) {
+                      $controlStatusFilterValue = 'not_assessed';
+                  }
+                  $controlStatusLabel = match ($controlStatus) {
+                      'not_applicable' => 'Not applicable',
+                      'not_run' => 'Not run',
+                      'skipped' => 'Skipped',
+                      'unmapped' => 'Unmapped',
+                      'error' => 'Error',
+                      'unknown' => 'Not assessed',
+                      default => ucfirst($controlStatus),
+                  };
                 ?>
                 <tr data-status-value="<?php echo htmlspecialchars($controlStatusFilterValue); ?>">
                   <td>
                     <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
                   </td>
-                  <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars(ucfirst($controlStatus)); ?></span></td>
+                  <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars($controlStatusLabel); ?></span></td>
                   <td>
-                    <div class="muted" style="font-size:0.94rem; line-height:1.55;">
-                      <?php echo htmlspecialchars($control['details'] ?? 'SecureIT reviews the matching imported report evidence and uses the result to set this check status.'); ?>
-                    </div>
+                    <?php echo secureit_tenant_control_guidance_html($control); ?>
                   </td>
                 </tr>
               <?php endforeach; ?>

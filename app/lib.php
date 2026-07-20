@@ -1650,6 +1650,97 @@ function secureit_canonical_controls_version_value(): string {
     return $value;
 }
 
+function secureit_validate_canonical_controls(array $data): array {
+    $errors = [];
+    $functionalAreas = $data['functionalAreas'] ?? null;
+    $controls = $data['controls'] ?? null;
+
+    if (!is_int($data['version'] ?? null) || (int) $data['version'] < 2) {
+        $errors[] = 'version must be an integer greater than or equal to 2.';
+    }
+
+    if (!is_array($functionalAreas) || $functionalAreas === []) {
+        $errors[] = 'functionalAreas must contain at least one area name.';
+        $functionalAreas = [];
+    }
+
+    $areaNames = [];
+    foreach ($functionalAreas as $index => $area) {
+        $area = is_string($area) ? trim($area) : '';
+        if ($area === '') {
+            $errors[] = 'functionalAreas[' . $index . '] must be a non-empty string.';
+            continue;
+        }
+        if (isset($areaNames[$area])) {
+            $errors[] = 'functional area names must be unique: ' . $area . '.';
+        }
+        $areaNames[$area] = true;
+    }
+
+    if (!is_array($controls) || $controls === []) {
+        $errors[] = 'controls must contain at least one canonical control.';
+        return $errors;
+    }
+
+    $controlIds = [];
+    foreach ($controls as $index => $control) {
+        $prefix = 'controls[' . $index . ']';
+        if (!is_array($control)) {
+            $errors[] = $prefix . ' must be an object.';
+            continue;
+        }
+
+        $controlId = trim((string) ($control['id'] ?? ''));
+        if ($controlId === '' || preg_match('/^[A-Z0-9][A-Z0-9._-]*$/', $controlId) !== 1) {
+            $errors[] = $prefix . '.id must be a stable uppercase identifier.';
+        } elseif (isset($controlIds[$controlId])) {
+            $errors[] = 'control IDs must be unique: ' . $controlId . '.';
+        } else {
+            $controlIds[$controlId] = true;
+        }
+
+        if (trim((string) ($control['title'] ?? '')) === '') {
+            $errors[] = $prefix . '.title must be a non-empty string.';
+        }
+
+        $functionalArea = $control['functionalArea'] ?? null;
+        if (!is_string($functionalArea) || !isset($areaNames[trim($functionalArea)])) {
+            $errors[] = $prefix . '.functionalArea must name exactly one declared functional area.';
+        }
+
+        $mappings = $control['frameworkMappings'] ?? null;
+        if (!is_array($mappings) || $mappings === []) {
+            $errors[] = $prefix . '.frameworkMappings must contain at least one explicit evidence ID.';
+        } else {
+            $mappingIds = [];
+            foreach ($mappings as $mappingIndex => $mapping) {
+                $mapping = is_string($mapping) ? trim($mapping) : '';
+                if ($mapping === '' || str_contains($mapping, '*')) {
+                    $errors[] = $prefix . '.frameworkMappings[' . $mappingIndex . '] must be an explicit evidence ID without wildcards.';
+                    continue;
+                }
+                $normalisedMapping = secureit_normalise_mapping_id($mapping);
+                if (isset($mappingIds[$normalisedMapping])) {
+                    $errors[] = $prefix . '.frameworkMappings contains a duplicate evidence ID: ' . $mapping . '.';
+                }
+                $mappingIds[$normalisedMapping] = true;
+            }
+        }
+
+        $weight = $control['scoring']['weight'] ?? null;
+        if (!is_int($weight) || $weight !== 1) {
+            $errors[] = $prefix . '.scoring.weight must be the integer 1.';
+        }
+
+        $passLogic = trim((string) ($control['scoring']['passLogic'] ?? ''));
+        if (!in_array($passLogic, ['direct', 'majority-pass', 'any-pass-no-fail-review'], true)) {
+            $errors[] = $prefix . '.scoring.passLogic is not supported.';
+        }
+    }
+
+    return $errors;
+}
+
 function secureit_load_canonical_controls(): array {
     foreach (secureit_canonical_controls_candidate_paths() as $path) {
         if (!file_exists($path)) {
@@ -1657,6 +1748,12 @@ function secureit_load_canonical_controls(): array {
         }
         $data = json_decode(file_get_contents($path), true);
         if (is_array($data)) {
+            $validationErrors = secureit_validate_canonical_controls($data);
+            if ($validationErrors !== []) {
+                throw new RuntimeException(
+                    'Invalid canonical control contract at ' . $path . ': ' . implode(' ', $validationErrors)
+                );
+            }
             $descriptions = secureit_load_test_descriptions();
             $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
             foreach ($controls as &$control) {
@@ -1833,58 +1930,128 @@ function secureit_fallback_block_for_control(array $control): ?string {
     return null;
 }
 
+function secureit_control_status_from_result(string $result): string {
+    $result = strtolower(trim($result));
+    if (secureit_is_pass_result($result)) {
+        return 'pass';
+    }
+    if (secureit_is_fail_result($result)) {
+        return 'fail';
+    }
+
+    return match ($result) {
+        'partial', 'partially met', 'investigate', 'review', 'warning', 'warn' => 'partial',
+        'notapplicable', 'not applicable', 'not_applicable' => 'not_applicable',
+        'notrun', 'not run', 'not_run' => 'not_run',
+        'skipped', 'skip', 'neutral', 'pending' => 'skipped',
+        'error', 'errored' => 'error',
+        default => 'unknown',
+    };
+}
+
+function secureit_control_non_assessed_status(array $statuses): string {
+    foreach (['error', 'not_run', 'skipped', 'not_applicable', 'unknown'] as $status) {
+        if (in_array($status, $statuses, true)) {
+            return $status;
+        }
+    }
+
+    return 'unknown';
+}
+
 function secureit_evaluate_control_status(array $matchedTests, string $passLogic): string {
     if (!$matchedTests) {
         return 'unmapped';
     }
 
-    $passCount = 0;
-    $failCount = 0;
-    $neutralCount = 0;
+    $statuses = array_map(
+        static fn(array $test): string => secureit_control_status_from_result((string) ($test['result'] ?? 'unknown')),
+        array_values(array_filter($matchedTests, 'is_array'))
+    );
+    $scoreableStatuses = array_values(array_filter(
+        $statuses,
+        static fn(string $status): bool => in_array($status, ['pass', 'partial', 'fail'], true)
+    ));
 
-    foreach ($matchedTests as $test) {
-        $result = $test['result'] ?? 'unknown';
-        if (secureit_is_pass_result($result)) {
-            $passCount++;
-        } elseif (secureit_is_fail_result($result)) {
-            $failCount++;
-        } else {
-            $neutralCount++;
-        }
+    if ($scoreableStatuses === []) {
+        return secureit_control_non_assessed_status($statuses);
     }
+
+    $passCount = count(array_filter($scoreableStatuses, static fn(string $status): bool => $status === 'pass'));
+    $partialCount = count(array_filter($scoreableStatuses, static fn(string $status): bool => $status === 'partial'));
+    $failCount = count(array_filter($scoreableStatuses, static fn(string $status): bool => $status === 'fail'));
 
     switch ($passLogic) {
         case 'any-pass-no-fail-review':
             if ($failCount > 0) {
-                return $passCount > 0 ? 'partial' : 'fail';
+                return $passCount > 0 || $partialCount > 0 ? 'partial' : 'fail';
             }
-            return $passCount > 0 ? 'pass' : 'partial';
+            return $partialCount > 0 ? 'partial' : 'pass';
 
         case 'majority-pass':
-            if ($passCount === 0 && $failCount === 0) {
-                return 'partial';
-            }
-            if ($failCount === 0 && $passCount > 0) {
+            if ($failCount === 0 && $partialCount === 0) {
                 return 'pass';
             }
-            if ($passCount > 0) {
-                return 'partial';
+            if ($passCount === 0 && $partialCount === 0) {
+                return 'fail';
             }
-            return 'fail';
+            return 'partial';
 
         case 'direct':
         default:
-            if ($passCount > 0 && $failCount === 0) {
+            if ($failCount === 0 && $partialCount === 0) {
                 return 'pass';
             }
-            if ($passCount > 0) {
-                return 'partial';
-            }
-            if ($failCount > 0) {
+            if ($passCount === 0 && $partialCount === 0) {
                 return 'fail';
             }
             return 'partial';
     }
+}
+
+function secureit_control_score_value(string $status): ?float {
+    return match (strtolower(trim($status))) {
+        'pass' => 1.0,
+        'partial' => 0.5,
+        'fail' => 0.0,
+        default => null,
+    };
+}
+
+function secureit_calculate_control_score(array $controls): array {
+    $earnedWeight = 0.0;
+    $assessedWeight = 0.0;
+    $assessedControls = 0;
+    $excludedControls = 0;
+
+    foreach ($controls as $control) {
+        if (!is_array($control)) {
+            continue;
+        }
+
+        $scoreValue = secureit_control_score_value((string) ($control['status'] ?? ''));
+        if ($scoreValue === null) {
+            $excludedControls++;
+            continue;
+        }
+
+        $weight = (int) ($control['weight'] ?? $control['scoring']['weight'] ?? 1);
+        if ($weight !== 1) {
+            throw new RuntimeException('Canonical control weights must be 1.');
+        }
+
+        $assessedControls++;
+        $assessedWeight += $weight;
+        $earnedWeight += $scoreValue * $weight;
+    }
+
+    return [
+        'score' => $assessedWeight > 0 ? (int) round(($earnedWeight / $assessedWeight) * 100) : null,
+        'earnedWeight' => $earnedWeight,
+        'assessedWeight' => $assessedWeight,
+        'assessedControls' => $assessedControls,
+        'excludedControls' => $excludedControls,
+    ];
 }
 
 function secureit_control_test_label(array $test): string {
@@ -1970,6 +2137,28 @@ function secureit_format_control_detail_entry(array $entry): string {
     return 'Inspects ' . $inspect . '. It passes when ' . $pass . '; it fails when ' . $fail . '. This matters because ' . $why . '.';
 }
 
+function secureit_control_guidance_sentence(string $value): string {
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+
+    $value = ucfirst(rtrim($value, " .\t\n\r\0\x0B"));
+    return $value . '.';
+}
+
+function secureit_load_control_remediation_catalog(): array {
+    static $catalog = null;
+    if (is_array($catalog)) {
+        return $catalog;
+    }
+
+    $path = __DIR__ . '/control-remediation.php';
+    $data = file_exists($path) ? require $path : [];
+    $catalog = is_array($data) ? $data : [];
+    return $catalog;
+}
+
 function secureit_control_detail_catalog_entry(array $control): ?array {
     $catalog = secureit_load_control_details_catalog();
     $candidateKeys = [
@@ -2017,6 +2206,64 @@ function secureit_control_details_for_resolved_control(array $control): string {
     return 'Inspects the Microsoft 365 setting or policy behind "' . $title . '". It passes when the setting matches the expected secure configuration; it fails when the setting is missing, too broad, or not applied as expected. This matters because the setting contributes to the tenant security posture and should be clear enough to review with the customer.';
 }
 
+function secureit_control_guidance_for_resolved_control(array $control): array {
+    $title = trim((string) ($control['title'] ?? $control['id'] ?? 'this SecureIT control'));
+    if ($title === '') {
+        $title = 'this SecureIT control';
+    }
+
+    $entry = secureit_control_detail_catalog_entry($control) ?? [];
+    $inspect = trim((string) ($entry['inspect'] ?? ('the Microsoft 365 configuration for ' . $title)));
+    $pass = trim((string) ($entry['pass'] ?? 'the configuration matches the expected SecureIT baseline'));
+    $fail = trim((string) ($entry['fail'] ?? 'the configuration is missing, too broad, or does not match the expected SecureIT baseline'));
+    $why = trim((string) ($entry['why'] ?? 'the control affects the tenant security posture'));
+
+    $remediationCatalog = secureit_load_control_remediation_catalog();
+    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+    $areaName = trim((string) ($control['functionalArea'] ?? ''));
+    $route = $remediationCatalog['controlRoutes'][$controlId]
+        ?? $remediationCatalog['areaDefaults'][$areaName]
+        ?? [
+            'method' => 'GUI',
+            'portal' => 'the relevant Microsoft 365 admin center',
+            'path' => 'use the portal search to open the setting named by this control',
+        ];
+
+    $steps = $remediationCatalog['controlSteps'][$controlId] ?? null;
+    if (!is_array($steps) || $steps === []) {
+        $method = trim((string) ($route['method'] ?? 'GUI')) ?: 'GUI';
+        $portal = trim((string) ($route['portal'] ?? 'the relevant Microsoft 365 admin center'));
+        $path = trim((string) ($route['path'] ?? 'use the portal search to open the setting named by this control'));
+        $steps = [
+            [
+                'method' => $method,
+                'instruction' => 'Open ' . $portal . ' and go to ' . $path . '.',
+            ],
+            [
+                'method' => 'Review',
+                'instruction' => 'Review ' . $inspect . ', including its current scope, assignments, exclusions, and any documented exceptions.',
+            ],
+            [
+                'method' => $method,
+                'instruction' => 'Update and save the configuration so that ' . $pass . '.',
+            ],
+            [
+                'method' => 'Verification',
+                'instruction' => 'Allow the Microsoft 365 change to propagate, confirm the saved configuration, and rerun this SecureIT control.',
+            ],
+        ];
+    }
+
+    return [
+        'issue' => secureit_control_guidance_sentence('The control fails when ' . $fail),
+        'impact' => secureit_control_guidance_sentence($why),
+        'recommendedAction' => secureit_control_guidance_sentence('Configure ' . $inspect . ' so that ' . $pass),
+        'steps' => array_values(array_filter($steps, static function ($step): bool {
+            return is_array($step) && trim((string) ($step['instruction'] ?? '')) !== '';
+        })),
+    ];
+}
+
 function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, ?array $summary): array {
     $mapping = secureit_load_canonical_controls();
 
@@ -2058,11 +2305,13 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             'testsPassed' => 0,
             'testsFailed' => 0,
             'testsSkipped' => 0,
+            'testsNotAssessed' => 0,
             'controlsTotal' => 0,
             'controlsPassing' => 0,
             'controlsFailing' => 0,
             'controlsPartial' => 0,
             'controlsUnmapped' => 0,
+            'controlsNotAssessed' => 0,
             'controls' => [],
             '_tests' => [],
         ];
@@ -2087,39 +2336,6 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             }
         }
 
-        if (!$matchedTests) {
-            $bestMatch = null;
-            $bestScore = 0.0;
-            foreach ($tests as $test) {
-                if (preg_match('/^Inspect-/i', (string) ($test['id'] ?? '')) === 1) {
-                    continue;
-                }
-
-                $score = secureit_score_control_test_match($control, $test);
-                if ($score > $bestScore) {
-                    $bestScore = $score;
-                    $bestMatch = $test;
-                }
-            }
-
-            if ($bestMatch !== null && $bestScore >= 1.0) {
-                $matchedTests[] = $bestMatch;
-            }
-        }
-
-        if (!$matchedTests) {
-            $fallbackBlock = secureit_fallback_block_for_control($control);
-            if ($fallbackBlock !== null && isset($groupResults[$fallbackBlock])) {
-                $matchedTests[] = [
-                    'id' => 'BLOCK::' . $fallbackBlock,
-                    'result' => strtolower((string) ($groupResults[$fallbackBlock]['result'] ?? 'unknown')),
-                    'title' => $fallbackBlock,
-                    'severity' => '',
-                    'tags' => $groupResults[$fallbackBlock]['tag'] ?? [],
-                ];
-            }
-        }
-
         $matchedIds = [];
         foreach ($matchedTests as $test) {
             $matchedIds[] = $test['id'];
@@ -2134,24 +2350,29 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             $areas[$area]['controlsPassing']++;
         } elseif ($status === 'partial') {
             $areas[$area]['controlsPartial']++;
-        } elseif ($status === 'unmapped') {
-            $areas[$area]['controlsUnmapped']++;
-        } else {
+        } elseif ($status === 'fail') {
             $areas[$area]['controlsFailing']++;
+        } else {
+            $areas[$area]['controlsNotAssessed']++;
+            if ($status === 'unmapped') {
+                $areas[$area]['controlsUnmapped']++;
+            }
         }
 
         $resolvedControl = [
             'id' => $control['id'] ?? '',
             'title' => $control['title'] ?? '',
             'description' => $control['description'] ?? '',
+            'functionalArea' => $area,
             'status' => $status,
             'frameworkMappings' => $control['frameworkMappings'] ?? [],
             'matchedIds' => $matchedIds,
             'matchedTests' => $matchedTests,
-            'weight' => (int) (($control['scoring']['weight'] ?? 1)),
+            'weight' => 1,
             'passLogic' => $passLogic,
         ];
         $resolvedControl['details'] = secureit_control_details_for_resolved_control($resolvedControl);
+        $resolvedControl['guidance'] = secureit_control_guidance_for_resolved_control($resolvedControl);
         $areas[$area]['controls'][] = $resolvedControl;
 
         foreach ($matchedTests as $test) {
@@ -2171,39 +2392,27 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
         $area['testsPassed'] = 0;
         $area['testsFailed'] = 0;
         $area['testsSkipped'] = 0;
+        $area['testsNotAssessed'] = 0;
         foreach ($uniqueTests as $test) {
             $result = strtolower((string) ($test['result'] ?? 'unknown'));
             if (secureit_is_pass_result($result)) {
                 $area['testsPassed']++;
             } elseif (secureit_is_fail_result($result)) {
                 $area['testsFailed']++;
-            } elseif (secureit_is_neutral_result($result)) {
-                $area['testsSkipped']++;
+            } else {
+                $area['testsNotAssessed']++;
+                if (secureit_control_status_from_result($result) === 'skipped') {
+                    $area['testsSkipped']++;
+                }
             }
         }
 
-        if ($area['controlsTotal'] === 0) {
-            $area['status'] = 'No data';
-            $area['tone'] = 'neutral';
-            $area['score'] = null;
-            $area['scoreLabel'] = 'Score unavailable';
-            continue;
-        }
-
-        $weightedEarned = 0.0;
-        $weightedTotal = 0.0;
-        foreach ($area['controls'] as $control) {
-            $weight = max(1, (int) ($control['weight'] ?? 1));
-            $weightedTotal += $weight;
-            if (($control['status'] ?? '') === 'pass') {
-                $weightedEarned += $weight;
-            } elseif (($control['status'] ?? '') === 'partial') {
-                $weightedEarned += ($weight * 0.5);
-            }
-        }
-
-        $score = $weightedTotal > 0 ? (int) round(($weightedEarned / $weightedTotal) * 100) : null;
+        $scoreCalculation = secureit_calculate_control_score($area['controls']);
+        $score = $scoreCalculation['score'];
         $area['score'] = $score;
+        $area['controlsAssessed'] = $scoreCalculation['assessedControls'];
+        $area['scoreEarnedWeight'] = $scoreCalculation['earnedWeight'];
+        $area['scoreAssessedWeight'] = $scoreCalculation['assessedWeight'];
         $areaStatus = secureit_functional_area_status_from_score($score);
         $area['status'] = $areaStatus['status'];
         $area['tone'] = $areaStatus['tone'];
@@ -2281,6 +2490,8 @@ function secureit_check_summary_counts(array $areaData): array {
     $partial = 0;
     $failed = 0;
     $unmapped = 0;
+    $notAssessed = 0;
+    $controls = [];
 
     foreach ($areas as $area) {
         $total += (int) ($area['controlsTotal'] ?? 0);
@@ -2288,25 +2499,17 @@ function secureit_check_summary_counts(array $areaData): array {
         $partial += (int) ($area['controlsPartial'] ?? 0);
         $failed += (int) ($area['controlsFailing'] ?? 0);
         $unmapped += (int) ($area['controlsUnmapped'] ?? 0);
-    }
-
-    $completed = max(0, $passed + $partial + $failed);
-    $passRate = $total > 0 ? (int) round(($passed / $total) * 100) : 0;
-    $riskLevel = 'No data';
-    $riskTone = 'neutral';
-
-    if ($total > 0) {
-        if ($failed === 0) {
-            $riskLevel = 'Healthy';
-            $riskTone = 'good';
-        } elseif ($failed <= 3) {
-            $riskLevel = 'Watch';
-            $riskTone = 'warn';
-        } else {
-            $riskLevel = 'Needs attention';
-            $riskTone = 'bad';
+        $notAssessed += (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
+        foreach (($area['controls'] ?? []) as $control) {
+            if (is_array($control)) {
+                $controls[] = $control;
+            }
         }
     }
+
+    $scoreCalculation = secureit_calculate_control_score($controls);
+    $score = $scoreCalculation['score'];
+    $status = secureit_functional_area_status_from_score($score);
 
     return [
         'total' => $total,
@@ -2314,10 +2517,15 @@ function secureit_check_summary_counts(array $areaData): array {
         'partial' => $partial,
         'failed' => $failed,
         'unmapped' => $unmapped,
-        'completed' => $completed,
-        'passRate' => $passRate,
-        'riskLevel' => $riskLevel,
-        'riskTone' => $riskTone,
+        'notAssessed' => $notAssessed,
+        'completed' => $scoreCalculation['assessedControls'],
+        'assessed' => $scoreCalculation['assessedControls'],
+        'score' => $score,
+        'passRate' => $score ?? 0,
+        'scoreEarnedWeight' => $scoreCalculation['earnedWeight'],
+        'scoreAssessedWeight' => $scoreCalculation['assessedWeight'],
+        'riskLevel' => $status['status'],
+        'riskTone' => $status['tone'],
     ];
 }
 
@@ -2345,20 +2553,19 @@ function secureit_tenant_analysis_text(?array $summary, array $areaData): string
         }
     }
 
-    if ($counts['failed'] === 0) {
-        $posture = 'is healthy';
-    } elseif ($counts['failed'] <= 3) {
-        $posture = 'is on the watch list';
-    } else {
-        $posture = 'is in need of attention';
-    }
+    $posture = match ($counts['riskLevel'] ?? 'No data') {
+        'Healthy' => 'is healthy',
+        'Watch' => 'is on the watch list',
+        'Needs attention' => 'is in need of attention',
+        default => 'does not yet have enough assessed controls for a score',
+    };
 
     $worstAreaName = 'n/a';
     $worstAreaScore = 'n/a';
     if ($worstArea && isset($worstArea['name'])) {
         $worstScore = $worstArea['score'];
         $worstAreaName = $worstArea['name'];
-        $worstAreaScore = $worstScore !== null ? (string) $worstScore : 'n/a';
+        $worstAreaScore = $worstScore !== null ? (string) $worstScore . '%' : 'n/a';
     }
 
     $bestAreaName = 'n/a';
@@ -2366,12 +2573,13 @@ function secureit_tenant_analysis_text(?array $summary, array $areaData): string
     if ($bestArea && isset($bestArea['name'])) {
         $bestScore = $bestArea['score'];
         $bestAreaName = $bestArea['name'];
-        $bestAreaScore = $bestScore !== null ? (string) $bestScore : 'n/a';
+        $bestAreaScore = $bestScore !== null ? (string) $bestScore . '%' : 'n/a';
     }
 
     return sprintf(
-        'The latest run on %s covers %d SecureIT checks. The overall posture %s. The lowest-scoring area is currently %s at %s%%. The strongest area is %s at %s%%.',
+        'The latest run on %s returned scoreable evidence for %d of %d SecureIT checks. The overall posture %s. The lowest-scoring area is currently %s at %s. The strongest area is %s at %s.',
         $runDate,
+        $counts['assessed'],
         $counts['total'],
         $posture,
         $worstAreaName,
@@ -2643,7 +2851,7 @@ function secureit_dashboard_stats(array $tenants): array {
         }
 
         $stats['reportingCount']++;
-        $counts = secureit_summary_counts($summary);
+        $counts = secureit_check_summary_counts(secureit_resolve_canonical_area_scores($tenantKey));
         if ($counts['riskTone'] === 'good') {
             $stats['healthyCount']++;
         }
@@ -3267,6 +3475,34 @@ function secureit_render_shell(string $title, string $content, array $options = 
     .status-filter-dot-fail { background: var(--bad); }
     .status-filter-dot-unmapped { background: var(--neutral); }
     .status-filter-dot-unknown { background: #94a3b8; }
+    .control-guidance {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .control-guidance strong { color: var(--text); }
+    .control-guidance p { margin: 3px 0 10px; }
+    .control-guidance-result {
+      margin-bottom: 9px;
+      padding-left: 10px;
+      border-left: 3px solid var(--line);
+    }
+    .control-guidance-steps {
+      display: grid;
+      gap: 7px;
+      margin: 7px 0 0;
+      padding-left: 22px;
+    }
+    .control-guidance-method {
+      display: inline-block;
+      min-width: 82px;
+      margin-right: 7px;
+      color: var(--brand-strong);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
     tr:last-child td { border-bottom: 0; }
     .textlink {
       color: var(--brand);

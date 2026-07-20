@@ -416,8 +416,8 @@ def build_runtime_tenants() -> dict:
 
 def build_canonical_controls(tests: list[str]) -> dict:
         return {
-            "version": 1,
-            "description": "Local demo canonical SecureIT control mapping for testing the container app.",
+            "version": 2,
+            "description": "SecureIT canonical control contract for local container testing.",
             "functionalAreas": [
             "Identity & Access Management",
             "Email & Calendaring",

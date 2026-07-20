@@ -73,9 +73,23 @@ function secureit_is_pass_result(string $result): bool {
 }
 
 function secureit_is_fail_result(string $result): bool {
-    return in_array(strtolower($result), ['fail', 'failed', 'error', 'critical'], true);
+    return in_array(strtolower(trim($result)), ['fail', 'failed', 'critical'], true);
 }
 
 function secureit_is_neutral_result(string $result): bool {
-    return in_array(strtolower($result), ['skipped', 'skip', 'notapplicable', 'not applicable', 'neutral', 'pending'], true);
+    return in_array(strtolower(trim($result)), [
+        'skipped',
+        'skip',
+        'notapplicable',
+        'not applicable',
+        'not_applicable',
+        'notrun',
+        'not run',
+        'not_run',
+        'neutral',
+        'pending',
+        'error',
+        'errored',
+        'unknown',
+    ], true);
 }

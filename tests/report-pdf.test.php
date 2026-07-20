@@ -14,10 +14,20 @@ $areas = [];
 foreach (secureit_functional_area_catalog() as $index => $catalogArea) {
     $controls = [];
     if ($index === 0) {
+        $remediationGuidance = [
+            'issue' => 'The control is not configured to the expected baseline.',
+            'impact' => 'The gap increases avoidable tenant risk.',
+            'recommendedAction' => 'Update the related Microsoft 365 policy.',
+            'steps' => [
+                ['method' => 'GUI', 'instruction' => 'Open the relevant Microsoft 365 admin center.'],
+                ['method' => 'GUI', 'instruction' => 'Update and save the policy.'],
+                ['method' => 'Verification', 'instruction' => 'Rerun the SecureIT control.'],
+            ],
+        ];
         $controls = [
             ['title' => 'Passed control', 'status' => 'pass', 'details' => 'This control meets the baseline.'],
-            ['title' => 'Failed control', 'status' => 'fail', 'details' => 'This control needs remediation.'],
-            ['title' => 'Partial control', 'status' => 'partial', 'details' => 'This control needs follow-up.'],
+            ['title' => 'Failed control', 'status' => 'fail', 'details' => 'This control needs remediation.', 'guidance' => $remediationGuidance],
+            ['title' => 'Partial control', 'status' => 'partial', 'details' => 'This control needs follow-up.', 'guidance' => $remediationGuidance],
             ['title' => 'Coverage control', 'status' => 'unmapped', 'details' => 'This control has no result.'],
         ];
     }
@@ -26,12 +36,13 @@ foreach (secureit_functional_area_catalog() as $index => $catalogArea) {
         'name' => $catalogArea['name'],
         'status' => $index === 0 ? 'Needs attention' : 'No data',
         'tone' => $index === 0 ? 'bad' : 'neutral',
-        'score' => $index === 0 ? 25 : null,
+        'score' => $index === 0 ? 50 : null,
         'controlsTotal' => count($controls),
         'controlsPassing' => $index === 0 ? 1 : 0,
         'controlsPartial' => $index === 0 ? 1 : 0,
         'controlsFailing' => $index === 0 ? 1 : 0,
         'controlsUnmapped' => $index === 0 ? 1 : 0,
+        'controlsNotAssessed' => $index === 0 ? 1 : 0,
         'controls' => $controls,
     ];
 }
@@ -54,6 +65,9 @@ secureit_report_test_assert(str_contains($html, 'Executive summary'), 'The execu
 secureit_report_test_assert(str_contains($html, 'Area breakdown'), 'The area overview is missing.');
 secureit_report_test_assert(substr_count($html, 'class="area-detail"') === 8, 'The report must include all eight functional areas.');
 secureit_report_test_assert(str_contains($html, 'Action required'), 'Priority controls are missing.');
+secureit_report_test_assert(str_contains($html, 'Issue and impact:'), 'Structured issue and impact guidance is missing.');
+secureit_report_test_assert(str_contains($html, 'Recommended action:'), 'Structured recommended action guidance is missing.');
+secureit_report_test_assert(str_contains($html, 'Rerun the SecureIT control.'), 'Ordered remediation steps are missing.');
 secureit_report_test_assert(str_contains($html, 'Assessment coverage gaps'), 'Coverage gaps are missing.');
 secureit_report_test_assert(str_contains($html, 'Controls meeting the baseline'), 'Passing controls are missing.');
 secureit_report_test_assert(str_contains($html, 'area-summary-bad'), 'Functional-area score traffic-light styling is missing.');

@@ -27,6 +27,7 @@ RUN apt-get update \
     && chown -R www-data:www-data /var/www/data
 
 COPY --from=vendor /app/vendor/ /var/www/vendor/
+COPY Logo_1.png /var/www/Logo_1.png
 COPY app/ /var/www/html/
 COPY shared/ /var/www/shared/
 COPY docker/secureit-assets/canonical-controls.json /usr/local/share/secureit/canonical-controls.json

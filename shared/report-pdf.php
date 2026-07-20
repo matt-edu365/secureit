@@ -4,6 +4,23 @@ function secureit_report_escape(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function secureit_report_logo_data_uri(): string {
+    static $logoDataUri = null;
+    if ($logoDataUri !== null) {
+        return $logoDataUri;
+    }
+
+    $logoPath = __DIR__ . '/../Logo_1.png';
+    if (!is_readable($logoPath)) {
+        $logoDataUri = '';
+        return $logoDataUri;
+    }
+
+    $logoData = file_get_contents($logoPath);
+    $logoDataUri = $logoData === false ? '' : 'data:image/png;base64,' . base64_encode($logoData);
+    return $logoDataUri;
+}
+
 function secureit_report_status_key(string $status): string {
     $status = strtolower(trim($status));
     return match ($status) {
@@ -228,6 +245,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     $priorities = secureit_report_top_priorities($areas);
     $unmapped = (int) ($counts['unmapped'] ?? 0);
     $reportMonth = $runDate !== 'Not available' ? date('F Y', strtotime((string) ($summary['generatedAt'] ?? 'now'))) : date('F Y');
+    $logoDataUri = secureit_report_logo_data_uri();
 
     ob_start();
     ?>
@@ -246,20 +264,19 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     h1 { margin-bottom: 12pt; font-size: 23pt; line-height: 1.12; }
     h2 { margin-bottom: 7pt; font-size: 15pt; line-height: 1.2; }
     h3 { margin-bottom: 4pt; font-size: 11pt; line-height: 1.25; }
-    .eyebrow { margin-bottom: 5pt; color: #339997; font-size: 8pt; font-weight: 700; text-transform: uppercase; }
     .muted { color: #52697a; }
-    .cover { position: relative; width: 210mm; height: 297mm; overflow: hidden; page-break-after: always; background: #00635f; color: #ffffff; }
-    .cover-accent { height: 7mm; background: #339997; }
-    .cover-content { padding: 44mm 20mm 0; }
-    .cover-product { margin-bottom: 20mm; color: #d6e8f7; font-size: 12pt; font-weight: 700; }
-    .cover-title { width: 168mm; color: #ffffff; font-size: 30pt; font-weight: 700; line-height: 1.18; }
-    .cover-tenant { margin-top: 13mm; color: #d6e8f7; font-size: 18pt; line-height: 1.25; }
-    .cover-meta { margin-top: 11mm; color: #a0b8cc; font-size: 10pt; }
+    .cover { position: relative; width: 210mm; height: 297mm; overflow: hidden; page-break-after: always; background: #ffffff; color: #0e2841; }
+    .cover-accent { height: 5mm; background: #00635f; border-bottom: 2mm solid #339997; }
+    .cover-content { padding: 28mm 22mm 0; }
+    .cover-logo { height: 18mm; }
+    .cover-logo img { width: 106mm; height: auto; }
+    .cover-logo-fallback { color: #00635f; font-size: 22pt; font-weight: 700; }
+    .cover-title { width: 168mm; margin-top: 47mm; color: #00635f; font-size: 30pt; font-weight: 700; line-height: 1.18; }
+    .cover-tenant { margin-top: 13mm; color: #0e2841; font-size: 18pt; line-height: 1.25; }
+    .cover-meta { margin-top: 11mm; color: #52697a; font-size: 10pt; }
     .cover-rule { width: 62mm; height: 1.2mm; margin-top: 12mm; background: #339997; }
-    .cover-brand { position: absolute; right: 20mm; bottom: 17mm; left: 20mm; border-top: 1px solid #6db4b2; padding-top: 8mm; }
-    .cover-brand-main { color: #ffffff; font-family: Arial, sans-serif; font-size: 25pt; font-weight: 700; }
-    .cover-brand-main span { color: #d6e8f7; }
-    .cover-brand-sub { float: right; margin-top: 5pt; color: #d6e8f7; font-size: 10pt; }
+    .cover-footer { position: absolute; right: 22mm; bottom: 16mm; left: 22mm; border-top: 1px solid #c8dadd; padding-top: 6mm; color: #52697a; font-size: 8.5pt; }
+    .cover-footer-brand { float: right; color: #00635f; font-weight: 700; }
     .section-lead { margin-bottom: 14pt; color: #344f62; font-size: 10.5pt; line-height: 1.55; }
     .executive { page-break-after: always; }
     .posture-table, .metric-table, .highlight-table, .area-grid, .area-metric-table { width: 100%; border-collapse: separate; border-spacing: 5pt; margin: 0 -5pt 12pt; }
@@ -285,6 +302,10 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .success-notice { padding: 8pt 10pt; border-left: 3px solid #00b050; background: #edf8f2; color: #24533a; }
     .area-overview { }
     .area-cell { width: 50%; padding: 9pt; border: 1px solid #c8dadd; border-radius: 7px; background: #f7fafb; vertical-align: top; }
+    .area-cell-good { border-color: #8fd4ad; background: #eef9f2; }
+    .area-cell-warn { border-color: #efca73; background: #fff8e7; }
+    .area-cell-bad { border-color: #efa6a1; background: #fff0ee; }
+    .area-cell-neutral { border-color: #c8dadd; background: #f3f6f7; }
     .area-name { min-height: 27pt; margin-bottom: 5pt; color: #0e2841; font-size: 10pt; font-weight: 700; line-height: 1.3; }
     .area-score { color: #00635f; font-size: 18pt; font-weight: 700; line-height: 1; }
     .area-status { float: right; margin-top: 3pt; font-size: 8pt; font-weight: 700; }
@@ -301,7 +322,15 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .area-counts { color: #52697a; font-size: 7.8pt; }
     .area-detail { page-break-before: always; }
     .area-summary { margin-bottom: 13pt; padding: 11pt 12pt; border-top: 4px solid #00635f; background: #eef6f6; }
+    .area-summary-good { border-color: #00b050; background: #eef9f2; }
+    .area-summary-warn { border-color: #ffc000; background: #fff8e7; }
+    .area-summary-bad { border-color: #ee0000; background: #fff0ee; }
+    .area-summary-neutral { border-color: #9aabb4; background: #f3f6f7; }
     .area-summary-score { width: 20%; color: #00635f; font-size: 23pt; font-weight: 700; vertical-align: middle; }
+    .area-summary-good .area-summary-score { color: #008443; }
+    .area-summary-warn .area-summary-score { color: #a66a00; }
+    .area-summary-bad .area-summary-score { color: #c62828; }
+    .area-summary-neutral .area-summary-score { color: #647784; }
     .area-summary-copy { width: 80%; color: #344f62; vertical-align: middle; }
     .area-summary-copy strong { display: block; margin-bottom: 2pt; color: #0e2841; font-size: 10pt; }
     .area-metric { width: 25%; padding: 6pt 7pt; border: 1px solid #d0dfe1; background: #ffffff; vertical-align: top; }
@@ -339,20 +368,25 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
   <section class="cover">
     <div class="cover-accent"></div>
     <div class="cover-content">
-      <div class="cover-product">SecureIT</div>
+      <div class="cover-logo">
+        <?php if ($logoDataUri !== ''): ?>
+          <img src="<?php echo secureit_report_escape($logoDataUri); ?>" alt="ICT365 SecureIT">
+        <?php else: ?>
+          <span class="cover-logo-fallback">ICT365 SecureIT</span>
+        <?php endif; ?>
+      </div>
       <div class="cover-title">Microsoft 365<br>Security Assessment</div>
       <div class="cover-tenant"><?php echo secureit_report_escape($tenantName); ?></div>
       <div class="cover-meta">Prepared <?php echo secureit_report_escape($reportMonth); ?> &nbsp;|&nbsp; CONFIDENTIAL</div>
       <div class="cover-rule"></div>
     </div>
-    <div class="cover-brand">
-      <span class="cover-brand-main">ICT<span>365</span></span>
-      <span class="cover-brand-sub">Microsoft 365 security, clearly reported</span>
+    <div class="cover-footer">
+      <span>CONFIDENTIAL</span>
+      <span class="cover-footer-brand">Microsoft 365 security, clearly reported</span>
     </div>
   </section>
 
   <section class="executive">
-    <div class="eyebrow">Microsoft 365 security assessment</div>
     <h1>Executive summary</h1>
     <p class="section-lead">SecureIT provides a point-in-time view of how this Microsoft 365 tenant aligns with the security controls assessed during the latest run. Results are organised into eight functional areas so that strengths, gaps, and remediation priorities are easy to identify.</p>
 
@@ -390,7 +424,6 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
   </section>
 
   <section class="area-overview">
-    <div class="eyebrow">Latest security posture</div>
     <h1>Area breakdown</h1>
     <p class="section-lead">The eight functional areas below mirror the SecureIT portal. Scores reflect the controls mapped to each area in the latest assessment.</p>
     <table class="area-grid">
@@ -398,7 +431,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
         <tr>
           <?php foreach ($areaRow as $area): ?>
             <?php $tone = secureit_report_area_tone($area); $areaScore = ($area['score'] ?? null) === null ? 0 : max(0, min(100, (int) $area['score'])); ?>
-            <td class="area-cell">
+            <td class="area-cell area-cell-<?php echo $tone; ?>">
               <div class="area-name"><?php echo secureit_report_escape((string) ($area['name'] ?? 'Functional area')); ?></div>
               <span class="area-score"><?php echo secureit_report_escape(secureit_report_area_score($area)); ?></span>
               <span class="area-status tone-<?php echo $tone; ?>"><?php echo secureit_report_escape((string) ($area['status'] ?? 'No data')); ?></span>
@@ -420,11 +453,10 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
       $tone = secureit_report_area_tone($area);
     ?>
     <section class="area-detail">
-      <div class="eyebrow">Functional area</div>
       <h1><?php echo secureit_report_escape($areaName); ?></h1>
       <p class="section-lead"><?php echo secureit_report_escape(secureit_report_area_description($areaName)); ?></p>
 
-      <div class="area-summary">
+      <div class="area-summary area-summary-<?php echo $tone; ?>">
         <table><tr>
           <td class="area-summary-score"><?php echo secureit_report_escape(secureit_report_area_score($area)); ?></td>
           <td class="area-summary-copy"><strong class="tone-<?php echo $tone; ?>"><?php echo secureit_report_escape((string) ($area['status'] ?? 'No data')); ?></strong><?php echo secureit_report_escape(secureit_report_area_insight($area)); ?></td>

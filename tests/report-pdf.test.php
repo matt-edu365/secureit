@@ -49,16 +49,21 @@ $html = secureit_report_build_html('Example & Tenant', '20 Jul 2026, 09:00', $su
 
 secureit_report_test_assert(str_contains($html, 'Microsoft 365 Security Assessment'), 'The report title is missing.');
 secureit_report_test_assert(str_contains($html, 'Example &amp; Tenant'), 'The tenant name is not HTML escaped.');
+secureit_report_test_assert(str_contains($html, 'data:image/png;base64,'), 'The ICT365 SecureIT logo is not embedded.');
 secureit_report_test_assert(str_contains($html, 'Executive summary'), 'The executive summary is missing.');
 secureit_report_test_assert(str_contains($html, 'Area breakdown'), 'The area overview is missing.');
 secureit_report_test_assert(substr_count($html, 'class="area-detail"') === 8, 'The report must include all eight functional areas.');
 secureit_report_test_assert(str_contains($html, 'Action required'), 'Priority controls are missing.');
 secureit_report_test_assert(str_contains($html, 'Assessment coverage gaps'), 'Coverage gaps are missing.');
 secureit_report_test_assert(str_contains($html, 'Controls meeting the baseline'), 'Passing controls are missing.');
+secureit_report_test_assert(str_contains($html, 'area-summary-bad'), 'Functional-area score traffic-light styling is missing.');
+secureit_report_test_assert(!str_contains($html, 'class="eyebrow"'), 'Uppercase section labels must not be rendered.');
 secureit_report_test_assert(!str_contains($html, 'a clear, way'), 'The known copy error is present.');
 
-$pdf = secureit_report_render_pdf($html, 'Example & Tenant', '20 Jul 2026, 09:00');
-secureit_report_test_assert(str_starts_with($pdf, '%PDF-'), 'The renderer did not return a PDF document.');
-secureit_report_test_assert(strlen($pdf) > 10000, 'The rendered PDF is unexpectedly small.');
+if (extension_loaded('gd')) {
+    $pdf = secureit_report_render_pdf($html, 'Example & Tenant', '20 Jul 2026, 09:00');
+    secureit_report_test_assert(str_starts_with($pdf, '%PDF-'), 'The renderer did not return a PDF document.');
+    secureit_report_test_assert(strlen($pdf) > 10000, 'The rendered PDF is unexpectedly small.');
+}
 
 echo "SecureIT PDF report test passed.\n";

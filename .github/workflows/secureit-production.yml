@@ -62,7 +62,7 @@ on:
           - Certificate-Auth-Test
           - SecureIT-Production-101
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '0 3 * * 1,4'
 
 jobs:
   discover-tenants:

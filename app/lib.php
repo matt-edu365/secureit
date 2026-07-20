@@ -1655,8 +1655,8 @@ function secureit_validate_canonical_controls(array $data): array {
     $functionalAreas = $data['functionalAreas'] ?? null;
     $controls = $data['controls'] ?? null;
 
-    if (!is_int($data['version'] ?? null) || (int) $data['version'] < 2) {
-        $errors[] = 'version must be an integer greater than or equal to 2.';
+    if (!is_int($data['version'] ?? null) || (int) $data['version'] < 1) {
+        $errors[] = 'version must be a positive integer.';
     }
 
     if (!is_array($functionalAreas) || $functionalAreas === []) {
@@ -1742,6 +1742,7 @@ function secureit_validate_canonical_controls(array $data): array {
 }
 
 function secureit_load_canonical_controls(): array {
+    $validationFailures = [];
     foreach (secureit_canonical_controls_candidate_paths() as $path) {
         if (!file_exists($path)) {
             continue;
@@ -1750,9 +1751,8 @@ function secureit_load_canonical_controls(): array {
         if (is_array($data)) {
             $validationErrors = secureit_validate_canonical_controls($data);
             if ($validationErrors !== []) {
-                throw new RuntimeException(
-                    'Invalid canonical control contract at ' . $path . ': ' . implode(' ', $validationErrors)
-                );
+                $validationFailures[] = $path . ': ' . implode(' ', $validationErrors);
+                continue;
             }
             $descriptions = secureit_load_test_descriptions();
             $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
@@ -1766,6 +1766,14 @@ function secureit_load_canonical_controls(): array {
             $data['controls'] = $controls;
             return $data;
         }
+
+        $validationFailures[] = $path . ': file does not contain a valid JSON object.';
+    }
+
+    if ($validationFailures !== []) {
+        throw new RuntimeException(
+            'No valid canonical control contract could be loaded. ' . implode(' ', $validationFailures)
+        );
     }
 
     return [

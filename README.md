@@ -129,6 +129,8 @@ SecureIT uses canonical functional areas rather than raw duplicate framework che
 
 The version 2 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
 
+Mounted version 1 catalogs remain readable during deployment when they satisfy the same structural rules. If a mounted catalog is invalid, the loader tries the bundled image seed so a stale runtime file cannot take down customer login.
+
 Area and overall scores use the same calculation:
 - pass = `1`
 - partial = `0.5`

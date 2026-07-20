@@ -14,6 +14,25 @@ $validationErrors = secureit_validate_canonical_controls($catalog);
 secureit_contract_test_assert($validationErrors === [], 'The canonical control catalog is invalid: ' . implode(' ', $validationErrors));
 secureit_contract_test_assert(count($catalog['controls'] ?? []) === 101, 'The production catalog must contain 101 controls.');
 
+$legacyCatalog = $catalog;
+$legacyCatalog['version'] = 1;
+secureit_contract_test_assert(
+    secureit_validate_canonical_controls($legacyCatalog) === [],
+    'A structurally valid version 1 mounted catalog must remain loadable during the production migration.'
+);
+$invalidCatalog = $catalog;
+$invalidCatalog['version'] = 0;
+secureit_contract_test_assert(
+    secureit_validate_canonical_controls($invalidCatalog) !== [],
+    'A non-positive catalog version must be rejected.'
+);
+$invalidCatalog = $catalog;
+$invalidCatalog['controls'][0]['scoring']['weight'] = 2;
+secureit_contract_test_assert(
+    secureit_validate_canonical_controls($invalidCatalog) !== [],
+    'Legacy compatibility must not permit control weights other than 1.'
+);
+
 $controlIds = [];
 foreach (($catalog['controls'] ?? []) as $control) {
     $controlId = (string) ($control['id'] ?? '');

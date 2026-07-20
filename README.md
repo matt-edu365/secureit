@@ -87,7 +87,7 @@ The local container uses:
 
 ## Report flow
 
-SecureIT does not generate reports inside the app container.
+SecureIT does not run Microsoft 365 assessments inside the app container. Maester remains the assessment engine; the app can render a downloadable customer PDF from the latest imported assessment data.
 
 Typical flow:
 1. GitHub Actions runs Maester
@@ -95,6 +95,8 @@ Typical flow:
 3. a bundle is prepared for app import
 4. `scripts/Import-AppReportBundle.ps1` imports that into runtime storage
 5. the app reads the imported bundle from `data/reports/<tenant-key>/...`
+
+From a tenant overview, an authorised customer or administrator can download a branded PDF assessment. The PDF is rendered from a print-specific HTML template and includes a cover, executive summary, eight-area posture overview, prioritised remediation detail, coverage gaps, and a compact record of passing controls.
 
 The onboarding flow also writes the customer application secret into Azure Key Vault so the live tenant setup stays aligned with the workflow and diagnostics paths.
 

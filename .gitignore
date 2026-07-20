@@ -42,4 +42,5 @@ secrets/
 ~$*.docx
 
 # PHP / Apache noise
+vendor/
 app/.phpunit.result.cache

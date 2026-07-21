@@ -1857,8 +1857,14 @@ function secureit_extract_tests_from_embedded_summary(?array $embedded): array {
             continue;
         }
 
+        $sourcePath = trim((string) ($test['ScriptBlockFile'] ?? ''));
+        $sourceFile = $sourcePath !== ''
+            ? basename(str_replace('\\', '/', $sourcePath))
+            : '';
+
         $tests[] = [
             'id' => $id,
+            'sourceFile' => $sourceFile,
             'result' => strtolower(trim((string) ($test['Result'] ?? 'unknown'))),
             'title' => trim((string) ($test['Title'] ?? '')),
             'severity' => trim((string) ($test['Severity'] ?? '')),
@@ -2280,9 +2286,18 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
     $tests = secureit_extract_tests_from_embedded_summary($embedded);
     $availableIds = array_values(array_unique(array_map(static fn(array $test): string => $test['id'], $tests)));
 
-    $testsById = [];
-    foreach ($tests as $test) {
-        $testsById[secureit_normalise_mapping_id($test['id'])][] = $test;
+    $testsByEvidenceId = [];
+    foreach ($tests as $testIndex => $test) {
+        $evidenceIds = array_unique([
+            trim((string) ($test['id'] ?? '')),
+            trim((string) ($test['sourceFile'] ?? '')),
+        ]);
+        foreach ($evidenceIds as $evidenceId) {
+            if ($evidenceId === '') {
+                continue;
+            }
+            $testsByEvidenceId[secureit_normalise_mapping_id($evidenceId)][$testIndex] = $test;
+        }
     }
 
     $groupResults = [];
@@ -2331,18 +2346,14 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             continue;
         }
 
-        $matchedTests = [];
-        foreach (($control['frameworkMappings'] ?? []) as $pattern) {
-            foreach ($availableIds as $availableId) {
-                if (!secureit_pattern_matches_test_id((string) $pattern, $availableId)) {
-                    continue;
-                }
-                $lookupId = secureit_normalise_mapping_id($availableId);
-                foreach (($testsById[$lookupId] ?? []) as $test) {
-                    $matchedTests[] = $test;
-                }
+        $matchedTestsByIndex = [];
+        foreach (($control['frameworkMappings'] ?? []) as $evidenceId) {
+            $lookupId = secureit_normalise_mapping_id((string) $evidenceId);
+            foreach (($testsByEvidenceId[$lookupId] ?? []) as $testIndex => $test) {
+                $matchedTestsByIndex[$testIndex] = $test;
             }
         }
+        $matchedTests = array_values($matchedTestsByIndex);
 
         $matchedIds = [];
         foreach ($matchedTests as $test) {

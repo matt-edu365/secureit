@@ -59,6 +59,48 @@ foreach ($statusCases as $sourceStatus => $expectedStatus) {
 }
 secureit_contract_test_assert(secureit_evaluate_control_status([], 'direct') === 'unmapped', 'Missing evidence must resolve to unmapped.');
 
+$sourceEvidenceArtifact = [
+    'Tests' => [
+        [
+            'Id' => 'CISA.MS.AAD.1.1',
+            'Title' => 'Legacy authentication is blocked',
+            'Result' => 'Passed',
+            'ScriptBlockFile' => '/runner/tests/Test-MtCisaBlockLegacyAuth.Tests.ps1',
+        ],
+        [
+            'Id' => 'MT.1148',
+            'Title' => 'Defender antivirus setting one',
+            'Result' => 'Passed',
+            'ScriptBlockFile' => 'C:\\runner\\tests\\Test-MtMdeAntivirusPolicy.Tests.ps1',
+        ],
+        [
+            'Id' => 'MT.1149',
+            'Title' => 'Defender antivirus setting two',
+            'Result' => 'Failed',
+            'ScriptBlockFile' => 'C:\\runner\\tests\\Test-MtMdeAntivirusPolicy.Tests.ps1',
+        ],
+    ],
+];
+$sourceEvidenceData = secureit_resolve_canonical_area_scores_from_artifact($sourceEvidenceArtifact, null);
+$sourceEvidenceControls = [];
+foreach (($sourceEvidenceData['areas'] ?? []) as $area) {
+    foreach (($area['controls'] ?? []) as $control) {
+        $sourceEvidenceControls[$control['id'] ?? ''] = $control;
+    }
+}
+secureit_contract_test_assert(
+    ($sourceEvidenceControls['MTCISABLOCKLEGACYAUTH']['status'] ?? '') === 'pass',
+    'A Maester result must match its explicit source-file evidence mapping.'
+);
+secureit_contract_test_assert(
+    ($sourceEvidenceControls['MTMDEANTIVIRUSPOLICY']['status'] ?? '') === 'partial',
+    'Multiple results from one explicitly mapped source file must be evaluated together.'
+);
+secureit_contract_test_assert(
+    count($sourceEvidenceControls['MTMDEANTIVIRUSPOLICY']['matchedIds'] ?? []) === 2,
+    'Every result emitted by an explicitly mapped source file must be retained as evidence.'
+);
+
 $scoreFixture = [
     ['status' => 'pass', 'weight' => 1],
     ['status' => 'partial', 'weight' => 1],

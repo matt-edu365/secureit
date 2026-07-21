@@ -196,6 +196,31 @@ foreach ($requirementExpectations as $controlId => $expectedFragment) {
     secureit_contract_test_assert(str_contains($flat, strtolower($expectedFragment)), $controlId . ' should surface the expected prerequisite detail.');
 }
 
+$bucketExpectations = [
+    'APPREGISTRATIONS' => 'missing_permissions',
+    'MTAPPREGISTRATIONOWNERSWITHOUTMFA' => 'missing_permissions',
+    'MTHIGHRISKAPPPERMISSIONS' => 'missing_permissions',
+    'XSPMDEVICES' => 'missing_license',
+    'XSPMPRIVILEGEDIDENTITIES' => 'missing_license',
+    'CONDITIONALACCESSWHATIF' => 'separate_feature',
+];
+
+foreach ($bucketExpectations as $controlId => $expectedBucket) {
+    secureit_contract_test_assert(
+        secureit_control_non_scoreable_bucket(['id' => $controlId]) === $expectedBucket,
+        $controlId . ' should resolve to the expected non-scoreable bucket.'
+    );
+}
+
+$bucketGroups = secureit_group_non_scoreable_controls([
+    ['id' => 'APPREGISTRATIONS', 'title' => 'App registrations', 'functionalArea' => 'Identity & Access Management'],
+    ['id' => 'XSPMDEVICES', 'title' => 'XSPM devices', 'functionalArea' => 'Security Operations & Threat Protection'],
+    ['id' => 'CONDITIONALACCESSWHATIF', 'title' => 'Conditional Access what-if analysis', 'functionalArea' => 'Compliance, Governance & Data Protection'],
+]);
+secureit_contract_test_assert(($bucketGroups[0]['bucket'] ?? '') === 'missing_permissions', 'Missing permissions bucket should sort first.');
+secureit_contract_test_assert(($bucketGroups[1]['bucket'] ?? '') === 'missing_license', 'Missing license bucket should sort second.');
+secureit_contract_test_assert(($bucketGroups[2]['bucket'] ?? '') === 'separate_feature', 'Separate feature bucket should sort third.');
+
 $productionWorkflowScript = file_get_contents(__DIR__ . '/../scripts/Invoke-MaesterRun.ps1');
 secureit_contract_test_assert(
     !str_contains($productionWorkflowScript, "'Test-ConditionalAccessWhatIf.Tests.ps1'"),

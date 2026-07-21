@@ -2611,6 +2611,9 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             'weight' => 1,
             'passLogic' => $passLogic,
         ];
+        $resolvedControl['reason'] = secureit_control_non_assessed_reason_with_requirements($resolvedControl);
+        $resolvedControl['requirements'] = secureit_control_assessment_requirements($resolvedControl);
+        $resolvedControl['bucket'] = secureit_control_non_scoreable_bucket($resolvedControl);
         $resolvedControl['details'] = secureit_control_details_for_resolved_control($resolvedControl);
         $resolvedControl['guidance'] = secureit_control_guidance_for_resolved_control($resolvedControl);
         $areas[$area]['controls'][] = $resolvedControl;
@@ -2802,6 +2805,70 @@ function secureit_control_non_assessed_reason_with_requirements(array $control):
     return $reason . ' ' . $detail;
 }
 
+function secureit_control_non_scoreable_bucket(array $control): string {
+    $requirements = secureit_control_assessment_requirements($control);
+    $type = strtolower(trim((string) ($requirements['type'] ?? '')));
+
+    return match ($type) {
+        'permissions' => 'missing_permissions',
+        'license' => 'missing_license',
+        'feature' => 'separate_feature',
+        default => 'other',
+    };
+}
+
+function secureit_control_non_scoreable_bucket_label(string $bucket): string {
+    return match ($bucket) {
+        'missing_permissions' => 'Missing permissions',
+        'missing_license' => 'Missing license',
+        'separate_feature' => 'Separate feature',
+        default => 'Other non-scoreable items',
+    };
+}
+
+function secureit_group_non_scoreable_controls(array $controls): array {
+    $bucketsByType = [];
+
+    foreach ($controls as $control) {
+        if (!is_array($control)) {
+            continue;
+        }
+
+        $bucket = secureit_control_non_scoreable_bucket($control);
+        if (!isset($bucketsByType[$bucket])) {
+            $bucketsByType[$bucket] = [
+                'bucket' => $bucket,
+                'label' => secureit_control_non_scoreable_bucket_label($bucket),
+                'count' => 0,
+                'controls' => [],
+            ];
+        }
+        $bucketsByType[$bucket]['count']++;
+        $bucketsByType[$bucket]['controls'][] = $control;
+    }
+
+    $bucketOrder = ['missing_permissions', 'missing_license', 'separate_feature', 'other'];
+    $buckets = [];
+    foreach ($bucketOrder as $bucketKey) {
+        if (!isset($bucketsByType[$bucketKey])) {
+            continue;
+        }
+        $buckets[] = $bucketsByType[$bucketKey];
+        unset($bucketsByType[$bucketKey]);
+    }
+    foreach ($bucketsByType as $bucket) {
+        $buckets[] = $bucket;
+    }
+    foreach ($buckets as &$bucket) {
+        usort($bucket['controls'], static function (array $a, array $b): int {
+            return [$a['functionalArea'] ?? '', $a['status'] ?? '', $a['title'] ?? ''] <=> [$b['functionalArea'] ?? '', $b['status'] ?? '', $b['title'] ?? ''];
+        });
+    }
+    unset($bucket);
+
+    return $buckets;
+}
+
 function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
     $tenant = secureit_find_tenant($tenantKey);
     if (!$tenant) {
@@ -2842,6 +2909,7 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
             if ($families === []) {
                 $families = ['Unknown'];
             }
+            $bucket = secureit_control_non_scoreable_bucket($control);
 
             $controls[] = [
                 'id' => (string) ($control['id'] ?? ''),
@@ -2851,6 +2919,7 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                 'reason' => secureit_control_non_assessed_reason_with_requirements($control),
                 'requirements' => secureit_control_assessment_requirements($control),
                 'remediation' => secureit_control_remediation_route($control),
+                'bucket' => $bucket,
                 'frameworkMappings' => array_values(array_filter(
                     array_map(static fn(mixed $mapping): string => trim((string) $mapping), $control['frameworkMappings'] ?? []),
                     static fn(string $mapping): bool => $mapping !== ''
@@ -2885,6 +2954,7 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                     'status' => $status,
                     'reason' => secureit_control_non_assessed_reason_with_requirements($control),
                     'requirements' => secureit_control_assessment_requirements($control),
+                    'bucket' => $bucket,
                 ];
             }
         }
@@ -2905,6 +2975,8 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
     }
     unset($group);
 
+    $buckets = secureit_group_non_scoreable_controls($controls);
+
     return [
         'tenantKey' => $tenantKey,
         'tenantName' => (string) ($tenant['name'] ?? $tenantKey),
@@ -2914,6 +2986,7 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
         'areaData' => $areaData,
         'controls' => $controls,
         'nonScoreableGroups' => $groups,
+        'nonScoreableBuckets' => $buckets,
         'errors' => [],
     ];
 }

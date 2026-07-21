@@ -48,5 +48,6 @@ echo json_encode([
     'counts' => $counts,
     'statusCounts' => $diagnostics['statusCounts'] ?? [],
     'nonScoreableGroups' => $diagnostics['nonScoreableGroups'] ?? [],
+    'nonScoreableBuckets' => $diagnostics['nonScoreableBuckets'] ?? [],
     'controls' => $diagnostics['controls'] ?? [],
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

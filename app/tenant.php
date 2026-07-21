@@ -112,6 +112,8 @@ function secureit_tenant_control_guidance_html(array $control): string {
         static fn(string $item): bool => $item !== ''
     ));
     $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
+    $bucket = trim((string) ($control['bucket'] ?? ''));
+    $bucketLabel = $bucket !== '' ? secureit_control_non_scoreable_bucket_label($bucket) : '';
 
     ob_start();
     ?>
@@ -122,6 +124,10 @@ function secureit_tenant_control_guidance_html(array $control): string {
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
       <?php elseif (!in_array($status, ['fail', 'partial'], true)): ?>
         <div class="control-guidance-result"><strong>Not scored.</strong> The latest assessment returned no scoreable evidence for this control.</div>
+        <?php if ($bucketLabel !== ''): ?>
+          <div><strong>Classification</strong></div>
+          <p><?php echo htmlspecialchars($bucketLabel); ?></p>
+        <?php endif; ?>
         <?php if ($reason !== ''): ?>
           <div><strong>Reason</strong></div>
           <p><?php echo htmlspecialchars($reason); ?></p>

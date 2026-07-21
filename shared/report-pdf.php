@@ -195,11 +195,17 @@ function secureit_report_control_guidance_html(array $control): string {
         static fn(string $item): bool => $item !== ''
     ));
     $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
+    $bucket = trim((string) ($control['bucket'] ?? ''));
+    $bucketLabel = $bucket !== '' ? secureit_control_non_scoreable_bucket_label($bucket) : '';
 
     if ($reason !== '') {
         $html = '<p class="guidance-block"><strong>Reason:</strong> ' . secureit_report_escape($reason) . '</p>';
     } else {
         $html = '';
+    }
+
+    if ($bucketLabel !== '') {
+        $html .= '<p class="guidance-block"><strong>Classification:</strong> ' . secureit_report_escape($bucketLabel) . '</p>';
     }
 
     if ($requirementSummary !== '' || $requirementItems !== []) {

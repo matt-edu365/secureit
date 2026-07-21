@@ -284,6 +284,40 @@ function secureit_report_passing_summary(array $controls): string {
         . '</div>';
 }
 
+function secureit_report_todo_summary(array $controls): string {
+    if ($controls === []) {
+        return '';
+    }
+
+    $rows = '';
+    foreach ($controls as $control) {
+        $title = (string) ($control['title'] ?? $control['id'] ?? 'To-do item');
+        $reason = trim((string) ($control['reason'] ?? ''));
+        $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
+        $requirementItems = array_values(array_filter(
+            array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+            static fn(string $item): bool => $item !== ''
+        ));
+        $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
+        $required = trim($requirementSummary . ' ' . implode('; ', $requirementItems));
+
+        $rows .= '<tr>';
+        $rows .= '<td class="control-title">' . secureit_report_escape($title) . '</td>';
+        $rows .= '<td><span class="table-status status-unmapped">TO-DO</span></td>';
+        $rows .= '<td><p class="guidance-block"><strong>Why it is separate:</strong> ' . secureit_report_escape($reason !== '' ? $reason : $requirementSummary) . '</p>';
+        $rows .= '<p class="guidance-block"><strong>Required to run:</strong> ' . secureit_report_escape($required) . '</p></td>';
+        $rows .= '</tr>';
+    }
+
+    return '<div class="control-group break-before">'
+        . '<h3>To-do</h3>'
+        . '<p class="group-intro">These items are intentionally excluded from the production test set and are tracked as separate feature work.</p>'
+        . '<table class="control-table">'
+        . '<thead><tr><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">Why it is separate</th></tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table></div>';
+}
+
 function secureit_report_build_html(string $tenantName, string $generatedAt, array $summary, array $areaData, array $counts): string {
     $areas = array_values(array_filter($areaData['areas'] ?? [], 'is_array'));
     $runDate = secureit_format_date_only($summary['generatedAt'] ?? null);
@@ -296,6 +330,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     $unmapped = (int) ($counts['notAssessed'] ?? $counts['unmapped'] ?? 0);
     $reportMonth = $runDate !== 'Not available' ? date('F Y', strtotime((string) ($summary['generatedAt'] ?? 'now'))) : date('F Y');
     $logoDataUri = secureit_report_logo_data_uri();
+    $todoControls = array_values(array_filter($areaData['todoControls'] ?? [], 'is_array'));
 
     ob_start();
     ?>
@@ -539,6 +574,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
             $groups['coverage'],
             $groups['attention'] !== []
         );
+        echo secureit_report_todo_summary($todoControls);
         echo secureit_report_passing_summary($groups['passing']);
       ?>
 

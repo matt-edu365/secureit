@@ -49,5 +49,6 @@ echo json_encode([
     'statusCounts' => $diagnostics['statusCounts'] ?? [],
     'nonScoreableGroups' => $diagnostics['nonScoreableGroups'] ?? [],
     'nonScoreableBuckets' => $diagnostics['nonScoreableBuckets'] ?? [],
+    'todoControls' => $diagnostics['areaData']['todoControls'] ?? [],
     'controls' => $diagnostics['controls'] ?? [],
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

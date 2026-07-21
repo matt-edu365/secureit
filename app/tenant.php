@@ -706,6 +706,47 @@ ob_start();
     <?php endif; ?>
   </article>
 </section>
+<?php $todoControls = array_values(array_filter($areaData['todoControls'] ?? [], 'is_array')); ?>
+<?php if ($todoControls !== [] && !$selectedArea): ?>
+<section class="section">
+  <article class="card panel">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <h2 class="section-title">To-do</h2>
+        <div class="muted">Controls handled as separate features and excluded from the production test set.</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Why it is separate</th>
+            <th>Required to run</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($todoControls as $control): ?>
+            <?php
+              $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
+              $requirementItems = array_values(array_filter(
+                  array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+                  static fn(string $item): bool => $item !== ''
+              ));
+              $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
+            ?>
+            <tr>
+              <td><strong><?php echo htmlspecialchars((string) ($control['title'] ?? $control['id'] ?? 'To-do item')); ?></strong></td>
+              <td><?php echo htmlspecialchars((string) ($control['reason'] ?? $requirementSummary)); ?></td>
+              <td><?php echo htmlspecialchars(trim($requirementSummary . ' ' . implode('; ', $requirementItems))); ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+<?php endif; ?>
 <?php if (!$selectedArea): ?>
 <section class="section">
   <div class="section-header">

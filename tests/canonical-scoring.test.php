@@ -212,6 +212,23 @@ foreach ($bucketExpectations as $controlId => $expectedBucket) {
     );
 }
 
+$reasonExpectations = [
+    ['id' => 'MTCISABLOCKHIGHRISKSIGNINS', 'status' => 'skipped', 'needle' => 'required license'],
+    ['id' => 'MTCISAPERMANENTROLEASSIGNMENT', 'status' => 'skipped', 'needle' => 'Privileged Identity Management'],
+    ['id' => 'CONDITIONALACCESSWHATIF', 'status' => 'not_run', 'needle' => 'separate feature'],
+];
+
+foreach ($reasonExpectations as $expectation) {
+    $reason = secureit_control_non_assessed_reason_with_requirements([
+        'id' => $expectation['id'],
+        'status' => $expectation['status'],
+    ]);
+    secureit_contract_test_assert(
+        str_contains(strtolower($reason), strtolower($expectation['needle'])),
+        $expectation['id'] . ' should surface a more specific non-assessed reason.'
+    );
+}
+
 $bucketGroups = secureit_group_non_scoreable_controls([
     ['id' => 'APPREGISTRATIONS', 'title' => 'App registrations', 'functionalArea' => 'Identity & Access Management'],
     ['id' => 'XSPMDEVICES', 'title' => 'XSPM devices', 'functionalArea' => 'Security Operations & Threat Protection'],

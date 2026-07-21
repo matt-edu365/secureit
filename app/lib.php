@@ -2504,6 +2504,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
 
     $functionalAreas = $mapping['functionalAreas'] ?? [];
     $controls = $mapping['controls'] ?? [];
+    $todoFeatureIds = array_fill_keys(secureit_todo_feature_control_ids(), true);
     $tests = secureit_extract_tests_from_embedded_summary($embedded);
     $availableIds = array_values(array_unique(array_map(static fn(array $test): string => $test['id'], $tests)));
 
@@ -2538,6 +2539,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
     }
 
     $areas = [];
+    $todoControls = [];
     foreach ($functionalAreas as $area) {
         $areas[$area] = [
             'name' => $area,
@@ -2562,6 +2564,21 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
     }
 
     foreach ($controls as $control) {
+        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+        if ($controlId !== '' && isset($todoFeatureIds[$controlId])) {
+            $todoRequirements = secureit_control_assessment_requirements($control);
+            $todoControls[] = [
+                'id' => (string) ($control['id'] ?? ''),
+                'title' => (string) ($control['title'] ?? ''),
+                'functionalArea' => (string) ($control['functionalArea'] ?? ''),
+                'status' => 'todo',
+                'reason' => trim((string) ($todoRequirements['summary'] ?? 'Tracked as a separate feature outside the production test set.')),
+                'requirements' => $todoRequirements,
+                'remediation' => secureit_control_remediation_route($control),
+            ];
+            continue;
+        }
+
         $area = $control['functionalArea'] ?? '';
         if (!isset($areas[$area])) {
             continue;
@@ -2672,6 +2689,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
         'groups' => $groupResults,
         'areas' => array_values($areas),
         'availableTestIds' => $availableIds,
+        'todoControls' => $todoControls,
     ];
 }
 
@@ -2761,11 +2779,127 @@ function secureit_control_assessment_requirements(array $control): array {
         ],
         'CONDITIONALACCESSWHATIF' => [
             'type' => 'feature',
-            'summary' => 'Conditional Access What If is being moved to a separate feature and is not part of the production test set.',
+            'summary' => 'Conditional Access What If is handled as a separate feature and is not part of the production test set.',
             'items' => [
                 'Microsoft Graph app-only access to Conditional Access data',
                 'A representative user object ID for the what-if scenario',
                 'Scenario inputs for each access path you want to simulate',
+            ],
+        ],
+        'MTCISAACTIVATIONNOTIFICATIONGLOBALADMIN' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Entra ID Protection or P2 / Governance licensing and privileged-role notification data.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISAACTIVATIONNOTIFICATIONOTHER' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Entra ID Protection or P2 / Governance licensing and privileged-role notification data.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISABLOCKHIGHRISKSIGNINS' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Entra ID Protection licensing and sign-in risk data.',
+            'items' => [
+                'Microsoft Entra ID P2',
+                'Identity Protection sign-in risk detections',
+            ],
+        ],
+        'MTCISABLOCKHIGHRISKUSERS' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Entra ID Protection licensing and user risk data.',
+            'items' => [
+                'Microsoft Entra ID P2',
+                'Identity Protection user risk detections',
+            ],
+        ],
+        'MTCISANOTIFYHIGHRISKUSERS' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Entra ID Protection licensing and user risk data.',
+            'items' => [
+                'Microsoft Entra ID P2',
+                'Identity Protection user risk detections',
+            ],
+        ],
+        'MTCISAPERMANENTROLEASSIGNMENT' => [
+            'type' => 'license',
+            'summary' => 'Requires Privileged Identity Management / Entra ID P2 or Governance licensing.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISAREQUIREACTIVATIONAPPROVAL' => [
+            'type' => 'license',
+            'summary' => 'Requires Privileged Identity Management / Entra ID P2 or Governance licensing.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISAUNMANAGEDROLEASSIGNMENTS' => [
+            'type' => 'license',
+            'summary' => 'Requires Privileged Identity Management / Entra ID P2 or Governance licensing.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISGLOBALADMINCOUNT' => [
+            'type' => 'license',
+            'summary' => 'Requires Privileged Identity Management / Entra ID P2 or Governance licensing.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISCLOUDADMIN' => [
+            'type' => 'license',
+            'summary' => 'Requires Privileged Identity Management / Entra ID P2 or Governance licensing.',
+            'items' => [
+                'Microsoft Entra ID P2 or Microsoft Entra ID Governance',
+            ],
+        ],
+        'MTCISADIAGNOSTICSETTINGS' => [
+            'type' => 'feature',
+            'summary' => 'Requires diagnostic settings or log export configuration to be present.',
+            'items' => [
+                'Diagnostic settings enabled for the relevant service',
+                'A configured log destination such as Log Analytics, Event Hub, or Storage',
+            ],
+        ],
+        'MTENTRAIDCONNECT' => [
+            'type' => 'feature',
+            'summary' => 'Requires a configured hybrid identity or cloud sync environment.',
+            'items' => [
+                'Microsoft Entra Connect or cloud sync',
+            ],
+        ],
+        'MTONPREMISESSYNCHRONIZATION' => [
+            'type' => 'feature',
+            'summary' => 'Requires a configured hybrid identity or cloud sync environment.',
+            'items' => [
+                'Microsoft Entra Connect or cloud sync',
+            ],
+        ],
+        'MTCISAAPPGROUPOWNERCONSENT' => [
+            'type' => 'feature',
+            'summary' => 'Requires app consent / group owner consent settings to be available for evaluation.',
+            'items' => [
+                'Group owner app consent settings',
+            ],
+        ],
+        'MTCISTHIRDPARTYANDCUSTOMAPPS' => [
+            'type' => 'feature',
+            'summary' => 'Requires third-party and custom app governance data to be present.',
+            'items' => [
+                'Custom apps or third-party app governance data',
+            ],
+        ],
+        'MTCISCUSTOMERLOCKBOX' => [
+            'type' => 'license',
+            'summary' => 'Requires Customer Lockbox to be enabled and licensed.',
+            'items' => [
+                'Customer Lockbox',
             ],
         ],
         'XSPMDEVICES', 'XSPMPRIVILEGEDIDENTITIES' => [
@@ -2787,22 +2921,43 @@ function secureit_control_non_assessed_reason_with_requirements(array $control):
         return $reason;
     }
 
+    $status = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+    $type = strtolower(trim((string) ($requirements['type'] ?? '')));
     $summary = trim((string) ($requirements['summary'] ?? ''));
     $items = array_values(array_filter(
         array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
         static fn(string $item): bool => $item !== ''
     ));
 
-    $detail = $summary;
+    $prefix = match ($status) {
+        'skipped' => match ($type) {
+            'permissions' => 'All matched tests were skipped because the required Microsoft Graph or API permissions are not available.',
+            'license' => 'All matched tests were skipped because the required license or tenant feature is not available.',
+            'feature' => 'All matched tests were skipped because this control depends on a feature or configuration that is not available in the production profile.',
+            default => $reason,
+        },
+        'not_run' => match ($type) {
+            'permissions' => 'All matched tests returned non-scoreable results because the required Microsoft Graph or API permissions are not available.',
+            'license' => 'All matched tests returned non-scoreable results because the required license or tenant feature is not available.',
+            'feature' => 'All matched tests returned non-scoreable results because this control depends on a feature or configuration that is not available in the production profile.',
+            default => $reason,
+        },
+        default => $reason,
+    };
+
+    $detailParts = [];
+    if ($summary !== '') {
+        $detailParts[] = $summary;
+    }
     if ($items !== []) {
-        $detail .= ($detail !== '' ? ' ' : '') . 'Required: ' . implode('; ', $items) . '.';
+        $detailParts[] = 'Required: ' . implode('; ', $items) . '.';
     }
 
-    if ($detail === '') {
-        return $reason;
+    if ($detailParts === []) {
+        return $prefix;
     }
 
-    return $reason . ' ' . $detail;
+    return trim($prefix . ' ' . implode(' ', $detailParts));
 }
 
 function secureit_control_non_scoreable_bucket(array $control): string {
@@ -2821,9 +2976,15 @@ function secureit_control_non_scoreable_bucket_label(string $bucket): string {
     return match ($bucket) {
         'missing_permissions' => 'Missing permissions',
         'missing_license' => 'Missing license',
-        'separate_feature' => 'Separate feature',
-        default => 'Other non-scoreable items',
+        'separate_feature' => 'To-do',
+        default => '',
     };
+}
+
+function secureit_todo_feature_control_ids(): array {
+    return [
+        'CONDITIONALACCESSWHATIF',
+    ];
 }
 
 function secureit_group_non_scoreable_controls(array $controls): array {

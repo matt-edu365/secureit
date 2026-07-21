@@ -155,4 +155,30 @@ foreach (['fabrikam-prod' => 100, 'contoso-prod' => 73] as $tenantKey => $expect
     }
 }
 
+$remediationExpectations = [
+    'MTCISSPOB2BINTEGRATION' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTCISSPODEFAULTSHARINGLINK' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTCISSPODEFAULTSHARINGLINKPERMISSION' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTCISSPOGUESTACCESSEXPIRY' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTCISSPOGUESTCANNOTSHAREUNOWNEDITEM' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTCISSPOPREVENTDOWNLOADMALICIOUSFILE' => ['portal' => 'SharePoint admin center', 'family' => 'PnP'],
+    'MTMDIHEALTHISSUES' => ['portal' => 'Microsoft Defender portal', 'family' => 'Security Operations & Threat Protection'],
+];
+
+foreach ($remediationExpectations as $controlId => $expected) {
+    $route = secureit_control_remediation_route([
+        'id' => $controlId,
+        'functionalArea' => $controlId === 'MTMDIHEALTHISSUES' ? 'Endpoint & Device Management' : 'Compliance, Governance & Data Protection',
+    ]);
+    secureit_contract_test_assert(($route['portal'] ?? '') === $expected['portal'], $controlId . ' should resolve to the expected remediation portal.');
+
+    $families = secureit_runtime_families_for_control([
+        'id' => $controlId,
+        'title' => $controlId,
+        'functionalArea' => $controlId === 'MTMDIHEALTHISSUES' ? 'Endpoint & Device Management' : 'Compliance, Governance & Data Protection',
+        'frameworkMappings' => [],
+    ]);
+    secureit_contract_test_assert(($families[0] ?? '') === $expected['family'], $controlId . ' should resolve to the expected runtime family fallback.');
+}
+
 echo "SecureIT canonical scoring test passed.\n";

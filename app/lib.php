@@ -1430,6 +1430,40 @@ function secureit_365inspect_runtime_family_for_mapping(string $mapping): string
     return (string) ($catalog[$mapping]['runtimeFamily'] ?? '');
 }
 
+function secureit_control_remediation_route(array $control): array {
+    $remediationCatalog = secureit_load_control_remediation_catalog();
+    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+    $areaName = trim((string) ($control['functionalArea'] ?? ''));
+
+    $route = $remediationCatalog['controlRoutes'][$controlId]
+        ?? $remediationCatalog['areaDefaults'][$areaName]
+        ?? [
+            'method' => 'GUI',
+            'portal' => 'the relevant Microsoft 365 admin center',
+            'path' => 'use the portal search to open the setting named by this control',
+        ];
+
+    return [
+        'method' => trim((string) ($route['method'] ?? 'GUI')) ?: 'GUI',
+        'portal' => trim((string) ($route['portal'] ?? 'the relevant Microsoft 365 admin center')) ?: 'the relevant Microsoft 365 admin center',
+        'path' => trim((string) ($route['path'] ?? 'use the portal search to open the setting named by this control')) ?: 'use the portal search to open the setting named by this control',
+    ];
+}
+
+function secureit_runtime_family_for_portal(string $portal): string {
+    $portal = strtolower(trim($portal));
+    return match (true) {
+        str_contains($portal, 'sharepoint') => 'PnP',
+        str_contains($portal, 'exchange') => 'Exchange',
+        str_contains($portal, 'defender') => 'Security Operations & Threat Protection',
+        str_contains($portal, 'entra') => 'Graph/Entra',
+        str_contains($portal, 'intune') => 'Intune',
+        str_contains($portal, 'purview') => 'Purview',
+        str_contains($portal, 'microsoft 365') => 'Microsoft 365',
+        default => '',
+    };
+}
+
 function secureit_runtime_families_for_control(array $control): array {
     $families = [];
     foreach (($control['frameworkMappings'] ?? []) as $mapping) {
@@ -1441,6 +1475,12 @@ function secureit_runtime_families_for_control(array $control): array {
 
     if ($families !== []) {
         return array_keys($families);
+    }
+
+    $route = secureit_control_remediation_route($control);
+    $routeFamily = secureit_runtime_family_for_portal((string) ($route['portal'] ?? ''));
+    if ($routeFamily !== '') {
+        return [$routeFamily];
     }
 
     $family = secureit_infer_control_runtime_family($control);
@@ -2721,6 +2761,7 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                 'functionalArea' => $areaName,
                 'status' => $status,
                 'reason' => secureit_control_non_assessed_reason($control),
+                'remediation' => secureit_control_remediation_route($control),
                 'frameworkMappings' => array_values(array_filter(
                     array_map(static fn(mixed $mapping): string => trim((string) $mapping), $control['frameworkMappings'] ?? []),
                     static fn(string $mapping): bool => $mapping !== ''

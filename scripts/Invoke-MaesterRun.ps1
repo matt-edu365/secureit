@@ -197,7 +197,6 @@ function Get-MaesterSelectedTestsPath {
                 'Test-AppRegistrations.Tests.ps1',
                 'Test-AuthenticationMethodBaseline.Tests.ps1',
                 'Test-ConditionalAccessBaseline.Tests.ps1',
-                'Test-ConditionalAccessWhatIf.Tests.ps1',
                 'Test-EntraRecommendations.Tests.ps1',
                 'Test-Groups.Tests.ps1',
                 'Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1',
@@ -277,6 +276,7 @@ function Get-MaesterSelectedTestsPath {
         }
 
         $allowLists['SecureIT-Production-101'] = $allowLists['Maester-83']
+        # TODO: Add Conditional Access What If as a separate dedicated feature/profile with its own inputs and reporting flow.
 
         $allowList = $allowLists[$Profile]
         if ($Profile -eq 'SecureIT-Production-101') {

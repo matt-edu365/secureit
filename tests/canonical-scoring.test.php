@@ -181,4 +181,29 @@ foreach ($remediationExpectations as $controlId => $expected) {
     secureit_contract_test_assert(($families[0] ?? '') === $expected['family'], $controlId . ' should resolve to the expected runtime family fallback.');
 }
 
+$requirementExpectations = [
+    'APPREGISTRATIONS' => 'Application.Read.All',
+    'MTAPPREGISTRATIONOWNERSWITHOUTMFA' => 'User.Read.All',
+    'MTHIGHRISKAPPPERMISSIONS' => 'Policy.Read.All',
+    'XSPMDEVICES' => 'Defender XDR / Exposure Management',
+    'XSPMPRIVILEGEDIDENTITIES' => 'Defender XDR / Exposure Management',
+];
+
+foreach ($requirementExpectations as $controlId => $expectedFragment) {
+    $requirements = secureit_control_assessment_requirements(['id' => $controlId]);
+    secureit_contract_test_assert($requirements !== [], $controlId . ' should expose prerequisite metadata.');
+    $flat = strtolower(implode(' ', array_merge([$requirements['summary'] ?? ''], $requirements['items'] ?? [])));
+    secureit_contract_test_assert(str_contains($flat, strtolower($expectedFragment)), $controlId . ' should surface the expected prerequisite detail.');
+}
+
+$productionWorkflowScript = file_get_contents(__DIR__ . '/../scripts/Invoke-MaesterRun.ps1');
+secureit_contract_test_assert(
+    !str_contains($productionWorkflowScript, "'Test-ConditionalAccessWhatIf.Tests.ps1'"),
+    'SecureIT-Production-101 must not include Conditional Access What If in its production allowlist.'
+);
+secureit_contract_test_assert(
+    str_contains($productionWorkflowScript, 'TODO: Add Conditional Access What If as a separate dedicated feature/profile'),
+    'The Conditional Access What If production exclusion should remain explicitly tracked as a follow-up feature.'
+);
+
 echo "SecureIT canonical scoring test passed.\n";

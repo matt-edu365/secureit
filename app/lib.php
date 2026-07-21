@@ -2714,6 +2714,94 @@ function secureit_control_non_assessed_reason(array $control): string {
     return 'Matched tests returned a mix of non-scoreable results: ' . implode(', ', array_keys($resultCounts)) . '.';
 }
 
+function secureit_control_assessment_requirements(array $control): array {
+    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+    if ($controlId === '') {
+        return [];
+    }
+
+    $graphReadPermissions = [
+        'Policy.Read.All',
+        'Policy.Read.ConditionalAccess',
+        'Directory.Read.All',
+        'Application.Read.All',
+        'User.Read.All',
+        'Group.Read.All',
+        'Organization.Read.All',
+    ];
+
+    return match ($controlId) {
+        'APPREGISTRATIONS' => [
+            'type' => 'permissions',
+            'summary' => 'Requires Microsoft Graph application read permissions.',
+            'items' => [
+                'Application.Read.All',
+                'Directory.Read.All',
+                'User.Read.All',
+                'Organization.Read.All',
+            ],
+        ],
+        'MTAPPREGISTRATIONOWNERSWITHOUTMFA' => [
+            'type' => 'permissions',
+            'summary' => 'Requires Microsoft Graph application and user read permissions.',
+            'items' => [
+                'Application.Read.All',
+                'Directory.Read.All',
+                'User.Read.All',
+                'Organization.Read.All',
+            ],
+        ],
+        'MTHIGHRISKAPPPERMISSIONS' => [
+            'type' => 'permissions',
+            'summary' => 'Requires Microsoft Graph read permissions for applications, policies, and users.',
+            'items' => $graphReadPermissions,
+        ],
+        'CONDITIONALACCESSWHATIF' => [
+            'type' => 'feature',
+            'summary' => 'Conditional Access What If is being moved to a separate feature and is not part of the production test set.',
+            'items' => [
+                'Microsoft Graph app-only access to Conditional Access data',
+                'A representative user object ID for the what-if scenario',
+                'Scenario inputs for each access path you want to simulate',
+            ],
+        ],
+        'XSPMDEVICES', 'XSPMPRIVILEGEDIDENTITIES' => [
+            'type' => 'license',
+            'summary' => 'Requires Microsoft Defender XDR licensing and exposure-management data.',
+            'items' => [
+                'Microsoft Defender XDR / Exposure Management entitlement',
+                'Tenant data available to the XSPM / Exposure Management service',
+            ],
+        ],
+        default => [],
+    };
+}
+
+function secureit_control_non_assessed_reason_with_requirements(array $control): string {
+    $reason = secureit_control_non_assessed_reason($control);
+    $requirements = secureit_control_assessment_requirements($control);
+    if ($requirements === []) {
+        return $reason;
+    }
+
+    $summary = trim((string) ($requirements['summary'] ?? ''));
+    $items = array_values(array_filter(
+        array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+        static fn(string $item): bool => $item !== ''
+    ));
+
+    $detail = $summary;
+    if ($items !== []) {
+        $detail .= ($detail !== '' ? ' ' : '') . 'Required: ' . implode('; ', $items) . '.';
+    }
+
+    if ($detail === '') {
+        return $reason;
+    }
+
+    return $reason . ' ' . $detail;
+}
+
 function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
     $tenant = secureit_find_tenant($tenantKey);
     if (!$tenant) {
@@ -2760,7 +2848,8 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                 'title' => (string) ($control['title'] ?? ''),
                 'functionalArea' => $areaName,
                 'status' => $status,
-                'reason' => secureit_control_non_assessed_reason($control),
+                'reason' => secureit_control_non_assessed_reason_with_requirements($control),
+                'requirements' => secureit_control_assessment_requirements($control),
                 'remediation' => secureit_control_remediation_route($control),
                 'frameworkMappings' => array_values(array_filter(
                     array_map(static fn(mixed $mapping): string => trim((string) $mapping), $control['frameworkMappings'] ?? []),
@@ -2794,7 +2883,8 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                     'title' => (string) ($control['title'] ?? ''),
                     'functionalArea' => $areaName,
                     'status' => $status,
-                    'reason' => secureit_control_non_assessed_reason($control),
+                    'reason' => secureit_control_non_assessed_reason_with_requirements($control),
+                    'requirements' => secureit_control_assessment_requirements($control),
                 ];
             }
         }

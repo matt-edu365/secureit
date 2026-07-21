@@ -188,8 +188,25 @@ function secureit_report_control_guidance_html(array $control): string {
     $impact = trim((string) ($guidance['impact'] ?? 'The result can affect the tenant security posture.'));
     $recommendedAction = trim((string) ($guidance['recommendedAction'] ?? 'Review and correct the related Microsoft 365 configuration.'));
     $steps = is_array($guidance['steps'] ?? null) ? $guidance['steps'] : [];
+    $reason = trim((string) ($control['reason'] ?? ''));
+    $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
+    $requirementItems = array_values(array_filter(
+        array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+        static fn(string $item): bool => $item !== ''
+    ));
+    $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
 
-    $html = '<p class="guidance-block"><strong>Issue and impact:</strong> ' . secureit_report_escape(trim($issue . ' ' . $impact)) . '</p>';
+    if ($reason !== '') {
+        $html = '<p class="guidance-block"><strong>Reason:</strong> ' . secureit_report_escape($reason) . '</p>';
+    } else {
+        $html = '';
+    }
+
+    if ($requirementSummary !== '' || $requirementItems !== []) {
+        $html .= '<p class="guidance-block"><strong>Required to run:</strong> ' . secureit_report_escape(trim($requirementSummary . ' ' . implode('; ', $requirementItems))) . '</p>';
+    }
+
+    $html .= '<p class="guidance-block"><strong>Issue and impact:</strong> ' . secureit_report_escape(trim($issue . ' ' . $impact)) . '</p>';
     $html .= '<p class="guidance-block"><strong>Recommended action:</strong> ' . secureit_report_escape($recommendedAction) . '</p>';
     if ($steps !== []) {
         $html .= '<ol class="guidance-steps">';

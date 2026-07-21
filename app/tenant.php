@@ -105,6 +105,13 @@ function secureit_tenant_control_guidance_html(array $control): string {
     $impact = trim((string) ($guidance['impact'] ?? 'The result should be reviewed to understand its effect on the tenant security posture.'));
     $recommendedAction = trim((string) ($guidance['recommendedAction'] ?? 'Review the control and update the related Microsoft 365 configuration.'));
     $steps = is_array($guidance['steps'] ?? null) ? $guidance['steps'] : [];
+    $reason = trim((string) ($control['reason'] ?? ''));
+    $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
+    $requirementItems = array_values(array_filter(
+        array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+        static fn(string $item): bool => $item !== ''
+    ));
+    $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
 
     ob_start();
     ?>
@@ -115,6 +122,14 @@ function secureit_tenant_control_guidance_html(array $control): string {
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
       <?php elseif (!in_array($status, ['fail', 'partial'], true)): ?>
         <div class="control-guidance-result"><strong>Not scored.</strong> The latest assessment returned no scoreable evidence for this control.</div>
+        <?php if ($reason !== ''): ?>
+          <div><strong>Reason</strong></div>
+          <p><?php echo htmlspecialchars($reason); ?></p>
+        <?php endif; ?>
+        <?php if ($requirementSummary !== '' || $requirementItems !== []): ?>
+          <div><strong>Required to run</strong></div>
+          <p><?php echo htmlspecialchars(trim($requirementSummary . ' ' . implode('; ', $requirementItems))); ?></p>
+        <?php endif; ?>
         <div><strong>Control context</strong></div>
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
       <?php else: ?>

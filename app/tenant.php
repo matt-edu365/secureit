@@ -640,6 +640,7 @@ ob_start();
           </form>
           <?php if ($summary): ?>
             <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Download results</a>
+            <a class="button" href="report-diagnostics.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#1d4ed8; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Report diagnostics</a>
           <?php endif; ?>
         </div>
       <?php endif; ?>

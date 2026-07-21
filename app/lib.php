@@ -1383,6 +1383,65 @@ function secureit_load_test_descriptions(): array {
     return $descriptions;
 }
 
+function secureit_load_365inspect_inspectors(): array {
+    static $catalog = null;
+    if (is_array($catalog)) {
+        return $catalog;
+    }
+
+    $path = dirname(__DIR__) . '/custom-tests/365inspect/data/inspectors.json';
+    $catalog = [];
+    if (!file_exists($path)) {
+        return $catalog;
+    }
+
+    $data = json_decode((string) file_get_contents($path), true);
+    if (!is_array($data) || !is_array($data['inspectors'] ?? null)) {
+        return $catalog;
+    }
+
+    foreach ($data['inspectors'] as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+
+        $inspector = trim((string) ($entry['inspector'] ?? ''));
+        if ($inspector === '') {
+            continue;
+        }
+
+        $catalog[secureit_normalise_mapping_id($inspector)] = [
+            'inspector' => $inspector,
+            'functionalArea' => trim((string) ($entry['functionalArea'] ?? '')),
+            'runtimeFamily' => trim((string) ($entry['runtimeFamily'] ?? '')),
+        ];
+    }
+
+    return $catalog;
+}
+
+function secureit_365inspect_runtime_family_for_mapping(string $mapping): string {
+    $catalog = secureit_load_365inspect_inspectors();
+    $mapping = secureit_normalise_mapping_id($mapping);
+    if ($mapping === '' || !isset($catalog[$mapping])) {
+        return '';
+    }
+
+    return (string) ($catalog[$mapping]['runtimeFamily'] ?? '');
+}
+
+function secureit_runtime_families_for_control(array $control): array {
+    $families = [];
+    foreach (($control['frameworkMappings'] ?? []) as $mapping) {
+        $family = secureit_365inspect_runtime_family_for_mapping((string) $mapping);
+        if ($family !== '') {
+            $families[$family] = true;
+        }
+    }
+
+    return array_keys($families);
+}
+
 function secureit_control_description_for_title(string $title, array $descriptions): string {
     $baseTitle = trim(preg_replace('/\s*\(scenario [^)]+\)$/i', '', $title) ?? $title);
     if ($baseTitle !== '' && isset($descriptions[$baseTitle])) {
@@ -2456,6 +2515,154 @@ function secureit_resolve_canonical_area_scores(string $tenantKey): array {
         secureit_tenant_embedded_summary($tenantKey),
         secureit_tenant_summary($tenantKey)
     );
+}
+
+function secureit_control_non_assessed_reason(array $control): string {
+    $status = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+    $matchedTests = array_values(array_filter(
+        $control['matchedTests'] ?? [],
+        static fn(mixed $test): bool => is_array($test)
+    ));
+
+    if ($status === 'unmapped' || $matchedTests === []) {
+        return 'No matching test evidence was found in the latest run.';
+    }
+
+    $resultCounts = [];
+    foreach ($matchedTests as $test) {
+        $result = strtolower(trim((string) ($test['result'] ?? 'unknown')));
+        $resultCounts[$result] = ($resultCounts[$result] ?? 0) + 1;
+    }
+
+    if ($resultCounts === []) {
+        return 'No matching test evidence was found in the latest run.';
+    }
+
+    if (count($resultCounts) === 1) {
+        $result = array_key_first($resultCounts);
+        return match ($result) {
+            'error' => 'All matched tests errored.',
+            'not run', 'not_run' => 'All matched tests were not run.',
+            'skipped' => 'All matched tests were skipped.',
+            'not applicable', 'not_applicable' => 'All matched tests were marked not applicable.',
+            default => 'All matched tests returned non-scoreable results.',
+        };
+    }
+
+    return 'Matched tests returned a mix of non-scoreable results: ' . implode(', ', array_keys($resultCounts)) . '.';
+}
+
+function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
+    $tenant = secureit_find_tenant($tenantKey);
+    if (!$tenant) {
+        return [
+            'tenantKey' => $tenantKey,
+            'tenantName' => '',
+            'summary' => null,
+            'counts' => null,
+            'statusCounts' => [],
+            'areaData' => null,
+            'controls' => [],
+            'errors' => ['Tenant not found.'],
+        ];
+    }
+
+    $summary = secureit_tenant_summary($tenantKey);
+    $areaData = secureit_resolve_canonical_area_scores($tenantKey);
+    $counts = secureit_check_summary_counts($areaData);
+    $controls = [];
+    $statusCounts = [];
+    $groupsByFamily = [];
+
+    foreach (($areaData['areas'] ?? []) as $area) {
+        $areaName = (string) ($area['name'] ?? '');
+        foreach (($area['controls'] ?? []) as $control) {
+            if (!is_array($control)) {
+                continue;
+            }
+
+            $status = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+            $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
+
+            if (in_array($status, ['pass', 'partial', 'fail'], true)) {
+                continue;
+            }
+
+            $families = secureit_runtime_families_for_control($control);
+            if ($families === []) {
+                $families = ['Unknown'];
+            }
+
+            $controls[] = [
+                'id' => (string) ($control['id'] ?? ''),
+                'title' => (string) ($control['title'] ?? ''),
+                'functionalArea' => $areaName,
+                'status' => $status,
+                'reason' => secureit_control_non_assessed_reason($control),
+                'frameworkMappings' => array_values(array_filter(
+                    array_map(static fn(mixed $mapping): string => trim((string) $mapping), $control['frameworkMappings'] ?? []),
+                    static fn(string $mapping): bool => $mapping !== ''
+                )),
+                'runtimeFamilies' => $families,
+                'matchedTests' => array_values(array_map(
+                    static function (array $test): array {
+                        return [
+                            'id' => (string) ($test['id'] ?? ''),
+                            'title' => (string) ($test['title'] ?? ''),
+                            'result' => (string) ($test['result'] ?? ''),
+                        ];
+                    },
+                    array_values(array_filter($control['matchedTests'] ?? [], static fn(mixed $test): bool => is_array($test)))
+                )),
+            ];
+
+            foreach ($families as $family) {
+                $family = trim((string) $family) !== '' ? trim((string) $family) : 'Unknown';
+                if (!isset($groupsByFamily[$family])) {
+                    $groupsByFamily[$family] = [
+                        'family' => $family,
+                        'count' => 0,
+                        'controls' => [],
+                    ];
+                }
+                $groupsByFamily[$family]['count']++;
+                $groupsByFamily[$family]['controls'][] = [
+                    'id' => (string) ($control['id'] ?? ''),
+                    'title' => (string) ($control['title'] ?? ''),
+                    'functionalArea' => $areaName,
+                    'status' => $status,
+                    'reason' => secureit_control_non_assessed_reason($control),
+                ];
+            }
+        }
+    }
+
+    usort($controls, static function (array $a, array $b): int {
+        return [$a['functionalArea'], $a['status'], $a['title']] <=> [$b['functionalArea'], $b['status'], $b['title']];
+    });
+
+    $groups = array_values($groupsByFamily);
+    usort($groups, static function (array $a, array $b): int {
+        return ($b['count'] <=> $a['count']) ?: ($a['family'] <=> $b['family']);
+    });
+    foreach ($groups as &$group) {
+        usort($group['controls'], static function (array $a, array $b): int {
+            return [$a['functionalArea'], $a['status'], $a['title']] <=> [$b['functionalArea'], $b['status'], $b['title']];
+        });
+    }
+    unset($group);
+
+    return [
+        'tenantKey' => $tenantKey,
+        'tenantName' => (string) ($tenant['name'] ?? $tenantKey),
+        'summary' => $summary,
+        'counts' => $counts,
+        'statusCounts' => $statusCounts,
+        'areaData' => $areaData,
+        'controls' => $controls,
+        'nonScoreableGroups' => $groups,
+        'errors' => [],
+    ];
 }
 
 function secureit_secret_name(string $tenantKey, string $suffix): string {

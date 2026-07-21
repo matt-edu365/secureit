@@ -174,6 +174,19 @@ function Get-MaesterSelectedTestsPath {
         )
     }
 
+    function Test-IsCertificateAuthOnlyTestName {
+        param([Parameter(Mandatory = $true)][string]$Name)
+
+        $patterns = $profilePatterns['Certificate-Auth-Test']
+        foreach ($pattern in $patterns) {
+            if ($Name -match [regex]::Escape($pattern)) {
+                return $true
+            }
+        }
+
+        return $false
+    }
+
     if ($Profile -in @('Maester-83','SecureIT-Production-101')) {
         $allowLists = @{
             'Maester-83' = @(
@@ -266,6 +279,9 @@ function Get-MaesterSelectedTestsPath {
         $allowLists['SecureIT-Production-101'] = $allowLists['Maester-83']
 
         $allowList = $allowLists[$Profile]
+        if ($Profile -eq 'SecureIT-Production-101') {
+            $allowList = @($allowList | Where-Object { -not (Test-IsCertificateAuthOnlyTestName -Name $_) })
+        }
         $missingMessages = @{
             'Maester-83' = 'Maester-83 allowlist file not found in installed Maester tests'
             'SecureIT-Production-101' = 'SecureIT-Production-101 allowlist file not found in installed Maester tests'
@@ -325,7 +341,7 @@ function Get-MaesterSelectedTestsPath {
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
     }
 
-    if ($Profile -eq 'SecureIT-Production-101') {
+    if ($Profile -eq '365Inspect-18') {
         Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
     }
@@ -619,7 +635,7 @@ Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
 Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
-$requireExchangeOnline = $TestProfile -eq 'Certificate-Auth-Test'
+$requireExchangeOnline = $AuthMode -eq 'certificate' -and $TestProfile -in @('Certificate-Auth-Test','SecureIT-Production-101')
 Connect-MaesterTenant -TenantId $TenantId -TenantDomain $TenantDomain -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
 
 $testsPath = Get-MaesterTestsPath

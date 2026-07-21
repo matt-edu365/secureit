@@ -2867,6 +2867,13 @@ function secureit_control_assessment_requirements(array $control): array {
                 'A configured log destination such as Log Analytics, Event Hub, or Storage',
             ],
         ],
+        'MTSECURITYGROUPCREATIONRESTRICTED' => [
+            'type' => 'feature',
+            'summary' => 'Requires Microsoft Entra group creation settings to be available for evaluation.',
+            'items' => [
+                'Entra group creation policy or directory setting',
+            ],
+        ],
         'MTENTRAIDCONNECT' => [
             'type' => 'feature',
             'summary' => 'Requires a configured hybrid identity or cloud sync environment.',
@@ -2881,6 +2888,13 @@ function secureit_control_assessment_requirements(array $control): array {
                 'Microsoft Entra Connect or cloud sync',
             ],
         ],
+        'MTENTRADEVICEREGISTRATIONPOLICY' => [
+            'type' => 'feature',
+            'summary' => 'Requires Entra device registration settings to be available for evaluation.',
+            'items' => [
+                'Device registration or join policy',
+            ],
+        ],
         'MTCISAAPPGROUPOWNERCONSENT' => [
             'type' => 'feature',
             'summary' => 'Requires app consent / group owner consent settings to be available for evaluation.',
@@ -2893,6 +2907,27 @@ function secureit_control_assessment_requirements(array $control): array {
             'summary' => 'Requires third-party and custom app governance data to be present.',
             'items' => [
                 'Custom apps or third-party app governance data',
+            ],
+        ],
+        'MTCISFORMSPHISHINGPROTECTIONENABLED' => [
+            'type' => 'feature',
+            'summary' => 'Requires Microsoft Forms service settings to be available for evaluation.',
+            'items' => [
+                'Microsoft Forms org settings',
+            ],
+        ],
+        'MTCISAMETHODSMIGRATION' => [
+            'type' => 'feature',
+            'summary' => 'Requires the authentication methods migration state to be available for evaluation.',
+            'items' => [
+                'Authentication methods policy migration data',
+            ],
+        ],
+        'MTCISAPASSWORDEXPIRATION' => [
+            'type' => 'feature',
+            'summary' => 'Requires the tenant password expiry policy to be available for evaluation.',
+            'items' => [
+                'Cloud password expiry policy data',
             ],
         ],
         'MTCISCUSTOMERLOCKBOX' => [
@@ -2933,13 +2968,13 @@ function secureit_control_non_assessed_reason_with_requirements(array $control):
         'skipped' => match ($type) {
             'permissions' => 'All matched tests were skipped because the required Microsoft Graph or API permissions are not available.',
             'license' => 'All matched tests were skipped because the required license or tenant feature is not available.',
-            'feature' => 'All matched tests were skipped because this control depends on a feature or configuration that is not available in the production profile.',
+            'feature' => 'All matched tests were skipped because the tenant did not expose the feature or configuration this control checks.',
             default => $reason,
         },
         'not_run' => match ($type) {
             'permissions' => 'All matched tests returned non-scoreable results because the required Microsoft Graph or API permissions are not available.',
             'license' => 'All matched tests returned non-scoreable results because the required license or tenant feature is not available.',
-            'feature' => 'All matched tests returned non-scoreable results because this control depends on a feature or configuration that is not available in the production profile.',
+            'feature' => 'All matched tests returned non-scoreable results because the tenant did not expose the feature or configuration this control checks.',
             default => $reason,
         },
         default => $reason,

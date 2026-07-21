@@ -1067,6 +1067,20 @@ ob_start();
         </div>
       </form>
 
+      <form method="get" action="report-diagnostics.php" style="margin:0 0 16px;">
+        <label for="report_diagnostics_tenant_key">Open report diagnostics for tenant</label>
+        <select id="report_diagnostics_tenant_key" name="tenant">
+          <?php foreach ($tenants as $tenantItem): ?>
+            <?php $tenantId = (string) ($tenantItem['id'] ?? ''); ?>
+            <option value="<?php echo htmlspecialchars($tenantId); ?>"<?php echo $registryCheckTenantKey === $tenantId ? ' selected' : ''; ?>>
+              <?php echo htmlspecialchars((string) ($tenantItem['name'] ?? $tenantId)); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <p class="field-note">This opens the per-tenant report diagnostics view for the selected tenant.</p>
+        <button type="submit">Open report diagnostics</button>
+      </form>
+
       <?php if ($registryCheckStatus): ?>
         <div class="empty-state" style="margin-bottom:0;">
           <strong><?php echo htmlspecialchars(($registryCheckStatus['tenantName'] !== '' ? $registryCheckStatus['tenantName'] : $registryCheckStatus['tenantKey']) . ' readiness: ' . ($registryCheckStatus['ready'] ? 'ready' : 'not ready')); ?></strong>

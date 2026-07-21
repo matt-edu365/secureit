@@ -1439,7 +1439,129 @@ function secureit_runtime_families_for_control(array $control): array {
         }
     }
 
-    return array_keys($families);
+    if ($families !== []) {
+        return array_keys($families);
+    }
+
+    $family = secureit_infer_control_runtime_family($control);
+    return $family !== '' ? [$family] : [];
+}
+
+function secureit_infer_control_runtime_family(array $control): string {
+    $haystack = strtolower(trim(
+        (string) ($control['id'] ?? '') . ' ' .
+        (string) ($control['title'] ?? '') . ' ' .
+        (string) ($control['description'] ?? '') . ' ' .
+        implode(' ', array_map(static fn(mixed $value): string => (string) $value, $control['frameworkMappings'] ?? []))
+    ));
+
+    if ($haystack === '') {
+        return '';
+    }
+
+    $matches = [
+        'PnP' => [
+            'sharepoint',
+            'spo',
+            'b2b integration',
+            'sharing link',
+            'guest access',
+            'guest sharing',
+            'malicious file',
+            'outgoing sharing',
+            'modern authentication',
+            'legacy auth',
+            'pnp',
+        ],
+        'Exchange' => [
+            'exchange',
+            'mailbox',
+            'mail flow',
+            'transport',
+            'sendas',
+            'send on behalf',
+            'forwarding',
+            'message encryption',
+            'large attachment',
+            'outbound spam',
+            'inbound spam',
+            'safe links',
+            'safe attachment',
+            'dmarc',
+            'dkim',
+            'spf',
+            'quarantine',
+        ],
+        'Hybrid' => [
+            'entra id connect',
+            'on-premises synchronization',
+            'hybrid',
+            'adfs',
+            'federation',
+            'krbtgt',
+            'soft- and hard-matching',
+        ],
+        'Security Operations & Threat Protection' => [
+            'xspm',
+            'critical asset',
+            'privileged identities',
+            'defender identity',
+            'mdi ',
+            'mde ',
+            'simphish',
+            'customer lockbox',
+        ],
+        'External' => [
+            'domain expiration',
+        ],
+        'Graph/Entra' => [
+            'conditional access',
+            'authentication method',
+            'app registration',
+            'app registrations',
+            'high risk',
+            'global admin',
+            'cloud admin',
+            'group owner',
+            'activation notification',
+            'assignment notification',
+            'notify high-risk users',
+            'block high-risk users',
+            'block high-risk sign-ins',
+            'require activation approval',
+            'permanent role assignment',
+            'unmanaged role assignments',
+            'third-party and custom apps',
+            'third party and custom apps',
+            'user consent',
+            'partner support',
+            'diagnostic settings',
+            'mfa',
+            'password expiry',
+            'methods migration',
+            'device registration policy',
+            'tenant creation',
+            'security group creation',
+            'high risk app permissions',
+            'groups',
+            'recommendations',
+            'synchronization',
+            'entra',
+            'aad',
+            'msol',
+            'identity',
+        ],
+    ];
+
+    foreach ($matches as $family => $patterns) {
+        foreach ($patterns as $pattern) {
+            if ($pattern !== '' && str_contains($haystack, $pattern)) {
+                return $family;
+            }
+        }
+    }
+
+    return '';
 }
 
 function secureit_control_description_for_title(string $title, array $descriptions): string {

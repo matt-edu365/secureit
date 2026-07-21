@@ -51,4 +51,26 @@ echo json_encode([
     'nonScoreableBuckets' => $diagnostics['nonScoreableBuckets'] ?? [],
     'todoControls' => $diagnostics['areaData']['todoControls'] ?? [],
     'controls' => $diagnostics['controls'] ?? [],
+    'remediationSummary' => [
+        'missing_permissions' => [
+            'label' => secureit_control_non_scoreable_bucket_label('missing_permissions'),
+            'description' => secureit_control_non_scoreable_bucket_description('missing_permissions'),
+            'nextStep' => 'Grant the required Graph/API permissions, then rerun production.',
+        ],
+        'missing_license' => [
+            'label' => secureit_control_non_scoreable_bucket_label('missing_license'),
+            'description' => secureit_control_non_scoreable_bucket_description('missing_license'),
+            'nextStep' => 'Enable or license the required feature, then rerun production.',
+        ],
+        'separate_feature' => [
+            'label' => secureit_control_non_scoreable_bucket_label('separate_feature'),
+            'description' => secureit_control_non_scoreable_bucket_description('separate_feature'),
+            'nextStep' => 'Move this control into the separate feature workflow or expose the tenant feature/configuration it needs.',
+        ],
+        'other' => [
+            'label' => 'Other',
+            'description' => secureit_control_non_scoreable_bucket_description('other'),
+            'nextStep' => 'Review the latest artifact and control output to identify the missing prerequisite or failure path.',
+        ],
+    ],
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

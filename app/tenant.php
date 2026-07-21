@@ -852,6 +852,7 @@ ob_start();
             <div class="badge tone-neutral" style="margin-bottom:10px;"><?php echo htmlspecialchars((string) ($bucket['label'] ?? 'Diagnostics')); ?></div>
             <h3 style="margin-bottom:8px;"><?php echo htmlspecialchars((string) ($bucket['count'] ?? 0)); ?> controls</h3>
             <p class="muted" style="margin-top:0;"><?php echo htmlspecialchars((string) ($bucket['reason'] ?? '')); ?></p>
+            <p class="muted" style="margin-bottom:0;"><strong>Next step:</strong> <?php echo htmlspecialchars((string) ($bucket['nextStep'] ?? 'Review the latest run details.')); ?></p>
           </article>
         <?php endforeach; ?>
       </div>
@@ -867,6 +868,7 @@ ob_start();
               <th>Status</th>
               <th>Reason</th>
               <th>Required to run</th>
+              <th>What to do next</th>
             </tr>
           </thead>
           <tbody>
@@ -889,6 +891,7 @@ ob_start();
                 <td><?php echo htmlspecialchars(str_replace('_', ' ', strtoupper((string) ($control['status'] ?? 'unknown')))); ?></td>
                 <td><?php echo htmlspecialchars((string) ($control['reason'] ?? '')); ?></td>
                 <td><?php echo htmlspecialchars($required !== '' ? $required : 'No additional prerequisites recorded.'); ?></td>
+                <td><?php echo htmlspecialchars((string) ($control['nextStep'] ?? 'Review the latest artifact and rerun the workflow.')); ?></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

@@ -3016,6 +3016,25 @@ function secureit_control_non_scoreable_bucket_label(string $bucket): string {
     };
 }
 
+function secureit_control_non_scoreable_bucket_description(string $bucket): string {
+    return match ($bucket) {
+        'missing_permissions' => 'The test ran, but the app or tenant did not have enough API access to return a scoreable result.',
+        'missing_license' => 'The test depends on a licensed feature or service that is not present in the tenant.',
+        'separate_feature' => 'The check belongs in a separate product feature or tenant workflow rather than the normal production run.',
+        default => 'The control did not match a known prerequisite bucket.',
+    };
+}
+
+function secureit_control_non_scoreable_next_step(array $control): string {
+    $bucket = secureit_control_non_scoreable_bucket($control);
+    return match ($bucket) {
+        'missing_permissions' => 'Grant the required Graph/API permissions, then rerun production.',
+        'missing_license' => 'Enable or license the required feature, then rerun production.',
+        'separate_feature' => 'Move this control into the separate feature workflow or expose the tenant feature/configuration it needs.',
+        default => 'Review the latest artifact and control output to identify the missing prerequisite or failure path.',
+    };
+}
+
 function secureit_todo_feature_control_ids(): array {
     return [
         'CONDITIONALACCESSWHATIF',
@@ -3116,6 +3135,9 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                 'requirements' => secureit_control_assessment_requirements($control),
                 'remediation' => secureit_control_remediation_route($control),
                 'bucket' => $bucket,
+                'bucketLabel' => secureit_control_non_scoreable_bucket_label($bucket),
+                'bucketDescription' => secureit_control_non_scoreable_bucket_description($bucket),
+                'nextStep' => secureit_control_non_scoreable_next_step($control),
                 'frameworkMappings' => array_values(array_filter(
                     array_map(static fn(mixed $mapping): string => trim((string) $mapping), $control['frameworkMappings'] ?? []),
                     static fn(string $mapping): bool => $mapping !== ''
@@ -3151,6 +3173,9 @@ function secureit_resolve_tenant_report_diagnostics(string $tenantKey): array {
                     'reason' => secureit_control_non_assessed_reason_with_requirements($control),
                     'requirements' => secureit_control_assessment_requirements($control),
                     'bucket' => $bucket,
+                    'bucketLabel' => secureit_control_non_scoreable_bucket_label($bucket),
+                    'bucketDescription' => secureit_control_non_scoreable_bucket_description($bucket),
+                    'nextStep' => secureit_control_non_scoreable_next_step($control),
                 ];
             }
         }

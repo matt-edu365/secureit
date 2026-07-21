@@ -134,6 +134,26 @@ function Get-MaesterSelectedTestsPath {
     )
     $repoRoot = Split-Path -Parent $PSScriptRoot
     $customTestsRoot = Join-Path $repoRoot 'custom-tests/365inspect'
+    $productionInspectors = @(
+        'Inspect-AZPSAssignment',
+        'Inspect-AZPSModules',
+        'Inspect-EmailVerifiedUserCreation',
+        'Inspect-LinkedInConnection',
+        'Inspect-MSOLPowerShell',
+        'Inspect-PartnerSupport',
+        'Inspect-EXOFullAccess',
+        'Inspect-EXOHiddenMailboxes',
+        'Inspect-EXOSendAsPermissions',
+        'Inspect-EXOSendOnBehalfOf',
+        'Inspect-LargeAttachmentBlockingRule',
+        'Inspect-MailboxesWithInternalForwarding',
+        'Inspect-OutgoingSharingMonitored',
+        'Inspect-SharepointLegacyAuthEnabled',
+        'Inspect-DomainExpiration',
+        'Inspect-SimPhish',
+        'Inspect-OfficeMessageEncryption',
+        'Inspect-eDiscoveryAdmins'
+    )
 
     if ($Profile -eq '365Inspect-18') {
         $selectedRoot = Join-Path $WorkingRoot '_selected_tests'
@@ -341,7 +361,11 @@ function Get-MaesterSelectedTestsPath {
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
     }
 
-    if ($Profile -eq '365Inspect-18') {
+    if ($Profile -eq 'SecureIT-Production-101') {
+        Write-Host "Selected SecureIT production custom tests from $customTestsRoot."
+        Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot -InspectorNames $productionInspectors
+    }
+    elseif ($Profile -eq '365Inspect-18') {
         Write-Host "Selected SecureIT custom tests for profile '$Profile' from $customTestsRoot."
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot
     }
@@ -356,7 +380,8 @@ function Copy-SecureItCustomTests {
     param(
         [Parameter(Mandatory = $true)][string]$SourceRoot,
         [Parameter(Mandatory = $true)][string]$DestinationRoot,
-        [Parameter(Mandatory = $true)][string]$RepoRoot
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [string[]]$InspectorNames
     )
 
     if (-not (Test-Path -LiteralPath $SourceRoot)) {
@@ -374,6 +399,17 @@ function Copy-SecureItCustomTests {
         $destinationDir = Split-Path -Parent $destinationPath
         New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
+    }
+
+    if ($InspectorNames -and $InspectorNames.Count -gt 0) {
+        $inspectorsJsonPath = Join-Path (Join-Path $DestinationRoot 'custom-tests/365inspect/data') 'inspectors.json'
+        if (Test-Path -LiteralPath $inspectorsJsonPath) {
+            $inspectorsDocument = Get-Content -Raw -LiteralPath $inspectorsJsonPath -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            $filteredInspectors = @($inspectorsDocument.inspectors | Where-Object { $InspectorNames -contains $_.inspector })
+            $inspectorsDocument.inspectors = $filteredInspectors
+            $inspectorsDocument | ConvertTo-Json -Depth 50 | Set-Content -LiteralPath $inspectorsJsonPath -Encoding UTF8
+            Write-Host "Filtered SecureIT 365Inspect inspectors to $($filteredInspectors.Count) production-safe checks."
+        }
     }
 }
 

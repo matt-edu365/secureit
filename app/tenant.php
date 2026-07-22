@@ -71,6 +71,7 @@ if ($selectedAreaName !== '') {
         }
     }
 }
+$selectedDiagnostics = $selectedArea === null && $selectedAreaName === 'Diagnostics';
 
 function secureit_functional_area_description(string $areaName): string {
     foreach (secureit_functional_area_catalog() as $area) {
@@ -655,7 +656,7 @@ ob_start();
       <div style="min-width:0; flex:1 1 auto;">
         <h2 class="section-title" style="white-space:nowrap;"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
       </div>
-      <?php if (!$selectedArea): ?>
+<?php if (!$selectedArea && !$selectedDiagnostics): ?>
         <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
           <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
             <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap; padding:14px 18px; min-width:150px;">Run tests now</button>
@@ -707,48 +708,7 @@ ob_start();
     <?php endif; ?>
   </article>
 </section>
-<?php $todoControls = array_values(array_filter($areaData['todoControls'] ?? [], 'is_array')); ?>
-<?php if ($todoControls !== [] && !$selectedArea): ?>
-<section class="section">
-  <article class="card panel">
-    <div class="section-header" style="margin-bottom:14px;">
-      <div>
-        <h2 class="section-title">To-do</h2>
-        <div class="muted">Controls handled as separate features and excluded from the production test set.</div>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Why it is separate</th>
-            <th>Required to run</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($todoControls as $control): ?>
-            <?php
-              $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
-              $requirementItems = array_values(array_filter(
-                  array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
-                  static fn(string $item): bool => $item !== ''
-              ));
-              $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
-            ?>
-            <tr>
-              <td><strong><?php echo htmlspecialchars((string) ($control['title'] ?? $control['id'] ?? 'To-do item')); ?></strong></td>
-              <td><?php echo htmlspecialchars((string) ($control['reason'] ?? $requirementSummary)); ?></td>
-              <td><?php echo htmlspecialchars(trim($requirementSummary . ' ' . implode('; ', $requirementItems))); ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </article>
-</section>
-<?php endif; ?>
-<?php if (!$selectedArea): ?>
+<?php if (!$selectedArea && !$selectedDiagnostics): ?>
 <section class="section">
   <div class="section-header">
     <div>
@@ -766,9 +726,7 @@ ob_start();
         <?php foreach ($functionalAreas as $area): ?>
           <?php if (($area['name'] ?? '') === 'Productivity, Automation & AI'): ?>
             <?php
-              $nonScoreableTotal = count($diagnostics['controls'] ?? []);
-              $diagnosticStatusCounts = $diagnostics['statusCounts'] ?? [];
-              $diagnosticHref = '#diagnostics';
+              $diagnosticHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode('Diagnostics');
             ?>
             <a class="card feature-card" href="<?php echo htmlspecialchars($diagnosticHref); ?>" style="display:block; text-decoration:none; color:inherit;">
               <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
@@ -780,13 +738,7 @@ ob_start();
                 <span class="badge tone-neutral">Diagnostics</span>
               </div>
               <h3 style="min-height:2.8em;">Diagnostics</h3>
-              <p style="margin-top:0; color:var(--muted); line-height:1.6;">Drill into failed, not run, skipped, and unmapped checks to see the underlying reason, requirements, and matched evidence.</p>
-              <div class="kv" style="gap:6px; margin-top:12px;">
-                <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Non-scoreable checks</div><div class="kv-value"><?php echo htmlspecialchars((string) $nonScoreableTotal); ?></div></div>
-                <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Not run</div><div class="kv-value"><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['not_run'] ?? 0)); ?></div></div>
-                <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Skipped</div><div class="kv-value"><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['skipped'] ?? 0)); ?></div></div>
-                <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Errors</div><div class="kv-value"><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['error'] ?? 0)); ?></div></div>
-              </div>
+              <p style="margin-top:0; color:var(--muted); line-height:1.6;">Open the diagnostics view to review unmapped, skipped, errored, and not-run controls with their reasons and prerequisites.</p>
             </a>
             <?php continue; ?>
           <?php endif; ?>
@@ -822,91 +774,82 @@ ob_start();
   <?php endif; ?>
 <?php endif; ?>
 
-<?php if (!$selectedArea): ?>
+<?php if ($selectedDiagnostics): ?>
   <?php
     $diagnosticControls = array_values(array_filter($diagnostics['controls'] ?? [], 'is_array'));
-    $diagnosticBuckets = array_values(array_filter($diagnostics['nonScoreableBuckets'] ?? [], 'is_array'));
+    $diagnosticStatusCounts = $diagnostics['statusCounts'] ?? [];
   ?>
-  <section class="section" id="diagnostics">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Diagnostics drill-down</h2>
-        <div class="muted">This is the operational view for checks that failed, errored, were skipped, were not run, or returned no scoreable evidence.</div>
+  <section class="section">
+    <article class="card panel" style="margin-bottom:18px;">
+      <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
+        <div>
+          <h3 class="section-title" style="font-size:1.2rem;">Diagnostics checks</h3>
+          <div class="muted">Controls that were unmapped, skipped, errored, or not run in the latest production run.</div>
+        </div>
+        <div class="inline-links">
+          <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to overview</a>
+          <a class="textlink" href="report-diagnostics.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>">Open JSON diagnostics</a>
+        </div>
       </div>
-      <div class="inline-links">
-        <a class="textlink" href="report-diagnostics.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>">Open JSON diagnostics</a>
+
+      <div class="stats-row" style="margin-bottom:16px;">
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($diagnosticControls)); ?></strong><span>Diagnostics items</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['unmapped'] ?? 0)); ?></strong><span>Unmapped</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['skipped'] ?? 0)); ?></strong><span>Skipped</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['not_run'] ?? 0)); ?></strong><span>Not run</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['error'] ?? 0)); ?></strong><span>Error</span></div>
       </div>
-    </div>
 
-    <div class="stats-row" style="margin-bottom:16px;">
-      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($diagnosticControls)); ?></strong><span>Diagnostics items</span></div>
-      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnostics['statusCounts']['fail'] ?? 0)); ?></strong><span>Failed</span></div>
-      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) (($diagnostics['statusCounts']['not_run'] ?? 0) + ($diagnostics['statusCounts']['skipped'] ?? 0))); ?></strong><span>Not run / skipped</span></div>
-      <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnostics['statusCounts']['unmapped'] ?? 0)); ?></strong><span>Unmapped</span></div>
-    </div>
-
-    <?php if ($diagnosticBuckets !== []): ?>
-      <div class="feature-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom:18px;">
-        <?php foreach ($diagnosticBuckets as $bucket): ?>
-          <article class="card feature-card" style="padding:18px;">
-            <div class="badge tone-neutral" style="margin-bottom:10px;"><?php echo htmlspecialchars((string) ($bucket['label'] ?? 'Diagnostics')); ?></div>
-            <h3 style="margin-bottom:8px;"><?php echo htmlspecialchars((string) ($bucket['count'] ?? 0)); ?> controls</h3>
-            <p class="muted" style="margin-top:0;"><?php echo htmlspecialchars((string) ($bucket['reason'] ?? '')); ?></p>
-            <p class="muted" style="margin-bottom:0;"><strong>Next step:</strong> <?php echo htmlspecialchars((string) ($bucket['nextStep'] ?? 'Review the latest run details.')); ?></p>
-          </article>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-
-    <?php if ($diagnosticControls !== []): ?>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Control</th>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Reason</th>
-              <th>Required to run</th>
-              <th>What to do next</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($diagnosticControls as $control): ?>
-              <?php
-                $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
-                $requirementItems = array_values(array_filter(
-                    array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
-                    static fn(string $item): bool => $item !== ''
-                ));
-                $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
-                $required = trim($requirementSummary . ' ' . implode('; ', $requirementItems));
-              ?>
+      <?php if ($diagnosticControls !== []): ?>
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td>
-                  <strong><?php echo htmlspecialchars((string) ($control['title'] ?? $control['id'] ?? 'Control')); ?></strong><br>
-                  <span class="muted"><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></span>
-                </td>
-                <td><?php echo htmlspecialchars((string) ($control['functionalArea'] ?? '')); ?></td>
-                <td><?php echo htmlspecialchars(str_replace('_', ' ', strtoupper((string) ($control['status'] ?? 'unknown')))); ?></td>
-                <td><?php echo htmlspecialchars((string) ($control['reason'] ?? '')); ?></td>
-                <td><?php echo htmlspecialchars($required !== '' ? $required : 'No additional prerequisites recorded.'); ?></td>
-                <td><?php echo htmlspecialchars((string) ($control['nextStep'] ?? 'Review the latest artifact and rerun the workflow.')); ?></td>
+                <th>Control</th>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Required to run</th>
+                <th>What to do next</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    <?php else: ?>
-      <div class="empty-state">
-        <strong>No diagnostics items yet.</strong>
-        <p class="muted">When a control fails, is skipped, is not run, or returns no scoreable evidence, it will appear here with its reason and prerequisites.</p>
-      </div>
-    <?php endif; ?>
+            </thead>
+            <tbody>
+              <?php foreach ($diagnosticControls as $control): ?>
+                <?php
+                  $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
+                  $requirementItems = array_values(array_filter(
+                      array_map(static fn(mixed $item): string => trim((string) $item), $requirements['items'] ?? []),
+                      static fn(string $item): bool => $item !== ''
+                  ));
+                  $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
+                  $required = trim($requirementSummary . ' ' . implode('; ', $requirementItems));
+                ?>
+                <tr>
+                  <td>
+                    <strong><?php echo htmlspecialchars((string) ($control['title'] ?? $control['id'] ?? 'Control')); ?></strong><br>
+                    <span class="muted"><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></span>
+                  </td>
+                  <td><?php echo htmlspecialchars((string) ($control['functionalArea'] ?? '')); ?></td>
+                  <td><?php echo htmlspecialchars(str_replace('_', ' ', strtoupper((string) ($control['status'] ?? 'unknown')))); ?></td>
+                  <td><?php echo htmlspecialchars((string) ($control['reason'] ?? '')); ?></td>
+                  <td><?php echo htmlspecialchars($required !== '' ? $required : 'No additional prerequisites recorded.'); ?></td>
+                  <td><?php echo htmlspecialchars((string) ($control['nextStep'] ?? 'Review the latest artifact and rerun the workflow.')); ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php else: ?>
+        <div class="empty-state" style="box-shadow:none;">
+          <strong>No diagnostics items yet.</strong>
+          <p class="muted">When a control fails, is skipped, is not run, or returns no scoreable evidence, it will appear here with its reason and prerequisites.</p>
+        </div>
+      <?php endif; ?>
+    </article>
   </section>
 <?php endif; ?>
 
-<?php if (!$selectedArea): ?>
+<?php if (!$selectedArea && !$selectedDiagnostics): ?>
   <section class="section">
     <?php
       $overviewColors = [

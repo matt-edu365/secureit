@@ -76,6 +76,10 @@ if ($selectedAreaName !== '') {
 }
 $selectedAreaName = $selectedArea ? $selectedAreaName : ($selectedAreaName === 'Diagnostics' ? 'Diagnostics' : '');
 $selectedDiagnostics = $selectedArea === null && $selectedAreaName === 'Diagnostics';
+$selectedDiagnosticsView = strtolower(trim((string) ($_GET['diagnosticsView'] ?? 'diagnostics')));
+if (!in_array($selectedDiagnosticsView, ['failures', 'diagnostics'], true)) {
+    $selectedDiagnosticsView = 'diagnostics';
+}
 
 function secureit_functional_area_description(string $areaName): string {
     foreach (secureit_functional_area_catalog() as $area) {
@@ -749,52 +753,108 @@ ob_start();
             </div>
           </a>
         <?php endforeach; ?>
+        <a class="card feature-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics" style="display:block; text-decoration:none; color:inherit;">
+          <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:#eef7f6; box-shadow:0 10px 20px rgba(15, 118, 110, 0.10); color:#0f766e; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
+              <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10.5 8v5M8 10.5h5"/></svg>
+              </span>
+            </span>
+            <span class="badge tone-neutral">Diagnostics</span>
+          </div>
+          <h3 style="min-height:2.8em;">Failures and Diagnostics</h3>
+          <p style="margin-top:0; color:var(--muted); line-height:1.6;">Deal with failures and diagnose tests not producing clean results.</p>
+        </a>
       <?php endif; ?>
     </div>
   <?php endif; ?>
-<?php endif; ?>
-
-<?php if (!$selectedArea && !$selectedDiagnostics): ?>
-  <section class="section">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Diagnostics</h2>
-        <div class="muted">Drill into controls that are unmapped, skipped, not run, or errored.</div>
-      </div>
-    </div>
-    <a class="card feature-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics" style="display:block; text-decoration:none; color:inherit;">
-      <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
-        <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:#eef7f6; box-shadow:0 10px 20px rgba(15, 118, 110, 0.10); color:#0f766e; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
-          <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10.5 8v5M8 10.5h5"/></svg>
-          </span>
-        </span>
-        <span class="badge tone-neutral">Diagnostics</span>
-      </div>
-      <h3 style="min-height:2.8em;">Diagnostics</h3>
-      <p style="margin-top:0; color:var(--muted); line-height:1.6;">Open the table of non-scoreable controls and review why they did not produce clean results.</p>
-    </a>
-  </section>
 <?php endif; ?>
 
 <?php if ($selectedDiagnostics): ?>
   <?php
     $diagnosticControls = array_values(array_filter($diagnostics['controls'] ?? [], 'is_array'));
     $diagnosticStatusCounts = $diagnostics['statusCounts'] ?? [];
+    $failedControls = [];
+    foreach ($functionalAreas as $area) {
+        foreach (($area['controls'] ?? []) as $control) {
+            if (($control['status'] ?? '') !== 'fail') {
+                continue;
+            }
+            $failedControls[] = $control;
+        }
+    }
   ?>
   <section class="section">
     <article class="card panel" style="margin-bottom:18px;">
       <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
         <div>
-          <h3 class="section-title" style="font-size:1.2rem;">Diagnostics checks</h3>
-          <div class="muted">Controls that were unmapped, skipped, errored, or not run in the latest production run.</div>
+          <div class="inline-links" style="gap:10px; align-items:center; margin-bottom:8px;">
+            <h3 class="section-title" style="font-size:1.2rem; margin:0;">Diagnostics checks</h3>
+            <div style="display:inline-flex; padding:3px; border:1px solid rgba(148,163,184,.35); border-radius:999px; background:#f8fafc; gap:3px;">
+              <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics&diagnosticsView=failures" style="white-space:nowrap; box-shadow:none; padding:8px 12px; border-radius:999px; background:<?php echo $selectedDiagnosticsView === 'failures' ? 'var(--brand)' : 'transparent'; ?>; color:<?php echo $selectedDiagnosticsView === 'failures' ? '#fff' : 'var(--text)'; ?>;">Failures</a>
+              <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics&diagnosticsView=diagnostics" style="white-space:nowrap; box-shadow:none; padding:8px 12px; border-radius:999px; background:<?php echo $selectedDiagnosticsView === 'diagnostics' ? 'var(--brand)' : 'transparent'; ?>; color:<?php echo $selectedDiagnosticsView === 'diagnostics' ? '#fff' : 'var(--text)'; ?>;">Diagnostics</a>
+            </div>
+          </div>
+          <div class="muted">
+            <?php echo $selectedDiagnosticsView === 'failures'
+                ? 'Controls that ran cleanly but failed across the tenant.'
+                : 'Controls that were unmapped, skipped, errored, or not run in the latest production run.'; ?>
+          </div>
         </div>
-        <div class="inline-links">
+        <div class="inline-links" style="margin-left:auto;">
           <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to overview</a>
-          <a class="textlink" href="report-diagnostics.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>">Open JSON diagnostics</a>
         </div>
       </div>
 
+      <?php if ($selectedDiagnosticsView === 'failures'): ?>
+        <div class="stats-row" style="margin-bottom:16px;">
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($failedControls)); ?></strong><span>Failures</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($functionalAreas)); ?></strong><span>Functional areas</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($counts['failed'] ?? 0)); ?></strong><span>Failed checks</span></div>
+        </div>
+        <?php if ($failedControls !== []): ?>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Control</th>
+                  <th>Area</th>
+                  <th>Matched tests</th>
+                  <th>Reason</th>
+                  <th>Recommended action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($failedControls as $control): ?>
+                  <?php
+                    $matchedTests = array_values(array_filter($control['matchedTests'] ?? [], static fn(mixed $test): bool => is_array($test)));
+                    $matchedLabels = array_map(static function (array $test): string {
+                        $id = trim((string) ($test['id'] ?? ''));
+                        $title = trim((string) ($test['title'] ?? ''));
+                        return trim($id . ($title !== '' ? ' — ' . $title : ''));
+                    }, $matchedTests);
+                  ?>
+                  <tr>
+                    <td>
+                      <strong><?php echo htmlspecialchars((string) ($control['title'] ?? $control['id'] ?? 'Control')); ?></strong><br>
+                      <span class="muted"><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></span>
+                    </td>
+                    <td><?php echo htmlspecialchars((string) ($control['functionalArea'] ?? '')); ?></td>
+                    <td><?php echo htmlspecialchars($matchedLabels !== [] ? implode(' · ', $matchedLabels) : 'No matched tests recorded.'); ?></td>
+                    <td><?php echo htmlspecialchars((string) ($control['reason'] ?? '')); ?></td>
+                    <td><?php echo htmlspecialchars((string) ($control['guidance']['recommendedAction'] ?? 'Review the failing evidence and correct the configuration.')); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php else: ?>
+          <div class="empty-state" style="box-shadow:none;">
+            <strong>No failed controls yet.</strong>
+            <p class="muted">The selected tenant had no controls that ran cleanly and failed in the latest production run.</p>
+          </div>
+        <?php endif; ?>
+      <?php else: ?>
       <div class="stats-row" style="margin-bottom:16px;">
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) count($diagnosticControls)); ?></strong><span>Diagnostics items</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['unmapped'] ?? 0)); ?></strong><span>Unmapped</span></div>
@@ -802,7 +862,6 @@ ob_start();
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['not_run'] ?? 0)); ?></strong><span>Not run</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($diagnosticStatusCounts['error'] ?? 0)); ?></strong><span>Error</span></div>
       </div>
-
       <?php if ($diagnosticControls !== []): ?>
         <div class="table-wrap">
           <table>
@@ -848,11 +907,12 @@ ob_start();
           <p class="muted">When a control fails, is skipped, is not run, or returns no scoreable evidence, it will appear here with its reason and prerequisites.</p>
         </div>
       <?php endif; ?>
+      <?php endif; ?>
     </article>
   </section>
 <?php endif; ?>
 
-<?php if (!$selectedArea && !$selectedDiagnostics): ?>
+<?php if (!$selectedDiagnostics): ?>
   <section class="section">
     <?php
       $overviewColors = [
@@ -925,7 +985,7 @@ ob_start();
       $overviewControlsHtml .= '</div>';
     ?>
     <?php echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 213, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false, 'controlsHtml' => $overviewControlsHtml, 'controlsWidth' => 238]); ?>
-  </section>
+</section>
 <?php endif; ?>
 
 <?php if ($selectedArea): ?>
@@ -1018,6 +1078,7 @@ ob_start();
   </section>
 <?php endif; ?>
 
+<?php if (!$selectedDiagnostics): ?>
 <section class="section">
   <article class="card panel">
     <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
@@ -1098,6 +1159,7 @@ ob_start();
     <?php endif; ?>
   </article>
 </section>
+<?php endif; ?>
 <script>
 (function () {
   const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase() || 'unknown';

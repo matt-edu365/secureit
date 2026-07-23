@@ -198,7 +198,6 @@ return [
         'Endpoint & Device Management' => ['method' => 'GUI', 'portal' => 'Microsoft Intune admin center', 'path' => 'Use the portal search to open the device, enrollment, or compliance setting named by this control'],
         'Security Operations & Threat Protection' => ['method' => 'GUI', 'portal' => 'Microsoft Defender portal', 'path' => 'Use the portal search to open the security setting or inventory named by this control'],
         'Compliance, Governance & Data Protection' => ['method' => 'GUI', 'portal' => 'Microsoft Purview portal', 'path' => 'Use the portal search to open the compliance or governance setting named by this control'],
-        'Productivity, Automation & AI' => ['method' => 'GUI', 'portal' => 'Microsoft 365 admin center', 'path' => 'Use the portal search to open the service setting named by this control'],
     ],
     'controlRoutes' => $routes,
     'controlSteps' => $powerShellSteps,

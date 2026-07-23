@@ -29,10 +29,6 @@ function secureit_functional_area_catalog(): array {
             'name' => 'Compliance, Governance & Data Protection',
             'description' => 'Sensitivity labels, data loss prevention, retention policies, legal hold, audit logs, compliance reporting, data governance, and risk management.',
         ],
-        [
-            'name' => 'Productivity, Automation & AI',
-            'description' => 'Day-to-day productivity, task management, forms, reporting, low-code apps, workflow automation, analytics, and AI-assisted work.',
-        ],
     ];
 }
 

@@ -8,8 +8,7 @@
     "Files, Intranet & Content Management",
     "Endpoint & Device Management",
     "Security Operations & Threat Protection",
-    "Compliance, Governance & Data Protection",
-    "Productivity, Automation & AI"
+      "Compliance, Governance & Data Protection"
   ],
   "controls": [
     {
@@ -337,7 +336,7 @@
     {
       "id": "PRODUCTIVITY_APP_PLATFORM_GOVERNANCE",
       "title": "Apps and low-code productivity platforms are governed",
-      "functionalArea": "Productivity, Automation & AI",
+      "functionalArea": "Compliance, Governance & Data Protection",
       "frameworkMappings": [
         "MT.1002",
         "CIS.M365.8.4.1",

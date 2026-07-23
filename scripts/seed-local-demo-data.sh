@@ -130,8 +130,6 @@ def family_for(test_name: str) -> str:
         return "Endpoint & Device Management"
     if any(token in base for token in ["HighRiskAppPermissions", "PrivilegedAssignments", "Xspm", "MdiHealthIssues", "MdE", "Defender", "CisCloudAdmin", "CisCustomerLockBox"]):
         return "Security Operations & Threat Protection"
-    if any(token in base for token in ["AppManagementPolicies"]):
-        return "Productivity, Automation & AI"
     return "Compliance, Governance & Data Protection"
 
 def title_for(test_name: str) -> str:
@@ -426,7 +424,6 @@ def build_canonical_controls(tests: list[str]) -> dict:
             "Endpoint & Device Management",
             "Security Operations & Threat Protection",
             "Compliance, Governance & Data Protection",
-            "Productivity, Automation & AI",
         ],
             "controls": [
                 {

@@ -2006,7 +2006,6 @@ function secureit_load_canonical_controls(): array {
             'Endpoint & Device Management',
             'Security Operations & Threat Protection',
             'Compliance, Governance & Data Protection',
-            'Productivity, Automation & AI',
         ],
         'controls' => [],
         'unmappedPolicy' => [

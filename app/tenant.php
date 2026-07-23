@@ -578,12 +578,6 @@ function secureit_functional_area_visual(string $areaName): array {
             'stroke' => '#475569',
             'svg' => '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="4" width="14" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5"/><path fill="currentColor" d="M16.2 8.3l1.2 1.2 2-2 1 1-3 3-2.2-2.2z"/></svg>',
         ],
-        'Productivity, Automation & AI' => [
-            'bg' => '#f3efff',
-            'shadow' => 'rgba(15, 23, 42, 0.10)',
-            'stroke' => '#7c3aed',
-            'svg' => '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M13 3l-2 7h5l-6 11 2-7H7l6-11z"/><circle cx="18" cy="6" r="1.3" fill="currentColor"/><circle cx="6" cy="18" r="1.3" fill="currentColor"/><circle cx="16.5" cy="16.5" r="1.1" fill="currentColor"/></svg>',
-        ],
     ];
 
     return $visuals[$areaName] ?? [
@@ -724,24 +718,6 @@ ob_start();
         </article>
       <?php else: ?>
         <?php foreach ($functionalAreas as $area): ?>
-          <?php if (($area['name'] ?? '') === 'Productivity, Automation & AI'): ?>
-            <?php
-              $diagnosticHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode('Diagnostics');
-            ?>
-            <a class="card feature-card" href="<?php echo htmlspecialchars($diagnosticHref); ?>" style="display:block; text-decoration:none; color:inherit;">
-              <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
-                <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:#eef7f6; box-shadow:0 10px 20px rgba(15, 118, 110, 0.10); color:#0f766e; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
-                  <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10.5 8v5M8 10.5h5"/></svg>
-                  </span>
-                </span>
-                <span class="badge tone-neutral">Diagnostics</span>
-              </div>
-              <h3 style="min-height:2.8em;">Diagnostics</h3>
-              <p style="margin-top:0; color:var(--muted); line-height:1.6;">Open the diagnostics view to review unmapped, skipped, errored, and not-run controls with their reasons and prerequisites.</p>
-            </a>
-            <?php continue; ?>
-          <?php endif; ?>
           <?php $toneClass = 'tone-' . ($area['tone'] ?? 'neutral'); ?>
           <?php $areaHref = 'tenant.php?tenant=' . rawurlencode($tenantKey) . '&area=' . rawurlencode((string) ($area['name'] ?? '')); ?>
           <?php $areaVisual = secureit_functional_area_visual((string) ($area['name'] ?? '')); ?>
@@ -772,6 +748,29 @@ ob_start();
       <?php endif; ?>
     </div>
   <?php endif; ?>
+<?php endif; ?>
+
+<?php if (!$selectedArea && !$selectedDiagnostics): ?>
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Diagnostics</h2>
+        <div class="muted">Open the diagnostics drill-down for controls that are unmapped, skipped, not run, or errored.</div>
+      </div>
+    </div>
+    <a class="card feature-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics" style="display:block; text-decoration:none; color:inherit;">
+      <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:#eef7f6; box-shadow:0 10px 20px rgba(15, 118, 110, 0.10); color:#0f766e; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
+          <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10.5 8v5M8 10.5h5"/></svg>
+          </span>
+        </span>
+        <span class="badge tone-neutral">Diagnostics</span>
+      </div>
+      <h3 style="min-height:2.8em;">Diagnostics</h3>
+      <p style="margin-top:0; color:var(--muted); line-height:1.6;">Review the checks that need attention without affecting the main functional-area scorecards.</p>
+    </a>
+  </section>
 <?php endif; ?>
 
 <?php if ($selectedDiagnostics): ?>

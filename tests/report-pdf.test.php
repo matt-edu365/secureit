@@ -63,7 +63,7 @@ secureit_report_test_assert(str_contains($html, 'Example &amp; Tenant'), 'The te
 secureit_report_test_assert(str_contains($html, 'data:image/png;base64,'), 'The ICT365 SecureIT logo is not embedded.');
 secureit_report_test_assert(str_contains($html, 'Executive summary'), 'The executive summary is missing.');
 secureit_report_test_assert(str_contains($html, 'Area breakdown'), 'The area overview is missing.');
-secureit_report_test_assert(substr_count($html, 'class="area-detail"') === 8, 'The report must include all eight functional areas.');
+secureit_report_test_assert(substr_count($html, 'class="area-detail"') === 7, 'The report must include all seven functional areas.');
 secureit_report_test_assert(str_contains($html, 'Action required'), 'Priority controls are missing.');
 secureit_report_test_assert(str_contains($html, 'Issue and impact:'), 'Structured issue and impact guidance is missing.');
 secureit_report_test_assert(str_contains($html, 'Recommended action:'), 'Structured recommended action guidance is missing.');

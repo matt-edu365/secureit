@@ -33,7 +33,7 @@ The diagnostics mail routines are the reusable baseline for future email work.
 
 - The supplied `SecureIT Example Report Template.docx` is the design authority for the customer PDF.
 - PDF output is built from print-specific HTML and rendered with Dompdf inside the app container.
-- Preserve the cover, executive summary, eight functional-area overview, remediation-first detail order, coverage-gap treatment, and compact passing-control index.
+- Preserve the cover, executive summary, seven functional-area overview, remediation-first detail order, coverage-gap treatment, and compact passing-control index.
 - The renderer must keep remote resource loading and embedded PHP disabled.
 
 ## Tenant overview and history graph

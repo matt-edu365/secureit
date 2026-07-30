@@ -478,7 +478,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
 
   <section class="executive">
     <h1>Executive summary</h1>
-    <p class="section-lead">SecureIT provides a point-in-time view of how this Microsoft 365 tenant aligns with the security controls assessed during the latest run. Results are organised into eight functional areas so that strengths, gaps, and remediation priorities are easy to identify.</p>
+    <p class="section-lead">SecureIT provides a point-in-time view of how this Microsoft 365 tenant aligns with the security controls assessed during the latest run. Results are organised into seven functional areas so that strengths, gaps, and remediation priorities are easy to identify.</p>
 
     <table class="posture-table"><tr>
       <td class="posture-score"><strong><?php echo secureit_report_escape($scoreLabel); ?></strong><span>OVERALL SCORE</span></td>
@@ -515,7 +515,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
 
   <section class="area-overview">
     <h1>Area breakdown</h1>
-    <p class="section-lead">The eight functional areas below mirror the SecureIT portal. Scores use assessed controls only; controls that were skipped, not run, not applicable, unmapped, or errored are shown as not assessed and excluded from the denominator.</p>
+    <p class="section-lead">The seven functional areas below mirror the SecureIT portal. Scores use assessed controls only; controls that were skipped, not run, not applicable, unmapped, or errored are shown as not assessed and excluded from the denominator.</p>
     <table class="area-grid">
       <?php foreach (array_chunk($areas, 2) as $areaRow): ?>
         <tr>

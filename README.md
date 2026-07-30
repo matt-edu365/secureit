@@ -96,7 +96,7 @@ Typical flow:
 4. `scripts/Import-AppReportBundle.ps1` imports that into runtime storage
 5. the app reads the imported bundle from `data/reports/<tenant-key>/...`
 
-From a tenant overview, an authorised customer or administrator can download a branded PDF assessment. The PDF is rendered from a print-specific HTML template and includes a cover, executive summary, eight-area posture overview, prioritised remediation detail, coverage gaps, and a compact record of passing controls.
+From a tenant overview, an authorised customer or administrator can download a branded PDF assessment. The PDF is rendered from a print-specific HTML template and includes a cover, executive summary, seven-area posture overview, prioritised remediation detail, coverage gaps, and a compact record of passing controls.
 
 The onboarding flow also writes the customer application secret into Azure Key Vault so the live tenant setup stays aligned with the workflow and diagnostics paths.
 
@@ -121,7 +121,7 @@ Current behavior:
 - the X axis uses each report date in `dd/MM` format
 - report-history area data is resolved once per history row and reused by the graph and run-history table to avoid repeated scoring work
 
-Functional-area views also show a single-area trend graph below the checks table and above run history. The eight functional-area cards are hidden while a functional-area view is active.
+Functional-area views also show a single-area trend graph below the checks table and above run history. The seven functional-area cards are hidden while a functional-area view is active.
 
 ## Functional-area scoring
 

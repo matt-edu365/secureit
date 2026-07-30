@@ -59,10 +59,7 @@ $summary = secureit_tenant_summary($tenantKey);
 $areaData = secureit_resolve_canonical_area_scores($tenantKey);
 $counts = secureit_check_summary_counts($areaData);
 $diagnostics = secureit_resolve_tenant_report_diagnostics($tenantKey);
-$functionalAreas = array_values(array_filter(
-    $areaData['areas'] ?? [],
-    static fn(mixed $area): bool => is_array($area) && (string) ($area['name'] ?? '') !== 'Productivity, Automation & AI'
-));
+$functionalAreas = array_values(array_filter($areaData['areas'] ?? [], 'is_array'));
 $analysisText = secureit_tenant_analysis_text($summary, $areaData);
 $selectedAreaName = trim((string) ($_GET['area'] ?? ''));
 $selectedArea = null;

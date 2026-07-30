@@ -28,6 +28,9 @@ The diagnostics mail routines are the reusable baseline for future email work.
 - Attachment sending has not been tested yet, so treat that as the next validation step before using the helpers elsewhere.
 - Tenant pages can now queue the `SecureIT Production` workflow when the GitHub dispatch token is configured.
 - Imported report bundles now send an HTML summary email to the tenant's configured report recipient.
+- The production workflow pins Maester `2.0.0` and a fixed fallback `maester-tests` commit.
+- Production report bundles must contain `latest/embedded-summary.json`; missing embedded evidence blocks publication rather than producing zero canonical results.
+- `tests/MaesterReportParsing.Tests.ps1` covers both the legacy `ws` and newer minified summary variable formats.
 
 ## Downloadable PDF report
 

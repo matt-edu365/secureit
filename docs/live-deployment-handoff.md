@@ -123,12 +123,13 @@ Before first meaningful validation:
 2. ensure `reports/` exists
 3. import at least one tenant report bundle under `data/reports/<tenant-key>/latest/`
 4. ensure `summary.json` exists for that tenant
+5. ensure `embedded-summary.json` exists for that tenant so canonical control evidence is available
 
 Without this, the app may still load, but there will be little useful content to verify.
 
 The diagnostics page includes a temporary secret-write tool for existing tenants. Use it as a repair path, not as the normal onboarding flow.
 
-## Workflow-to-runtime integration gap
+## Workflow-to-runtime integration
 
 The production workflow now publishes report bundles back into SecureIT through `report-import.php`, which means the workflow-to-app bridge is live rather than just theoretical.
 
@@ -137,6 +138,8 @@ Current available path:
 2. workflow prepares `app-import/<tenant-key>/...`
 3. the workflow posts the bundle to `report-import.php`
 4. `report-import.php` imports the bundle into app runtime storage and can send the tenant's HTML report summary email
+
+The production workflow now validates the bundle before publication. `latest/summary.json` provides run totals and `latest/embedded-summary.json` provides the individual Maester evidence used by SecureIT canonical scoring. Missing embedded evidence causes the assessment/publish path to fail rather than importing a zero-evidence report.
 
 Still to decide:
 - whether the live host will also use a host-side sync/pull job or rely on the workflow push path alone

@@ -108,6 +108,8 @@ The onboarding flow also writes the customer application secret into Azure Key V
 
 Tenant overview pages can queue a single-tenant run of the `SecureIT Production` GitHub workflow when `SECUREIT_GITHUB_TOKEN` and the repository settings are configured in the environment. `SECUREIT_WORKFLOW_SYNC_TOKEN` remains the app-to-app bridge token used by the SecureIT workflow-sync endpoint. The workflow now also forwards the tenant report recipient to the import endpoint so the post-import email does not depend only on the stored tenant record. After the resulting bundle is imported back into SecureIT, the app sends the tenant's report recipient an HTML summary email using the same overview layout as the diagnostics page.
 
+The production workflow pins the Maester module to version `2.0.0` and uses a fixed Maester test-suite commit when the pinned module does not provide its own test copy. The generated report must contain `latest/embedded-summary.json`; the workflow refuses to publish or complete successfully if that file is missing or cannot be parsed. This protects the portal from importing a report whose raw HTML has results but whose canonical control evidence is unavailable.
+
 ## Tenant overview trends
 
 Tenant overview pages include an SVG trend graph for the latest ten stored reports.
@@ -144,6 +146,8 @@ Key files:
 - `shared/functional-areas.php`
 - `app/control-details.php`
 - `app/control-remediation.php`
+
+The report-summary parser is shared by the production runner and is covered by `tests/MaesterReportParsing.Tests.ps1`. It accepts Maester's embedded summary object regardless of the minified JavaScript variable name used by the generated HTML report.
 
 ## Deployment direction
 

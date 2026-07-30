@@ -22,6 +22,8 @@ Already present:
 - `docker-compose.yml` for local testing
 - report import bridge into mounted runtime storage
 - diagnostic workflows for Azure and Key Vault
+- production report-summary parsing independent of Maester's minified JavaScript variable names
+- pinned production Maester module and test-suite inputs
 
 ## Build priorities
 
@@ -30,6 +32,7 @@ Already present:
 3. Keep the app and any companion surfaces aligned through the shared helper
 4. Keep docs aligned with the Docker-only stack
 5. Keep Maester as the backend engine, not the local web runtime
+6. Reject incomplete report bundles before they reach the SecureIT portal
 
 ## Runtime contract
 
@@ -46,6 +49,8 @@ The assessment engine still runs separately from the app runtime:
 2. workflow output is prepared for app import
 3. imported bundles are written into mounted runtime storage
 4. the SecureIT app reads the imported bundle
+
+The production bundle contract requires both `latest/summary.json` and `latest/embedded-summary.json`. The latter contains the individual Maester evidence needed for canonical SecureIT control scoring; a summary-only bundle must not be published.
 
 ## Success condition
 

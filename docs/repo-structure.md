@@ -13,6 +13,7 @@ SecureIT/
       azure-keyvault-smoke-test.yml
       azure-oidc-diagnostic.yml
       docker-publish.yml
+      secureit-production.yml
       maester-manual-run.yml
       maester-weekly.yml
   app/
@@ -55,9 +56,14 @@ SecureIT/
     Get-ResolvedTenantConfig.ps1
     Get-TenantConfig.ps1
     Import-AppReportBundle.ps1
+    MaesterReportParsing.ps1
     Invoke-MaesterRun.ps1
     New-SummaryJson.ps1
     seed-local-demo-data.sh
+  tests/
+    MaesterReportParsing.Tests.ps1
+    canonical-scoring.test.php
+    report-pdf.test.php
   shared/
     functional-areas.php
   Dockerfile
@@ -92,7 +98,12 @@ The current architecture, deployment, and handoff documentation.
 Workflow-generated report artifacts before they are imported into the app runtime.
 
 ### `scripts`
-PowerShell and shell helpers for tenant config, Maester runs, summary generation, and report import.
+PowerShell and shell helpers for tenant config, Maester runs, report-summary parsing, summary generation, and report import.
+
+`MaesterReportParsing.ps1` extracts the embedded result summary without depending on the minified JavaScript variable name chosen by the generated Maester HTML report.
+
+### `tests`
+Contract tests for canonical scoring, PDF rendering, and Maester embedded-summary parsing.
 
 ### `shared`
 Shared runtime helpers used by the app and any aligned companion surfaces.

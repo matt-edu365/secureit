@@ -16,6 +16,7 @@ Before testing:
 - confirm `data/tenants.json` exists or is intentionally seeded
 - confirm at least one tenant report bundle exists under `data/reports/<tenant-key>/latest/`
 - confirm `latest/summary.json` exists for the test tenant
+- confirm `latest/embedded-summary.json` exists for the test tenant
 - lint the PHP app pages with `php -l` if PHP is available locally
 - review `app/config.php` so the expected environment variables match the intended runtime
 
@@ -74,6 +75,7 @@ Minimum success state:
 - login, callback, logout, unavailable, and dashboard pages load without fatal errors
 - tenant metadata is readable from mounted `data/tenants.json`
 - imported tenant summaries render from mounted `data/reports/`
+- imported tenant bundles include parsed embedded Maester evidence and produce non-zero canonical control results when matching evidence exists
 - tenant detail view loads for a valid tenant
 - non-`fab@local` and non-`con@local` logins are redirected through Microsoft Entra
 - runtime writes stay inside mounted storage
@@ -83,6 +85,7 @@ Minimum success state:
 If doing a fuller validation pass:
 - confirm the app behaves sensibly when no tenant reports exist yet
 - confirm the app behaves sensibly when a tenant exists but `summary.json` is missing
+- confirm the workflow/import path rejects a bundle when `embedded-summary.json` is missing
 - test an imported bundle created through the workflow-to-app path
 - verify the app does not assume any removed shared-host paths
 - verify Key Vault-related pages degrade safely when Azure settings are absent

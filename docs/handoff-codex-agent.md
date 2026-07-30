@@ -38,6 +38,8 @@ Then inspect:
 - `scripts/Import-AppReportBundle.ps1`
 - `app/config.php`
 - `shared/functional-areas.php`
+- `scripts/MaesterReportParsing.ps1`
+- `tests/MaesterReportParsing.Tests.ps1`
 
 ## Working assumptions
 
@@ -62,6 +64,8 @@ Current important bridge:
 3. the workflow posts the bundle to `report-import.php`
 4. `report-import.php` imports into app runtime storage and can send the tenant's HTML report summary email
 
+The production workflow pins Maester to `2.0.0` and pins the fallback `maester-tests` checkout to commit `9e915230d5f077bef54f7216066b5d68dac6b0a1`. A production bundle is incomplete without `latest/embedded-summary.json`; both the runner and publish step reject missing or unparsable embedded evidence.
+
 ## Recommended priorities
 
 1. Keep the Docker-based runtime reproducible
@@ -84,4 +88,4 @@ If continuing product cleanup:
 1. inspect how `app/` reads imported report data
 2. compare that against actual workflow output and app-import bundle shape
 3. close any mismatches
-4. document the app bundle contract clearly
+4. document the app bundle contract clearly, including the required embedded summary

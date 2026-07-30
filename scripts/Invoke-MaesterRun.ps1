@@ -20,6 +20,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'MaesterReportParsing.ps1')
+
 function Ensure-DirectoryClean {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -700,21 +702,25 @@ catch {
 
 $htmlCandidate = Get-ChildItem -Path (Join-Path (Get-Location) 'test-results') -Filter 'TestResults-*.html' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 $embeddedSummaryPath = Join-Path $historyDir 'embedded-summary.json'
+$embeddedSummary = $null
 if ($htmlCandidate) {
     Copy-Item -Path $htmlCandidate.FullName -Destination $htmlReportPath -Force
     Set-SecureItReportBranding -HtmlPath $htmlReportPath -TenantKey $TenantKey
 
     try {
         $htmlContent = Get-Content -Raw -LiteralPath $htmlCandidate.FullName -ErrorAction Stop
-        $wsMatch = [regex]::Match($htmlContent, 'var\s+ws\s*=\s*(\{.*?\})\s*;', [System.Text.RegularExpressions.RegexOptions]::Singleline)
-        if ($wsMatch.Success) {
-            $embeddedSummary = $wsMatch.Groups[1].Value | ConvertFrom-Json -ErrorAction Stop
+        $embeddedSummary = Get-SecureItEmbeddedMaesterSummary -HtmlContent $htmlContent
+        if ($null -ne $embeddedSummary) {
             $embeddedSummary | ConvertTo-Json -Depth 50 | Set-Content -Path $embeddedSummaryPath -Encoding UTF8
         }
     }
     catch {
         Write-Warning ("Failed to persist embedded HTML summary JSON: " + $_.Exception.Message)
     }
+}
+
+if ($htmlCandidate -and $null -eq $embeddedSummary) {
+    throw 'The Maester HTML report did not contain a parseable embedded summary. No report bundle was published.'
 }
 
 $testResults = @()
@@ -744,23 +750,17 @@ if (-not $testResults) {
         'not run' = 0
     }
 
-    $wsMatch = [regex]::Match($htmlFallback, 'var\s+ws\s*=\s*(\{.*?\});', [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    if ($wsMatch.Success) {
-        try {
-            $wsSummary = $wsMatch.Groups[1].Value | ConvertFrom-Json -ErrorAction Stop
-            if ($null -ne $wsSummary.PassedCount) { $summaryMap['passed'] = [int]$wsSummary.PassedCount }
-            if ($null -ne $wsSummary.FailedCount) { $summaryMap['failed'] = [int]$wsSummary.FailedCount }
-            if ($null -ne $wsSummary.InvestigateCount) { $summaryMap['investigate'] = [int]$wsSummary.InvestigateCount }
-            if ($null -ne $wsSummary.SkippedCount) { $summaryMap['skipped'] = [int]$wsSummary.SkippedCount }
-            if ($null -ne $wsSummary.ErrorCount) { $summaryMap['error'] = [int]$wsSummary.ErrorCount }
-            if ($null -ne $wsSummary.NotRunCount) { $summaryMap['not run'] = [int]$wsSummary.NotRunCount }
-        }
-        catch {
-            Write-Warning ("Failed to parse embedded Maester summary JSON from HTML report: " + $_.Exception.Message)
-        }
+    $wsSummary = Get-SecureItEmbeddedMaesterSummary -HtmlContent $htmlFallback
+    if ($null -ne $wsSummary) {
+        if ($null -ne $wsSummary.PassedCount) { $summaryMap['passed'] = [int]$wsSummary.PassedCount }
+        if ($null -ne $wsSummary.FailedCount) { $summaryMap['failed'] = [int]$wsSummary.FailedCount }
+        if ($null -ne $wsSummary.InvestigateCount) { $summaryMap['investigate'] = [int]$wsSummary.InvestigateCount }
+        if ($null -ne $wsSummary.SkippedCount) { $summaryMap['skipped'] = [int]$wsSummary.SkippedCount }
+        if ($null -ne $wsSummary.ErrorCount) { $summaryMap['error'] = [int]$wsSummary.ErrorCount }
+        if ($null -ne $wsSummary.NotRunCount) { $summaryMap['not run'] = [int]$wsSummary.NotRunCount }
     }
 
-    if (-not $wsMatch.Success) {
+    if ($null -eq $wsSummary) {
         $patterns = @{
             'passed' = 'Tests Passed[^:]*:\s*(\d+)'
             'failed' = 'Failed[^:]*:\s*(\d+)'

@@ -267,6 +267,8 @@ jobs:
     env:
       CONFIG_PATH: config/tenants.json
       TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'SecureIT-Production-101' }}
+      MAESTER_VERSION: '2.0.0'
+      MAESTER_TESTS_REF: '9e915230d5f077bef54f7216066b5d68dac6b0a1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -410,23 +412,22 @@ jobs:
           if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
             Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
           }
-          if (-not (Get-Module -ListAvailable -Name Maester)) {
-            if (Get-PSResourceRepository -ErrorAction SilentlyContinue) {
-              Install-PSResource Maester -TrustRepository -Scope CurrentUser
-            }
-            else {
-              Install-Module Maester -Scope CurrentUser -Force -AllowClobber
-            }
+          if (-not (Get-Module -ListAvailable -Name Maester -RequiredVersion $env:MAESTER_VERSION)) {
+            Install-Module Maester -RequiredVersion $env:MAESTER_VERSION -Scope CurrentUser -Force -AllowClobber
           }
           Import-Module Pester -RequiredVersion 5.7.1 -Force
           Import-Module ExchangeOnlineManagement -Force
-          Import-Module Maester -Force
+          Import-Module Maester -RequiredVersion $env:MAESTER_VERSION -Force
           $env:CI = 'true'
-          $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+          $maesterModule = Get-Module -ListAvailable -Name Maester -RequiredVersion $env:MAESTER_VERSION | Select-Object -First 1
           $moduleRoot = Split-Path -Parent $maesterModule.Path
           $testsRoot = Join-Path $moduleRoot 'maester-tests'
           if (-not (Test-Path -LiteralPath $testsRoot)) {
-            'y' | Install-MaesterTests
+            $testsRoot = Join-Path $env:GITHUB_WORKSPACE 'maester-tests'
+            git init $testsRoot | Out-Null
+            git -C $testsRoot remote add origin https://github.com/maester365/maester-tests.git
+            git -C $testsRoot fetch --depth 1 origin $env:MAESTER_TESTS_REF
+            git -C $testsRoot checkout --detach $env:MAESTER_TESTS_REF
           }
 
       - name: Run SecureIT assessment engine
@@ -468,6 +469,10 @@ jobs:
           if [ ! -d "output/${TENANT_KEY}" ]; then
             echo "No output bundle found for ${TENANT_KEY}; skipping portal publish." >&2
             exit 0
+          fi
+          if [ ! -f "output/${TENANT_KEY}/latest/embedded-summary.json" ]; then
+            echo "The assessment output is missing latest/embedded-summary.json; refusing to publish an incomplete report." >&2
+            exit 1
           fi
 
           reportRecipientHeader=()
@@ -530,7 +535,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ "${{ steps.maester.outcome }}" != "success" ] && [ ! -f "output/${{ matrix.tenantKey }}/latest/summary.json" ]; then
-            echo "Assessment step failed and no fallback summary was produced." >&2
+          if [ "${{ steps.maester.outcome }}" != "success" ] || [ ! -f "output/${{ matrix.tenantKey }}/latest/embedded-summary.json" ]; then
+            echo "Assessment did not produce a complete report bundle with latest/embedded-summary.json." >&2
             exit 1
           fi

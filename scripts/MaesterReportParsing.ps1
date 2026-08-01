@@ -80,7 +80,10 @@ function Get-SecureItEmbeddedMaesterSummary {
             continue
         }
 
-        $propertyNames = @($summary.PSObject.Properties.Name)
+        $propertyNames = @(
+            $summary.PSObject.Properties |
+                ForEach-Object { $_.Name }
+        )
         $missingProperty = $requiredSummaryProperties |
             Where-Object { $_ -notin $propertyNames } |
             Select-Object -First 1

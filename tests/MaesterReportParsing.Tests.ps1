@@ -60,6 +60,35 @@ const testResults={
         $summary.Blocks[0].Counts.Failed | Should -Be 71
     }
 
+    It 'parses the Maester 2 report format under production strict mode' {
+        $parserPath = (Resolve-Path (Join-Path (Join-Path $PSScriptRoot '..') 'scripts/MaesterReportParsing.ps1')).Path
+        $strictModeScript = {
+            param([string]$ParserPath)
+
+            $ErrorActionPreference = 'Stop'
+            Set-StrictMode -Version Latest
+            . $ParserPath
+
+            $html = '<script>const testResults = {"Result":"Failed","FailedCount":1,"PassedCount":2,"ErrorCount":0,"InvestigateCount":0,"SkippedCount":0,"NotRunCount":0,"TotalCount":3,"Tests":[{"Result":"Failed"}]};</script>'
+            Get-SecureItEmbeddedMaesterSummary -HtmlContent $html | ConvertTo-Json -Compress
+        }
+        $runspace = [powershell]::Create()
+
+        try {
+            $result = @($runspace.AddScript($strictModeScript.ToString()).AddArgument($parserPath).Invoke())
+            $errors = @($runspace.Streams.Error)
+        }
+        finally {
+            $runspace.Dispose()
+        }
+
+        $errors | Should -BeNullOrEmpty
+        $summary = $result[-1].ToString() | ConvertFrom-Json -ErrorAction Stop
+        $summary.PassedCount | Should -Be 2
+        $summary.FailedCount | Should -Be 1
+        $summary.TotalCount | Should -Be 3
+    }
+
     It 'accepts let assignments and skips unrelated JavaScript objects' {
         $html = @'
 <script>

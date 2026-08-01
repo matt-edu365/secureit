@@ -412,14 +412,18 @@ jobs:
           if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
             Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
           }
-          if (-not (Get-Module -ListAvailable -Name Maester -RequiredVersion $env:MAESTER_VERSION)) {
+          $maesterModuleSpec = @{
+            ModuleName = 'Maester'
+            RequiredVersion = $env:MAESTER_VERSION
+          }
+          if (-not (Get-Module -ListAvailable -FullyQualifiedName $maesterModuleSpec)) {
             Install-Module Maester -RequiredVersion $env:MAESTER_VERSION -Scope CurrentUser -Force -AllowClobber
           }
           Import-Module Pester -RequiredVersion 5.7.1 -Force
           Import-Module ExchangeOnlineManagement -Force
           Import-Module Maester -RequiredVersion $env:MAESTER_VERSION -Force
           $env:CI = 'true'
-          $maesterModule = Get-Module -ListAvailable -Name Maester -RequiredVersion $env:MAESTER_VERSION | Select-Object -First 1
+          $maesterModule = Get-Module -ListAvailable -FullyQualifiedName $maesterModuleSpec | Select-Object -First 1
           $moduleRoot = Split-Path -Parent $maesterModule.Path
           $testsRoot = Join-Path $moduleRoot 'maester-tests'
           if (-not (Test-Path -LiteralPath $testsRoot)) {

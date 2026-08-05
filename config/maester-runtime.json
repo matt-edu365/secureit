@@ -1,0 +1,112 @@
+{
+  "maesterVersion": "2.2.0",
+  "permissionSource": "Maester 2.2.0 Get-MtGraphScope default read-only scopes",
+  "graphApplicationPermissions": [
+    {
+      "name": "AuditLog.Read.All",
+      "purpose": "Read directory audit and sign-in activity used by security checks."
+    },
+    {
+      "name": "DeviceManagementConfiguration.Read.All",
+      "purpose": "Read Intune device configuration and compliance policies."
+    },
+    {
+      "name": "DeviceManagementManagedDevices.Read.All",
+      "purpose": "Read managed-device inventory and state."
+    },
+    {
+      "name": "DeviceManagementRBAC.Read.All",
+      "purpose": "Read Intune role-based access configuration."
+    },
+    {
+      "name": "DeviceManagementServiceConfig.Read.All",
+      "purpose": "Read Intune service configuration, connectors, and enrollment settings."
+    },
+    {
+      "name": "Directory.Read.All",
+      "purpose": "Read directory users, groups, applications, roles, and organisation data."
+    },
+    {
+      "name": "DirectoryRecommendations.Read.All",
+      "purpose": "Read Microsoft Entra recommendations."
+    },
+    {
+      "name": "EntitlementManagement.Read.All",
+      "purpose": "Read entitlement-management catalogues, access packages, and policies."
+    },
+    {
+      "name": "IdentityRiskEvent.Read.All",
+      "purpose": "Read identity-risk detections used by risk-policy checks."
+    },
+    {
+      "name": "NetworkAccess.Read.All",
+      "purpose": "Read Global Secure Access configuration."
+    },
+    {
+      "name": "OnPremDirectorySynchronization.Read.All",
+      "purpose": "Read Entra Connect and cloud-sync configuration."
+    },
+    {
+      "name": "OrgSettings-AppsAndServices.Read.All",
+      "purpose": "Read organisation-wide application and service settings."
+    },
+    {
+      "name": "OrgSettings-Forms.Read.All",
+      "purpose": "Read Microsoft Forms organisation settings."
+    },
+    {
+      "name": "Policy.Read.All",
+      "purpose": "Read identity, authentication, authorisation, and security policies."
+    },
+    {
+      "name": "Policy.Read.ConditionalAccess",
+      "purpose": "Read Conditional Access policies and assignments."
+    },
+    {
+      "name": "Reports.Read.All",
+      "purpose": "Read Microsoft 365 usage and activity reports used by checks."
+    },
+    {
+      "name": "ReportSettings.Read.All",
+      "purpose": "Read Microsoft Graph report settings."
+    },
+    {
+      "name": "RoleEligibilitySchedule.Read.Directory",
+      "purpose": "Read eligible Microsoft Entra role-assignment schedules without write access."
+    },
+    {
+      "name": "RoleManagement.Read.All",
+      "purpose": "Read Microsoft Entra role definitions, assignments, and policies."
+    },
+    {
+      "name": "RoleManagementAlert.Read.Directory",
+      "purpose": "Read privileged-role management alerts."
+    },
+    {
+      "name": "SecurityIdentitiesSensors.Read.All",
+      "purpose": "Read Microsoft Defender for Identity sensor information."
+    },
+    {
+      "name": "SecurityIdentitiesHealth.Read.All",
+      "purpose": "Read Microsoft Defender for Identity health information."
+    },
+    {
+      "name": "SharePointTenantSettings.Read.All",
+      "purpose": "Read SharePoint and OneDrive tenant settings exposed through Microsoft Graph."
+    },
+    {
+      "name": "ThreatHunting.Read.All",
+      "purpose": "Read Defender threat-hunting and exposure data used by security checks."
+    },
+    {
+      "name": "UserAuthenticationMethod.Read.All",
+      "purpose": "Read users' registered authentication methods and MFA coverage."
+    }
+  ],
+  "optionalPrivilegedPermissions": [
+    {
+      "name": "ReportSettings.ReadWrite.All",
+      "purpose": "Allow Maester to disable report obfuscation; SecureIT does not require this for its default read-only run."
+    }
+  ]
+}

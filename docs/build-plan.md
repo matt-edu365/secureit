@@ -39,7 +39,7 @@ Already present:
 The container should assume:
 - tenant metadata lives in `/var/www/data/tenants.json`
 - reports live in `/var/www/data/reports`
-- canonical controls, if used, live in `/var/www/data/canonical-controls.json`, but the app can fall back to the bundled image copy for the homepage total
+- canonical controls live in `/var/www/data/canonical-controls.json`; the versioned image seed is used to create or refresh that runtime copy and remains the loader fallback
 - shared runtime helpers are baked into the image
 
 ## Workflow-to-app bridge
@@ -50,7 +50,16 @@ The assessment engine still runs separately from the app runtime:
 3. imported bundles are written into mounted runtime storage
 4. the SecureIT app reads the imported bundle
 
-The production bundle contract requires both `latest/summary.json` and `latest/embedded-summary.json`. The latter contains the individual Maester evidence needed for canonical SecureIT control scoring; a summary-only bundle must not be published.
+The production publication contract requires both `latest/summary.json` and `latest/embedded-summary.json`. The latter contains the individual Maester evidence needed for canonical SecureIT control scoring; the production runner and workflow refuse to publish a summary-only bundle. The generic `report-import.php` endpoint currently validates `latest/summary.json` but relies on its authenticated producer to supply `latest/embedded-summary.json`.
+
+## Extending test coverage
+
+- Enable long-running tests deliberately after measuring them against the production workflow timeout. Confirm the application-registration controls become scoreable and the XSPM controls produce either real results or explicit Defender capability skips.
+- Keep preview tests excluded from the normal production profile initially. Represent `MTHIGHRISKAPPPERMISSIONS` as an intentional preview exclusion, or place it in a separate preview profile, instead of reporting an unexplained `not_run` result.
+- Add service-aware onboarding for Exchange Online, Teams, Azure, SharePoint Online, Entra P2/Governance, Defender XDR/Exposure Management, Intune, and hybrid identity. Record which capabilities are available and keep unavailable licensed services outside the score denominator.
+- Add each service connection only with its matching preflight: Exchange application permission and RBAC, Teams application authentication and reader role, Azure RBAC, and an explicit certificate-based SharePoint app-only option. Do not silently add high-privilege SharePoint access to client-secret onboarding.
+- Replace generic non-scoreable explanations with distinct states for missing consent or connection, unlicensed/not applicable, deliberately excluded preview, unsupported upstream tests, and runner/configuration defects.
+- Handle `Test-MtMdiHealthIssues.Tests.ps1` explicitly: zero returned health issues may be a pass only when the Defender for Identity request is known to have succeeded; permission, connection, and API failures must remain coverage gaps.
 
 ## Success condition
 

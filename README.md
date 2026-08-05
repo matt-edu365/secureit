@@ -63,9 +63,9 @@ Runtime storage mounted into the container.
 Expected uses:
 - `tenants.json`
 - `reports/<tenant-key>/...`
-- `canonical-controls.json` if canonical scoring is enabled
+- `canonical-controls.json` for the live canonical scoring catalog
 
-Canonical controls are stored in the mounted `data/` volume, not in the image. The container seeds `data/canonical-controls.json` from the image copy on first boot, but a pre-existing volume file will stay in place across redeploys until it is explicitly refreshed. Use the diagnostics page to reset the file from the image seed if the live control count drifts from the current build.
+The image contains a versioned seed at `/usr/local/share/secureit/canonical-controls.json`, while the active runtime copy normally lives at `/var/www/data/canonical-controls.json`. On container startup, the entrypoint creates the runtime copy when it is missing and refreshes it when the seed version differs. The loader reads a valid runtime catalog first and falls back to the image seed if the runtime file is missing or invalid. The diagnostics page can also reset the runtime copy manually.
 
 ## Local Docker workflow
 
@@ -108,7 +108,9 @@ The onboarding flow also writes the customer application secret into Azure Key V
 
 Tenant overview pages can queue a single-tenant run of the `SecureIT Production` GitHub workflow when `SECUREIT_GITHUB_TOKEN` and the repository settings are configured in the environment. `SECUREIT_WORKFLOW_SYNC_TOKEN` remains the app-to-app bridge token used by the SecureIT workflow-sync endpoint. The workflow now also forwards the tenant report recipient to the import endpoint so the post-import email does not depend only on the stored tenant record. After the resulting bundle is imported back into SecureIT, the app sends the tenant's report recipient an HTML summary email using the same overview layout as the diagnostics page.
 
-The production workflow pins the Maester module to version `2.0.0` and uses a fixed Maester test-suite commit when the pinned module does not provide its own test copy. The generated report must contain `latest/embedded-summary.json`; the workflow refuses to publish or complete successfully if that file is missing or cannot be parsed. This protects the portal from importing a report whose raw HTML has results but whose canonical control evidence is unavailable.
+The production workflow reads its Maester `2.2.0` pin and required Graph application permissions from `config/maester-runtime.json`. SecureIT uses only the test suite bundled with that exact module version and fails closed if a production allowlist file is absent or the manifest permissions differ from `Get-MtGraphScope`. This prevents independently versioned tests and module functions from drifting apart. The generated report must contain `latest/embedded-summary.json`; the workflow refuses to publish or complete successfully if that file is missing or cannot be parsed.
+
+Customer onboarding renders the permission list from the same runtime manifest. Before a client-secret tenant is saved, SecureIT requests a Graph application token with the supplied credentials and verifies that its application-role claims include every permission required by the pinned Maester runtime.
 
 ## Tenant overview trends
 
@@ -129,6 +131,8 @@ Functional-area views also show a single-area trend graph below the checks table
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.
 
+The current version 2 catalog contains 101 controls across seven scored functional areas. `SecureIT-Production-101` combines the `Maester-83` baseline with 18 production-selected 365Inspect checks. `CONDITIONALACCESSWHATIF` is catalogued as a separate to-do feature and is not included in the current 100-control scored-or-excluded production reconciliation.
+
 The version 2 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
 
 Mounted version 1 catalogs remain readable during deployment when they satisfy the same structural rules. If a mounted catalog is invalid, the loader tries the bundled image seed so a stale runtime file cannot take down customer login.
@@ -143,6 +147,7 @@ Each resolved control also carries structured customer guidance: an issue descri
 
 Key files:
 - `config/canonical-controls.example.json`
+- `config/maester-runtime.json`
 - `shared/functional-areas.php`
 - `app/control-details.php`
 - `app/control-remediation.php`
@@ -157,7 +162,7 @@ Current target:
 - runtime on Docker or Proxmox-backed Docker host
 - public hostname `https://secureit.ict365.ky`
 
-Canonical controls follow the same pattern as tenant data: the image carries the seed copy, while `/var/www/data/canonical-controls.json` is the live runtime file. If the live control count does not match the build, overwrite the mounted file from the diagnostics reset action or replace the persistent volume copy before expecting the portal scores and emails to update.
+Canonical controls follow the same mounted-data pattern as tenant data. The image carries the versioned seed, and `/var/www/data/canonical-controls.json` is the preferred live scoring source. A normal container start refreshes the mounted copy when its version differs from the image. Use the diagnostics reset action if a manual recovery or verification is needed.
 
 ## Working rule for future changes
 

@@ -8,6 +8,7 @@ return [
     'canonical_controls_file' => getenv('SECUREIT_CANONICAL_CONTROLS_FILE') ?: __DIR__ . '/../data/canonical-controls.json',
     'canonical_controls_version_file' => getenv('SECUREIT_CANONICAL_CONTROLS_VERSION_FILE') ?: __DIR__ . '/../data/canonical-controls.version',
     'canonical_controls_example_file' => __DIR__ . '/../config/canonical-controls.example.json',
+    'maester_runtime_manifest_file' => getenv('SECUREIT_MAESTER_RUNTIME_MANIFEST_FILE') ?: (file_exists('/usr/local/share/secureit/maester-runtime.json') ? '/usr/local/share/secureit/maester-runtime.json' : __DIR__ . '/../config/maester-runtime.json'),
     'test_descriptions_dir' => getenv('SECUREIT_TEST_DESCRIPTIONS_DIR') ?: __DIR__ . '/../data/maester-test-descriptions',
     'entra_authority' => getenv('SECUREIT_ENTRA_AUTHORITY') ?: 'organizations',
     'entra_tenant_id' => getenv('SECUREIT_ENTRA_TENANT_ID') ?: '',

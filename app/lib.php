@@ -9,6 +9,63 @@ function secureit_config(): array {
     return $config;
 }
 
+function secureit_maester_runtime_manifest(): array {
+    static $manifest = null;
+    if (is_array($manifest)) {
+        return $manifest;
+    }
+
+    $path = trim((string) (secureit_config()['maester_runtime_manifest_file'] ?? ''));
+    if ($path === '' || !is_file($path) || !is_readable($path)) {
+        throw new RuntimeException('The Maester runtime manifest is missing or unreadable.');
+    }
+
+    $decoded = json_decode((string) file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException('The Maester runtime manifest is not valid JSON.');
+    }
+
+    $version = trim((string) ($decoded['maesterVersion'] ?? ''));
+    $permissions = $decoded['graphApplicationPermissions'] ?? null;
+    if ($version === '' || !is_array($permissions) || $permissions === []) {
+        throw new RuntimeException('The Maester runtime manifest is missing its version or Graph application permissions.');
+    }
+
+    $seen = [];
+    foreach ($permissions as $permission) {
+        $name = is_array($permission) ? trim((string) ($permission['name'] ?? '')) : '';
+        if ($name === '' || isset($seen[strtolower($name)])) {
+            throw new RuntimeException('The Maester runtime manifest contains an empty or duplicate Graph permission.');
+        }
+        $seen[strtolower($name)] = true;
+    }
+
+    $manifest = $decoded;
+    return $manifest;
+}
+
+function secureit_maester_graph_application_permissions(): array {
+    $permissions = [];
+    foreach (secureit_maester_runtime_manifest()['graphApplicationPermissions'] as $permission) {
+        if (!is_array($permission)) {
+            continue;
+        }
+
+        $name = trim((string) ($permission['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+
+        $permissions[] = [
+            'name' => $name,
+            'purpose' => trim((string) ($permission['purpose'] ?? 'Required by the pinned Maester assessment runtime.')),
+        ];
+    }
+
+    usort($permissions, static fn(array $left, array $right): int => strcasecmp($left['name'], $right['name']));
+    return $permissions;
+}
+
 function secureit_current_request_base_url(): string {
     $forwardedProto = trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
     $scheme = 'http';
@@ -986,33 +1043,115 @@ function secureit_entra_exchange_code_for_tokens(string $code): array {
     ]);
 }
 
-function secureit_entra_graph_access_token_for_tenant(string $tenantId): string {
-    $config = secureit_entra_config();
+function secureit_entra_client_credentials_access_token(string $tenantId, string $clientId, string $clientSecret, string $scope): string {
     $tenantId = trim($tenantId);
+    $clientId = trim($clientId);
+    $clientSecret = trim($clientSecret);
+    $scope = trim($scope);
 
     if ($tenantId === '') {
-        throw new RuntimeException('Tenant ID is required to request a Microsoft Graph token.');
+        throw new RuntimeException('Tenant ID is required to request an application token.');
     }
-    if ($config['clientId'] === '' || $config['clientSecret'] === '') {
-        throw new RuntimeException('Entra client credentials are not configured.');
+    if ($clientId === '' || $clientSecret === '') {
+        throw new RuntimeException('Application client credentials are required to request a token.');
+    }
+    if ($scope === '') {
+        throw new RuntimeException('A token scope is required.');
     }
 
     $response = secureit_http_post_form(
         'https://login.microsoftonline.com/' . rawurlencode($tenantId) . '/oauth2/v2.0/token',
         [
-            'client_id' => $config['clientId'],
-            'client_secret' => $config['clientSecret'],
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
             'grant_type' => 'client_credentials',
-            'scope' => 'https://graph.microsoft.com/.default',
+            'scope' => $scope,
         ]
     );
 
     $accessToken = trim((string) ($response['access_token'] ?? ''));
     if ($accessToken === '') {
-        throw new RuntimeException('Azure token response did not include a Microsoft Graph access token.');
+        throw new RuntimeException('Microsoft Entra did not issue an application token. Confirm the tenant ID, application ID, client secret, and admin consent.');
     }
 
     return $accessToken;
+}
+
+function secureit_entra_graph_application_roles_from_token(string $accessToken): array {
+    $decoded = secureit_jwt_decode(trim($accessToken));
+    if (!$decoded) {
+        throw new RuntimeException('The Microsoft Graph access token could not be inspected for granted application permissions.');
+    }
+
+    $roles = $decoded['payload']['roles'] ?? [];
+    if (is_string($roles)) {
+        $roles = [$roles];
+    }
+    if (!is_array($roles)) {
+        $roles = [];
+    }
+
+    $roles = array_values(array_unique(array_filter(array_map(
+        static fn(mixed $role): string => trim((string) $role),
+        $roles
+    ), static fn(string $role): bool => $role !== '')));
+    sort($roles, SORT_NATURAL | SORT_FLAG_CASE);
+    return $roles;
+}
+
+function secureit_entra_validate_maester_graph_permissions(string $tenantId, string $clientId, string $clientSecret): array {
+    $required = array_values(array_map(
+        static fn(array $permission): string => $permission['name'],
+        secureit_maester_graph_application_permissions()
+    ));
+
+    try {
+        $token = secureit_entra_client_credentials_access_token(
+            $tenantId,
+            $clientId,
+            $clientSecret,
+            'https://graph.microsoft.com/.default'
+        );
+        $granted = secureit_entra_graph_application_roles_from_token($token);
+    } catch (Throwable $exception) {
+        return [
+            'ok' => false,
+            'required' => $required,
+            'granted' => [],
+            'missing' => $required,
+            'message' => $exception->getMessage(),
+        ];
+    }
+
+    $grantedLookup = [];
+    foreach ($granted as $role) {
+        $grantedLookup[strtolower($role)] = true;
+    }
+
+    $missing = array_values(array_filter(
+        $required,
+        static fn(string $permission): bool => !isset($grantedLookup[strtolower($permission)])
+    ));
+
+    return [
+        'ok' => $missing === [],
+        'required' => $required,
+        'granted' => $granted,
+        'missing' => $missing,
+        'message' => $missing === []
+            ? 'All required Microsoft Graph application permissions are present in the issued token.'
+            : 'The application is missing required Microsoft Graph application permissions: ' . implode(', ', $missing),
+    ];
+}
+
+function secureit_entra_graph_access_token_for_tenant(string $tenantId): string {
+    $config = secureit_entra_config();
+    return secureit_entra_client_credentials_access_token(
+        $tenantId,
+        $config['clientId'],
+        $config['clientSecret'],
+        'https://graph.microsoft.com/.default'
+    );
 }
 
 function secureit_entra_graph_get_json_for_tenant(string $tenantId, string $path): array {

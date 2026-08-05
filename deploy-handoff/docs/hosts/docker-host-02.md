@@ -38,7 +38,8 @@
 - Uptime Kuma local origin: `http://192.168.36.40:3001`
 - UniFi Toolkit local origin: `http://192.168.36.40:8100`
 - Uptime Kuma alert webhook target: AdamAI `192.168.36.30:5055` via `uptime-adamai.ict365.ky`
-- Planned public hostnames: `paperclip.ict365.ky`, `secureit.ict365.ky`, `serpbear.ict365.ky`, and `umami.ict365.ky`
+- SecureIT public hostname: `secureit.ict365.ky`
+- Other planned public hostnames: `paperclip.ict365.ky`, `serpbear.ict365.ky`, and `umami.ict365.ky`
 
 ## Notes
 - The `adam` account has `sudo` access but is not in the Docker group.

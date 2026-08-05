@@ -7,7 +7,7 @@
 
 ## Goal
 
-Deploy SecureIT as a live Docker-hosted application at:
+Operate and update SecureIT as a live Docker-hosted application at:
 - `https://secureit.ict365.ky`
 
 The intended delivery loop is now:
@@ -71,9 +71,9 @@ Persistent mounted storage must exist for:
 - `/var/www/data/tenants.json`
 - `/var/www/data/reports/`
 
-Likely additional runtime files:
+Additional runtime files:
 - `/var/www/data/admin-config.json`
-- `/var/www/data/canonical-controls.json` if canonical scoring is enabled later; this is optional because Previous behaviour relied on the bundled image copy as a fallback
+- `/var/www/data/canonical-controls.json` for canonical scoring; container startup seeds or refreshes it from the versioned image copy, and the loader can fall back to the image if it is missing or invalid
 
 ## Minimum environment variables
 
@@ -83,8 +83,8 @@ Required minimum runtime variables:
 - `SECUREIT_TENANTS_FILE=/var/www/data/tenants.json`
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
 
-Likely later:
-- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` if you want to override the default runtime path; otherwise it can be omitted
+Current integration variables:
+- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` is already the production-stack default and only needs to be set explicitly when overriding the image default
 - `SECUREIT_KEY_VAULT_TENANT_ID=<app-tenant-id>`
 - `SECUREIT_KEY_VAULT_CLIENT_ID=<secureit-app-client-id>`
 - `SECUREIT_KEY_VAULT_CLIENT_SECRET=<secureit-app-client-secret>`
@@ -116,9 +116,9 @@ At minimum, the app may need to:
 
 Check ownership and permissions for the effective Apache/PHP user, which is expected to be `www-data` in the current image.
 
-## Bootstrap requirements for first live test
+## Bootstrap or recovery requirements
 
-Before first meaningful validation:
+Before a first deployment, or when rebuilding an empty runtime volume:
 1. create or seed `tenants.json`
 2. ensure `reports/` exists
 3. import at least one tenant report bundle under `data/reports/<tenant-key>/latest/`
@@ -153,19 +153,19 @@ The next agent should treat this as a priority integration decision.
 The current app now uses an Entra ID-backed login flow in the codebase, but production sign-in is only real once the live app registration, redirect URIs, and logout URLs are configured and tested end to end.
 The localhost-only seed identities (`fab@local` and `con@local`) are development conveniences and must not be treated as a live deployment path.
 
-Before real customer exposure, confirm the live tenant configuration and sign-in routing:
+Before further customer exposure, and after authentication changes, confirm the live tenant configuration and sign-in routing:
 - Entra redirect URIs are registered for `/auth/callback`
 - logout return URLs and front-channel logout URLs are registered
 - admin and customer access rules work as intended
 - the first customer tenant can sign in without seeing any other tenant
 - local `.local/identity-seeds.json` data is not mounted or relied on in the production container
-- `/var/www/data/canonical-controls.json` is optional for the homepage total; Previous behaviour was to use the runtime file first and then the bundled image copy as a fallback
+- `/var/www/data/canonical-controls.json` should normally exist as the active catalog; the entrypoint synchronizes it from the versioned image seed, and the loader uses the bundled seed only when the runtime file is missing or invalid
 
 Do not assume the fallback seed-based login path is the production auth model.
 
 ## Post-deploy validation checklist
 
-After the first live deploy, verify:
+After every live deploy, verify:
 - `https://secureit.ict365.ky` loads
 - login page loads
 - portal/dashboard pages render without fatal errors
@@ -176,13 +176,15 @@ After the first live deploy, verify:
 
 ## Recommended priorities for the next Codex agent
 
-1. confirm live Docker host deployment method
-2. implement or document the GHCR-to-host deployment path
-3. confirm the workflow-to-app report import path and email notification flow
+1. keep the tracked Portainer stack and GHCR-to-host deployment path aligned
+2. add the workflow bridge and GitHub dispatch variables to the checked-in production stack before relying on those features there
+3. revalidate the workflow-to-app report import path and email notification flow after deployment changes
 4. validate mounted storage permissions and ownership
 5. verify TLS and reverse-proxy behaviour for `secureit.ict365.ky`
-6. decide short-term access control before public exposure
+6. revalidate customer/admin access isolation before broader exposure
 7. run an end-to-end live test with at least one real imported tenant bundle
+
+Current stack caveat: `deploy-handoff/docker/secureit/portainer-stack.yaml` does not yet forward `SECUREIT_WORKFLOW_SYNC_TOKEN` or the `SECUREIT_GITHUB_*` settings. The variables above describe the application contract, but the tracked production stack must be extended before tenant discovery, authenticated report import, or tenant-page workflow dispatch can be expected to work from that definition alone.
 
 ## Relevant files to inspect next
 

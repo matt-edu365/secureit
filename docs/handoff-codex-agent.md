@@ -33,8 +33,7 @@ Read these before making architecture decisions:
 - `docs/proxmox-deploy-plan.md`
 
 Then inspect:
-- `.github/workflows/maester-manual-run.yml`
-- `.github/workflows/maester-weekly.yml`
+- `.github/workflows/secureit-production.yml`
 - `scripts/Import-AppReportBundle.ps1`
 - `app/config.php`
 - `shared/functional-areas.php`
@@ -64,7 +63,7 @@ Current important bridge:
 3. the workflow posts the bundle to `report-import.php`
 4. `report-import.php` imports into app runtime storage and can send the tenant's HTML report summary email
 
-The production workflow pins Maester to `2.0.0` and pins the fallback `maester-tests` checkout to commit `9e915230d5f077bef54f7216066b5d68dac6b0a1`. A production bundle is incomplete without `latest/embedded-summary.json`; both the runner and publish step reject missing or unparsable embedded evidence.
+The production workflow reads its Maester `2.2.0` pin and Graph application-permission contract from `config/maester-runtime.json`. It uses only the tests bundled with that module, validates the manifest against `Get-MtGraphScope`, and fails closed when an allowlisted production test is absent. A production bundle is incomplete without `latest/embedded-summary.json`; both the runner and production publication step reject missing or unparsable embedded evidence. The authenticated generic import endpoint itself currently validates only `latest/summary.json`, so producers other than the production workflow must enforce the full contract.
 
 ## Recommended priorities
 
@@ -79,7 +78,7 @@ The production workflow pins Maester to `2.0.0` and pins the fallback `maester-t
 - `app/`
 - `shared/`
 - `scripts/Import-AppReportBundle.ps1`
-- `.github/workflows/maester-manual-run.yml`
+- `.github/workflows/secureit-production.yml`
 - `docs/`
 
 ## Practical next step

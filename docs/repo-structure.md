@@ -12,6 +12,7 @@ SecureIT/
     workflows/
       azure-keyvault-smoke-test.yml
       azure-oidc-diagnostic.yml
+      docker-deploy-handoff.yml
       docker-publish.yml
       secureit-production.yml
       maester-manual-run.yml
@@ -23,20 +24,30 @@ SecureIT/
       logout.php
       unavailable.php
     config.php
+    control-details.php
+    control-remediation.php
     dashboard.php
+    diagnostics.php
     index.php
     keyvault.php
     lib.php
     login.php
+    logout.php
     onboard.php
+    report-diagnostics.php
+    report-download.php
+    report-import.php
     tenant.php
+    workflow-sync.php
   config/
     admin-config.example.json
     canonical-controls.example.json
+    maester-runtime.json
     tenants.example.json
     tenants.json
     tenants.schema-notes.md
   custom-tests/
+    365inspect/
   data/
     reports/
     tenants.example.json
@@ -49,9 +60,12 @@ SecureIT/
     live-deployment-handoff.md
     proxmox-deploy-plan.md
     repo-structure.md
+  deploy-handoff/
+  docker/
   output/
-    history/
-    latest/
+    <tenant-key>/
+      history/
+      latest/
   scripts/
     Get-ResolvedTenantConfig.ps1
     Get-TenantConfig.ps1
@@ -66,7 +80,10 @@ SecureIT/
     report-pdf.test.php
   shared/
     functional-areas.php
+    mail.php
+    report-pdf.php
   Dockerfile
+  composer.json
   docker-compose.yml
   README.md
 ```
@@ -76,7 +93,8 @@ SecureIT/
 ### `.github/workflows`
 Automation for:
 - SecureIT image publishing
-- manual Maester runs
+- production, scheduled, and manual Maester runs
+- tenant discovery and report publication through the SecureIT workflow bridge
 - retained diagnostic workflows for Azure and Key Vault
 
 ### `app`
@@ -86,7 +104,7 @@ The primary SecureIT application.
 Tracked example configuration and schema notes.
 
 ### `custom-tests`
-Placeholder for SecureIT-specific or Maester-adjacent tests.
+Repo-owned SecureIT-specific checks, including the mirrored 365Inspect integration. The current production profile selects 18 of the 26 mirrored inspectors.
 
 ### `data`
 Runtime-mounted tenant and report data.
@@ -95,7 +113,7 @@ Runtime-mounted tenant and report data.
 The current architecture, deployment, and handoff documentation.
 
 ### `output`
-Workflow-generated report artifacts before they are imported into the app runtime.
+Workflow-generated report artifacts under `output/<tenant-key>/` before they are imported into the app runtime. The top-level `output/latest/` and `output/history/` placeholders are retained but are not the current production bundle layout.
 
 ### `scripts`
 PowerShell and shell helpers for tenant config, Maester runs, report-summary parsing, summary generation, and report import.

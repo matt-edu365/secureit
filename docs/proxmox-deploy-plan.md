@@ -48,8 +48,8 @@ Inside that volume, expect at minimum:
 - `reports/<tenant-key>/latest/...`
 - `reports/<tenant-key>/history/...`
 
-Optional runtime file if used:
-- `canonical-controls.json` (the app can also fall back to the bundled image copy for the homepage total)
+Additional runtime file:
+- `canonical-controls.json` (seeded or refreshed from the versioned image copy; the loader falls back to the image if this file is missing or invalid)
 
 ## Example host preparation
 
@@ -71,7 +71,7 @@ docker compose pull
 docker compose up -d
 ```
 
-## Planned production hostname
+## Production hostname
 
 - `secureit.ict365.ky`
 
@@ -81,7 +81,7 @@ docker compose up -d
 - `SECUREIT_BASE_URL=https://secureit.ict365.ky`
 - `SECUREIT_TENANTS_FILE=/var/www/data/tenants.json`
 - `SECUREIT_REPORTS_ROOT=/var/www/data/reports`
-- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` if you want to override the default runtime path
+- `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json` (the default production stack path; override only when deliberately using another mounted location)
 - `SECUREIT_KEY_VAULT_TENANT_ID=<app-tenant-id>`
 - `SECUREIT_KEY_VAULT_CLIENT_ID=<secureit-app-client-id>`
 - `SECUREIT_KEY_VAULT_CLIENT_SECRET=<secureit-app-client-secret>`
@@ -93,8 +93,15 @@ docker compose up -d
 - `SECUREIT_ENTRA_REDIRECT_URI=https://secureit.ict365.ky/auth/callback`
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=https://secureit.ict365.ky/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
+- `SECUREIT_WORKFLOW_SYNC_TOKEN=<shared workflow bridge token>`
+- `SECUREIT_GITHUB_REPOSITORY=matt-edu365/secureit`
+- `SECUREIT_GITHUB_WORKFLOW_FILE=secureit-production.yml`
+- `SECUREIT_GITHUB_WORKFLOW_REF=main`
+- `SECUREIT_GITHUB_TOKEN=<fine-grained workflow-dispatch token>`
 
 Optional Key Vault metadata can be persisted in the admin config, but the runtime source of truth is the Key Vault environment set on the container or host.
+
+The current checked-in Portainer stack does not yet forward the workflow-sync or GitHub-dispatch variables listed above. Add them to the stack before treating workflow discovery, report import, or the tenant-page run button as configured in production.
 
 ## Recommended deployment validation
 

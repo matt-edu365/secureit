@@ -49,10 +49,10 @@ Expected environment:
 - `SECUREIT_ENTRA_POST_LOGOUT_REDIRECT_URI=http://localhost:8088/login.php`
 - `SECUREIT_ENTRA_ADMIN_EMAIL_DOMAINS=ict365.ky`
 
-If you want to override the default canonical controls path:
+The default mounted canonical controls path is:
 - `SECUREIT_CANONICAL_CONTROLS_FILE=/var/www/data/canonical-controls.json`
 
-Otherwise the homepage total uses the bundled image copy if the runtime file is missing or stale.
+The container entrypoint creates or refreshes that runtime file from the versioned image seed. The application reads a valid runtime catalog first and falls back to the bundled image copy if the runtime file is missing or invalid.
 
 ## Suggested pages
 
@@ -85,7 +85,8 @@ Minimum success state:
 If doing a fuller validation pass:
 - confirm the app behaves sensibly when no tenant reports exist yet
 - confirm the app behaves sensibly when a tenant exists but `summary.json` is missing
-- confirm the workflow/import path rejects a bundle when `embedded-summary.json` is missing
+- confirm the production runner/workflow refuses publication when `embedded-summary.json` is missing
+- note that the authenticated generic import endpoint currently validates `summary.json` only
 - test an imported bundle created through the workflow-to-app path
 - verify the app does not assume any removed shared-host paths
 - verify Key Vault-related pages degrade safely when Azure settings are absent

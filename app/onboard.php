@@ -10,6 +10,9 @@ if ($authRole !== 'admin') {
 $baseSiteUrl = secureit_config()['base_url'];
 $messages = [];
 $errors = [];
+$maesterRuntime = secureit_maester_runtime_manifest();
+$maesterVersion = trim((string) ($maesterRuntime['maesterVersion'] ?? ''));
+$maesterGraphPermissions = secureit_maester_graph_application_permissions();
 $config = secureit_load_tenants();
 $config['tenants'] = $config['tenants'] ?? [];
 $example = ['tenants' => [[
@@ -58,6 +61,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (secureit_tenant_exists($config['tenants'], $tenantKey)) {
         $errors[] = 'That tenant key already exists.';
+    }
+
+    $permissionValidation = null;
+    if (!$errors) {
+        $permissionValidation = secureit_entra_validate_maester_graph_permissions(
+            $tenantId,
+            $clientId,
+            $clientSecretValue
+        );
+        if (empty($permissionValidation['ok'])) {
+            $errors[] = trim((string) ($permissionValidation['message'] ?? 'The required Microsoft Graph application permissions could not be validated.'));
+        }
     }
 
     $resolvedTenantIdentity = [
@@ -119,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $messages[] = 'Tenant saved into the container app successfully.';
         $messages[] = 'Client secret written to Azure Key Vault using the configured secret name.';
+        $messages[] = 'Validated all ' . count($maesterGraphPermissions) . ' Microsoft Graph application permissions required by Maester ' . $maesterVersion . '.';
         if ($m365TenantName !== '' || $resolvedTenantDomain !== '') {
             $lookupBits = [];
             if ($m365TenantName !== '') {
@@ -233,7 +249,7 @@ ob_start();
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
           <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>2. Create the Entra ID App Registration</strong><br><span class="muted">In Microsoft Entra admin center, create a new app registration for the customer tenant and record the Application (client) ID and Directory (tenant) ID.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
-          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>3. Add API permissions and grant admin consent</strong><br><span class="muted">Assign the required Microsoft Graph application permissions, then grant tenant-wide admin consent so SecureIT can run non-interactive reporting.</span></div>
+          <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>3. Add API permissions and grant admin consent</strong><br><span class="muted">Assign the Microsoft Graph application permissions listed for Maester <?php echo htmlspecialchars($maesterVersion); ?>, then grant tenant-wide admin consent. SecureIT validates the permissions using the supplied application credentials before saving the tenant.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
           <div style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid var(--line); overflow-wrap:anywhere;"><strong>4. Create and store the client secret</strong><br><span class="muted">Generate the client secret, store it in Azure Key Vault using the agreed secret name, and confirm that the secret value and expiry are recorded securely.</span></div>
           <div style="text-align:center; color:var(--brand); font-weight:700;">↓</div>
@@ -257,6 +273,7 @@ ob_start();
 
       <div>
         <h3 class="section-title" style="font-size:1.35rem; margin-bottom:12px;">Required Entra ID / Microsoft Graph permissions</h3>
+        <p class="field-note" style="margin-top:0;">Pinned assessment runtime: Maester <?php echo htmlspecialchars($maesterVersion); ?>. All listed permissions are Application permissions and require tenant-wide admin consent.</p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -267,17 +284,17 @@ ob_start();
               </tr>
             </thead>
             <tbody>
-              <tr><td>Policy.Read.All</td><td>Application</td><td>Read Conditional Access and other security policy configuration.</td></tr>
-              <tr><td>Policy.Read.ConditionalAccess</td><td>Application</td><td>Inspect Conditional Access policy assignments and logic.</td></tr>
-              <tr><td>Directory.Read.All</td><td>Application</td><td>Read directory objects referenced by policy and tenant configuration.</td></tr>
-              <tr><td>Application.Read.All</td><td>Application</td><td>Review enterprise apps and app registrations relevant to assessment output.</td></tr>
-              <tr><td>User.Read.All</td><td>Application</td><td>Support policy impact analysis and What If style identity checks.</td></tr>
-              <tr><td>Group.Read.All</td><td>Application</td><td>Resolve group-based policy targeting and exclusions.</td></tr>
-              <tr><td>Organization.Read.All</td><td>Application</td><td>Read tenant profile information for reporting context.</td></tr>
+              <?php foreach ($maesterGraphPermissions as $permission): ?>
+                <tr>
+                  <td><?php echo htmlspecialchars($permission['name']); ?></td>
+                  <td>Application</td>
+                  <td><?php echo htmlspecialchars($permission['purpose']); ?></td>
+                </tr>
+              <?php endforeach; ?>
             </tbody>
           </table>
         </div>
-        <p class="field-note">Exact permissions may evolve with the reporting scope, but these are the core read permissions typically required for SecureIT style tenant assessment and policy analysis.</p>
+        <p class="field-note">This table is generated from the same versioned runtime manifest that pins the workflow. Update the manifest and the Maester package together.</p>
       </div>
   </aside>
 </section>

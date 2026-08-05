@@ -267,11 +267,18 @@ jobs:
     env:
       CONFIG_PATH: config/tenants.json
       TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'SecureIT-Production-101' }}
-      MAESTER_VERSION: '2.0.0'
-      MAESTER_TESTS_REF: '9e915230d5f077bef54f7216066b5d68dac6b0a1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Load pinned Maester runtime manifest
+        shell: pwsh
+        run: |
+          $manifest = Get-Content -Raw -LiteralPath 'config/maester-runtime.json' | ConvertFrom-Json -ErrorAction Stop
+          if ([string]::IsNullOrWhiteSpace([string]$manifest.maesterVersion)) {
+            throw 'config/maester-runtime.json does not declare maesterVersion.'
+          }
+          "MAESTER_VERSION=$($manifest.maesterVersion)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Azure login via OIDC (tenant scope)
         uses: azure/login@v2
@@ -423,16 +430,23 @@ jobs:
           Import-Module ExchangeOnlineManagement -Force
           Import-Module Maester -RequiredVersion $env:MAESTER_VERSION -Force
           $env:CI = 'true'
-          $maesterModule = Get-Module -ListAvailable -FullyQualifiedName $maesterModuleSpec | Select-Object -First 1
+          $maesterModule = Get-Module Maester | Select-Object -First 1
+          if (-not $maesterModule -or $maesterModule.Version.ToString() -ne $env:MAESTER_VERSION) {
+            throw "Loaded Maester version does not match the SecureIT runtime manifest. Expected $($env:MAESTER_VERSION)."
+          }
           $moduleRoot = Split-Path -Parent $maesterModule.Path
           $testsRoot = Join-Path $moduleRoot 'maester-tests'
           if (-not (Test-Path -LiteralPath $testsRoot)) {
-            $testsRoot = Join-Path $env:GITHUB_WORKSPACE 'maester-tests'
-            git init $testsRoot | Out-Null
-            git -C $testsRoot remote add origin https://github.com/maester365/maester-tests.git
-            git -C $testsRoot fetch --depth 1 origin $env:MAESTER_TESTS_REF
-            git -C $testsRoot checkout --detach $env:MAESTER_TESTS_REF
+            throw "Pinned Maester $($env:MAESTER_VERSION) does not contain its matching bundled maester-tests directory."
           }
+          $manifest = Get-Content -Raw -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'config/maester-runtime.json') | ConvertFrom-Json -ErrorAction Stop
+          $manifestScopes = @($manifest.graphApplicationPermissions | ForEach-Object { [string]$_.name } | Sort-Object -Unique)
+          $moduleScopes = @(Get-MtGraphScope | Sort-Object -Unique)
+          $scopeDifference = @(Compare-Object -ReferenceObject $moduleScopes -DifferenceObject $manifestScopes)
+          if ($scopeDifference.Count -gt 0) {
+            throw "SecureIT Graph permission manifest does not match Maester $($env:MAESTER_VERSION) Get-MtGraphScope: $($scopeDifference | Out-String)"
+          }
+          "## Assessment runtime`n- Maester: $($maesterModule.Version)`n- Bundled test files: $((Get-ChildItem -Path $testsRoot -Recurse -Filter '*.Tests.ps1' -File).Count)`n- Required Graph application permissions: $($manifestScopes.Count)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Run SecureIT assessment engine
         id: maester

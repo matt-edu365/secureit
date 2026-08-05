@@ -19,6 +19,13 @@ The current intention is to keep the product surface and container runtime consi
 - report bundle contract
 - runtime storage paths
 
+Canonical catalog rule:
+
+- the image contains the versioned seed
+- the mounted runtime file is the preferred scoring source
+- container startup creates or refreshes the mounted file when the seed version changes
+- the loader falls back to the bundled seed when the runtime catalog is missing or invalid
+
 ## Email wiring
 
 The diagnostics mail routines are the reusable baseline for future email work.
@@ -28,7 +35,7 @@ The diagnostics mail routines are the reusable baseline for future email work.
 - Attachment sending has not been tested yet, so treat that as the next validation step before using the helpers elsewhere.
 - Tenant pages can now queue the `SecureIT Production` workflow when the GitHub dispatch token is configured.
 - Imported report bundles now send an HTML summary email to the tenant's configured report recipient.
-- The production workflow pins Maester `2.0.0` and a fixed fallback `maester-tests` commit.
+- The production workflow reads the Maester `2.2.0` pin and Graph permission contract from `config/maester-runtime.json`, uses the module's bundled tests, and fails closed on catalogue drift.
 - Production report bundles must contain `latest/embedded-summary.json`; missing embedded evidence blocks publication rather than producing zero canonical results.
 - `tests/MaesterReportParsing.Tests.ps1` covers both the legacy `ws` and newer minified summary variable formats.
 

@@ -64,6 +64,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Load pinned Maester runtime manifest
+        shell: pwsh
+        run: |
+          $manifest = Get-Content -Raw -LiteralPath 'config/maester-runtime.json' | ConvertFrom-Json -ErrorAction Stop
+          if ([string]::IsNullOrWhiteSpace([string]$manifest.maesterVersion)) {
+            throw 'config/maester-runtime.json does not declare maesterVersion.'
+          }
+          "MAESTER_VERSION=$($manifest.maesterVersion)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Azure login via OIDC (tenant scope)
         uses: azure/login@v2
         with:
@@ -151,23 +160,22 @@ jobs:
           if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
             Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force -AllowClobber
           }
-          if (-not (Get-Module -ListAvailable -Name Maester)) {
-            if (Get-PSResourceRepository -ErrorAction SilentlyContinue) {
-              Install-PSResource Maester -TrustRepository -Scope CurrentUser
-            }
-            else {
-              Install-Module Maester -Scope CurrentUser -Force -AllowClobber
-            }
+          $maesterModuleSpec = @{
+            ModuleName = 'Maester'
+            RequiredVersion = $env:MAESTER_VERSION
+          }
+          if (-not (Get-Module -ListAvailable -FullyQualifiedName $maesterModuleSpec)) {
+            Install-Module Maester -RequiredVersion $env:MAESTER_VERSION -Scope CurrentUser -Force -AllowClobber
           }
           Import-Module Pester -RequiredVersion 5.7.1 -Force
           Import-Module ExchangeOnlineManagement -Force
-          Import-Module Maester -Force
+          Import-Module Maester -RequiredVersion $env:MAESTER_VERSION -Force
           $env:CI = 'true'
-          $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+          $maesterModule = Get-Module Maester | Select-Object -First 1
           $moduleRoot = Split-Path -Parent $maesterModule.Path
           $testsRoot = Join-Path $moduleRoot 'maester-tests'
           if (-not (Test-Path -LiteralPath $testsRoot)) {
-            'y' | Install-MaesterTests
+            throw "Pinned Maester $($env:MAESTER_VERSION) does not contain its matching bundled maester-tests directory."
           }
 
       - name: Run SecureIT assessment engine

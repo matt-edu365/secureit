@@ -72,10 +72,11 @@ Should typically have:
 
 ## Current workflow reality
 
-The modern manual workflow already supports Key Vault retrieval for client-secret mode, and the app now writes the client secret during onboarding.
+The authoritative `SecureIT Production` workflow retrieves tenant authentication material from Azure Key Vault after discovering tenant metadata through the protected SecureIT workflow-sync endpoint. The retained manual workflow also supports Key Vault retrieval for client-secret mode, and the app writes the client secret during onboarding.
 
 Relevant path:
-- `.github/workflows/maester-manual-run.yml`
+- `.github/workflows/secureit-production.yml`
+- `.github/workflows/maester-manual-run.yml` (retained manual path)
 
 That means future work should focus less on proving the concept and more on standardising the secret ownership model across:
 - app onboarding
@@ -96,5 +97,5 @@ These still need clearer decisions:
 1. compare `app/` onboarding expectations with actual workflow secret-resolution behaviour
 2. document the single preferred secret-reference shape in tenant config
 3. update tenant resolution scripts so secret retrieval paths are consistent
-4. remove or reduce duplicated secret-source assumptions between GitHub secrets and Key Vault
+4. remove or reduce duplicated secret-source assumptions in retained legacy/manual paths
 5. keep SecureIT branding in customer/admin surfaces while treating Key Vault and Maester as backend concerns

@@ -248,4 +248,32 @@ secureit_contract_test_assert(
     'The Conditional Access What If production exclusion should remain explicitly tracked as a follow-up feature.'
 );
 
+$maesterManifest = secureit_maester_runtime_manifest();
+$maesterPermissions = secureit_maester_graph_application_permissions();
+secureit_contract_test_assert(($maesterManifest['maesterVersion'] ?? '') === '2.2.0', 'The SecureIT runtime manifest should pin Maester 2.2.0.');
+secureit_contract_test_assert(count($maesterPermissions) === 25, 'The Maester 2.2.0 manifest should expose all 25 default read-only Graph permissions.');
+$maesterPermissionNames = array_column($maesterPermissions, 'name');
+secureit_contract_test_assert(in_array('RoleEligibilitySchedule.Read.Directory', $maesterPermissionNames, true), 'The manifest should use the read-only role eligibility permission.');
+secureit_contract_test_assert(!in_array('RoleEligibilitySchedule.ReadWrite.Directory', $maesterPermissionNames, true), 'The manifest should not request the obsolete read-write role eligibility permission.');
+
+$syntheticToken = secureit_base64url_encode(json_encode(['alg' => 'none'], JSON_THROW_ON_ERROR))
+    . '.' . secureit_base64url_encode(json_encode(['roles' => $maesterPermissionNames], JSON_THROW_ON_ERROR))
+    . '.test-signature';
+$syntheticRoles = secureit_entra_graph_application_roles_from_token($syntheticToken);
+secureit_contract_test_assert(count($syntheticRoles) === 25, 'Graph application-role inspection should retain every granted permission.');
+secureit_contract_test_assert(in_array('ThreatHunting.Read.All', $syntheticRoles, true), 'Graph application-role inspection should expose granted Maester permissions.');
+
+$workflowDefinition = file_get_contents(__DIR__ . '/../.github/workflows/secureit-production.yml');
+secureit_contract_test_assert(str_contains($workflowDefinition, 'config/maester-runtime.json'), 'The production workflow should load the shared Maester runtime manifest.');
+secureit_contract_test_assert(!str_contains($workflowDefinition, 'MAESTER_TESTS_REF'), 'The production workflow should not mix an independent test-suite ref with the pinned module.');
+secureit_contract_test_assert(!str_contains($workflowDefinition, 'maester365/maester-tests.git'), 'The production workflow should use the pinned module bundled tests only.');
+secureit_contract_test_assert(str_contains($workflowDefinition, 'Get-MtGraphScope'), 'The production workflow should validate the permission manifest against the loaded Maester module.');
+secureit_contract_test_assert(str_contains($productionWorkflowScript, 'The pinned Maester package and SecureIT catalogue are not aligned.'), 'Production test selection should fail closed when an allowlisted test is absent.');
+secureit_contract_test_assert(str_contains($productionWorkflowScript, 'SecureIT does not mix independently versioned test sources with the pinned module.'), 'The runner should require the test suite bundled with the loaded module.');
+
+$onboardingPage = file_get_contents(__DIR__ . '/../app/onboard.php');
+secureit_contract_test_assert(str_contains($onboardingPage, 'secureit_maester_graph_application_permissions()'), 'Onboarding should render permissions from the Maester runtime manifest.');
+secureit_contract_test_assert(str_contains($onboardingPage, 'secureit_entra_validate_maester_graph_permissions('), 'Onboarding should validate Graph permissions before saving a tenant.');
+secureit_contract_test_assert(!str_contains($onboardingPage, '<tr><td>Policy.Read.All</td>'), 'Onboarding should not contain the legacy hard-coded seven-permission table.');
+
 echo "SecureIT canonical scoring test passed.\n";

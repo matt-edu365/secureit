@@ -309,14 +309,18 @@ function Get-MaesterSelectedTestsPath {
             'SecureIT-Production-101' = 'SecureIT-Production-101 allowlist file not found in installed Maester tests'
         }
 
+        $missingFiles = [System.Collections.Generic.List[string]]::new()
         $matchedFiles = foreach ($name in $allowList) {
             $match = $candidateFiles | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
             if ($match) {
                 $match
             }
             else {
-                Write-Warning "$($missingMessages[$Profile]): $name"
+                $missingFiles.Add($name)
             }
+        }
+        if ($missingFiles.Count -gt 0) {
+            throw "$($missingMessages[$Profile]). The pinned Maester package and SecureIT catalogue are not aligned. Missing: $($missingFiles -join ', ')"
         }
     }
     else {
@@ -416,31 +420,24 @@ function Copy-SecureItCustomTests {
 }
 
 function Get-MaesterTestsPath {
-    $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+    $maesterModule = Get-Module -Name Maester | Select-Object -First 1
+    if (-not $maesterModule) {
+        $maesterModule = Get-Module -ListAvailable -Name Maester | Sort-Object Version -Descending | Select-Object -First 1
+    }
     if (-not $maesterModule) {
         throw 'Maester module is not installed.'
     }
 
     $moduleRoot = Split-Path -Parent $maesterModule.Path
-    $repoRoot = Split-Path -Parent $PSScriptRoot
-    $candidates = @(
-        (Join-Path $repoRoot 'maester-tests'),
-        (Join-Path (Get-Location) 'maester-tests'),
-        (Join-Path $moduleRoot 'maester-tests'),
-        (Join-Path $HOME '.maester/maester-tests'),
-        (Join-Path $HOME '.config/maester/maester-tests')
-    )
-
-    foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate) {
-            $testFiles = Get-ChildItem -Path $candidate -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
-            if ($testFiles) {
-                return $candidate
-            }
+    $testsRoot = Join-Path $moduleRoot 'maester-tests'
+    if (Test-Path -LiteralPath $testsRoot) {
+        $testFiles = Get-ChildItem -Path $testsRoot -Recurse -Include '*.Tests.ps1','*.ps1' -File -ErrorAction SilentlyContinue
+        if ($testFiles) {
+            return $testsRoot
         }
     }
 
-    throw "Unable to find installed Maester tenant-facing tests. Checked: $($candidates -join ', ')"
+    throw "Maester $($maesterModule.Version) does not contain a usable bundled maester-tests directory at '$testsRoot'. SecureIT does not mix independently versioned test sources with the pinned module."
 }
 
 function Set-SecureItReportBranding {

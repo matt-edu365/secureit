@@ -2155,6 +2155,11 @@ function secureit_load_canonical_controls(): array {
 }
 
 function secureit_total_canonical_control_count(): int {
+    $todoFeatureIds = array_fill_keys(array_map(
+        'secureit_normalise_mapping_id',
+        secureit_todo_feature_control_ids()
+    ), true);
+
     foreach (secureit_canonical_controls_candidate_paths() as $path) {
         if (!file_exists($path)) {
             continue;
@@ -2165,7 +2170,13 @@ function secureit_total_canonical_control_count(): int {
         }
 
         $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
-        $count = count($controls);
+        $count = count(array_filter($controls, static function ($control) use ($todoFeatureIds): bool {
+            if (!is_array($control)) {
+                return false;
+            }
+            $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+            return $controlId !== '' && !isset($todoFeatureIds[$controlId]);
+        }));
         if ($count > 0) {
             return $count;
         }

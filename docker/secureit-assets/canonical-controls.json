@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "description": "SecureIT canonical control contract. Every control has a stable ID, one scoring functional area, explicit evidence mappings, and a scoring weight of 1.",
   "functionalAreas": [
     "Identity & Access Management",
@@ -38,37 +38,11 @@
       }
     },
     {
-      "id": "MTMDIHEALTHISSUES",
-      "title": "Defender identity health issues",
-      "functionalArea": "Endpoint & Device Management",
-      "frameworkMappings": [
-        "Test-MtMdiHealthIssues.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
       "id": "APPMANAGEMENTPOLICIES",
       "title": "App management policies",
       "functionalArea": "Compliance, Governance & Data Protection",
       "frameworkMappings": [
         "Test-AppManagementPolicies.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "APPREGISTRATIONS",
-      "title": "App registrations",
-      "functionalArea": "Identity & Access Management",
-      "frameworkMappings": [
-        "Test-AppRegistrations.Tests.ps1"
       ],
       "duplicatePolicy": "single",
       "scoring": {
@@ -134,19 +108,6 @@
       "functionalArea": "Collaboration & Communication",
       "frameworkMappings": [
         "Test-Groups.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "MTAPPREGISTRATIONOWNERSWITHOUTMFA",
-      "title": "App registration owners without MFA",
-      "functionalArea": "Identity & Access Management",
-      "frameworkMappings": [
-        "Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1"
       ],
       "duplicatePolicy": "single",
       "scoring": {
@@ -246,19 +207,6 @@
       }
     },
     {
-      "id": "MTHIGHRISKAPPPERMISSIONS",
-      "title": "High-risk app permissions",
-      "functionalArea": "Security Operations & Threat Protection",
-      "frameworkMappings": [
-        "Test-MtHighRiskAppPermissions.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
       "id": "MTONPREMISESSYNCHRONIZATION",
       "title": "On-premises synchronization",
       "functionalArea": "Compliance, Governance & Data Protection",
@@ -342,32 +290,6 @@
       "functionalArea": "Security Operations & Threat Protection",
       "frameworkMappings": [
         "Test-XspmCriticalAssetManagement.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "XSPMDEVICES",
-      "title": "XSPM devices",
-      "functionalArea": "Security Operations & Threat Protection",
-      "frameworkMappings": [
-        "Test-XspmDevices.Tests.ps1"
-      ],
-      "duplicatePolicy": "single",
-      "scoring": {
-        "weight": 1,
-        "passLogic": "direct"
-      }
-    },
-    {
-      "id": "XSPMPRIVILEGEDIDENTITIES",
-      "title": "XSPM privileged identities",
-      "functionalArea": "Security Operations & Threat Protection",
-      "frameworkMappings": [
-        "Test-XspmPrivilegedIdentities.Tests.ps1"
       ],
       "duplicatePolicy": "single",
       "scoring": {

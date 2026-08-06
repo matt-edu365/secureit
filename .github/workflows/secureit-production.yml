@@ -54,13 +54,13 @@ on:
       test_profile:
         description: Test profile to run
         required: true
-        default: SecureIT-Production-101
+        default: SecureIT-Production-94
         type: choice
         options:
           - Maester-83
           - 365Inspect-18
           - Certificate-Auth-Test
-          - SecureIT-Production-101
+          - SecureIT-Production-94
   schedule:
     - cron: '0 3 * * 1,4'
 
@@ -266,7 +266,7 @@ jobs:
       matrix: ${{ fromJson(needs.discover-tenants.outputs.tenant_matrix) }}
     env:
       CONFIG_PATH: config/tenants.json
-      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'SecureIT-Production-101' }}
+      TEST_PROFILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_profile || 'SecureIT-Production-94' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

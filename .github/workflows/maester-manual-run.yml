@@ -41,15 +41,15 @@ on:
         required: false
         default: ""
       test_profile:
-        description: Test profile to run (Maester-83 is the legacy 83-check run; SecureIT-Production-101 includes the 365Inspect bundle)
+        description: Test profile to run (Maester-83 is the legacy baseline; SecureIT-Production-94 includes the production-selected 365Inspect bundle)
         required: true
-        default: SecureIT-Production-101
+        default: SecureIT-Production-94
         type: choice
         options:
           - Maester-83
           - 365Inspect-18
           - Certificate-Auth-Test
-          - SecureIT-Production-101
+          - SecureIT-Production-94
 
 jobs:
   run-assessment:

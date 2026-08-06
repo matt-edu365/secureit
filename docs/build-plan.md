@@ -54,12 +54,12 @@ The production publication contract requires both `latest/summary.json` and `lat
 
 ## Extending test coverage
 
-- Enable long-running tests deliberately after measuring them against the production workflow timeout. Confirm the application-registration controls become scoreable and the XSPM controls produce either real results or explicit Defender capability skips.
-- Keep preview tests excluded from the normal production profile initially. Represent `MTHIGHRISKAPPPERMISSIONS` as an intentional preview exclusion, or place it in a separate preview profile, instead of reporting an unexplained `not_run` result.
+- Keep `APPREGISTRATIONS`, `MTAPPREGISTRATIONOWNERSWITHOUTMFA`, `MTHIGHRISKAPPPERMISSIONS`, `XSPMDEVICES`, `XSPMPRIVILEGEDIDENTITIES`, and `MTMDIHEALTHISSUES` outside the normal production contract. They were removed when production moved to 94 controls because they are long-running, preview, or unable to provide a dependable result with the current integration.
+- If any removed control is reconsidered, first prove its runtime and evidence semantics in a separate opt-in profile. Reintroduce it to the canonical contract and production totals only after it produces a deterministic pass, fail, skip, or actionable error for supported tenants.
 - Add service-aware onboarding for Exchange Online, Teams, Azure, SharePoint Online, Entra P2/Governance, Defender XDR/Exposure Management, Intune, and hybrid identity. Record which capabilities are available and keep unavailable licensed services outside the score denominator.
 - Add each service connection only with its matching preflight: Exchange application permission and RBAC, Teams application authentication and reader role, Azure RBAC, and an explicit certificate-based SharePoint app-only option. Do not silently add high-privilege SharePoint access to client-secret onboarding.
 - API failures, missing permissions, and non-assertion runner exceptions are now classified as non-scoreable `Error`, with required permissions shown where known. Continue separating missing service connections, unlicensed/not-applicable features, deliberate preview exclusions, and unsupported upstream tests instead of leaving them under generic non-scoreable explanations.
-- Handle `Test-MtMdiHealthIssues.Tests.ps1` explicitly: zero returned health issues may be a pass only when the Defender for Identity request is known to have succeeded; permission, connection, and API failures must remain coverage gaps.
+- For any future `Test-MtMdiHealthIssues.Tests.ps1` experiment, treat zero returned health issues as a pass only when the Defender for Identity request is known to have succeeded; permission, connection, and API failures must remain coverage gaps.
 
 ## Success condition
 

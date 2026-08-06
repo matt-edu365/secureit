@@ -13,7 +13,7 @@ param(
     [string]$CertificatePassword,
     [string]$WebsiteBaseUrl = '',
     [string]$ConfigPath = (Join-Path (Join-Path $PSScriptRoot '..') 'config/tenants.json'),
-    [ValidateSet('Maester-83','365Inspect-18','Certificate-Auth-Test','SecureIT-Production-101')]
+    [ValidateSet('Maester-83','365Inspect-18','Certificate-Auth-Test','SecureIT-Production-94')]
     [string]$TestProfile = 'Maester-83'
 )
 
@@ -209,7 +209,7 @@ function Get-MaesterSelectedTestsPath {
         return $false
     }
 
-    if ($Profile -in @('Maester-83','SecureIT-Production-101')) {
+    if ($Profile -in @('Maester-83','SecureIT-Production-94')) {
         $allowLists = @{
             'Maester-83' = @(
                 'Test-EIDSCA.Generated.Tests.ps1',
@@ -297,16 +297,27 @@ function Get-MaesterSelectedTestsPath {
             )
         }
 
-        $allowLists['SecureIT-Production-101'] = $allowLists['Maester-83']
+        $allowLists['SecureIT-Production-94'] = $allowLists['Maester-83']
         # TODO: Add Conditional Access What If as a separate dedicated feature/profile with its own inputs and reporting flow.
 
         $allowList = $allowLists[$Profile]
-        if ($Profile -eq 'SecureIT-Production-101') {
-            $allowList = @($allowList | Where-Object { -not (Test-IsCertificateAuthOnlyTestName -Name $_) })
+        if ($Profile -eq 'SecureIT-Production-94') {
+            # Production contract: 82 Maester baseline files minus these six controls, plus 18 365Inspect checks = 94.
+            $productionExcludedTestFiles = @(
+                'Test-AppRegistrations.Tests.ps1',
+                'Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1',
+                'Test-MtHighRiskAppPermissions.Tests.ps1',
+                'Test-XspmDevices.Tests.ps1',
+                'Test-XspmPrivilegedIdentities.Tests.ps1',
+                'Test-MtMdiHealthIssues.Tests.ps1'
+            )
+            $allowList = @($allowList | Where-Object {
+                (-not (Test-IsCertificateAuthOnlyTestName -Name $_)) -and ($_ -notin $productionExcludedTestFiles)
+            })
         }
         $missingMessages = @{
             'Maester-83' = 'Maester-83 allowlist file not found in installed Maester tests'
-            'SecureIT-Production-101' = 'SecureIT-Production-101 allowlist file not found in installed Maester tests'
+            'SecureIT-Production-94' = 'SecureIT-Production-94 allowlist file not found in installed Maester tests'
         }
 
         $missingFiles = [System.Collections.Generic.List[string]]::new()
@@ -367,7 +378,7 @@ function Get-MaesterSelectedTestsPath {
         Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
     }
 
-    if ($Profile -eq 'SecureIT-Production-101') {
+    if ($Profile -eq 'SecureIT-Production-94') {
         Write-Host "Selected SecureIT production custom tests from $customTestsRoot."
         Copy-SecureItCustomTests -SourceRoot $customTestsRoot -DestinationRoot $selectedRoot -RepoRoot $repoRoot -InspectorNames $productionInspectors
     }
@@ -670,7 +681,7 @@ Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
 Import-Module Pester -RequiredVersion 5.7.1 -ErrorAction Stop
 Import-Module Maester -ErrorAction Stop
 
-$requireExchangeOnline = $AuthMode -eq 'certificate' -and $TestProfile -in @('Certificate-Auth-Test','SecureIT-Production-101')
+$requireExchangeOnline = $AuthMode -eq 'certificate' -and $TestProfile -in @('Certificate-Auth-Test','SecureIT-Production-94')
 Connect-MaesterTenant -TenantId $TenantId -TenantDomain $TenantDomain -ClientId $ClientId -AuthMode $AuthMode -ClientSecret $ClientSecret -CertificateBase64 $CertificateBase64 -CertificatePassword $CertificatePassword -RequireExchangeOnline:$requireExchangeOnline
 
 $testsPath = Get-MaesterTestsPath
@@ -685,7 +696,7 @@ $invokeParams = @{
     Path = $selectedTestsPath
     PassThru = $true
 }
-if ($TestProfile -in @('Maester-83','SecureIT-Production-101','Certificate-Auth-Test')) {
+if ($TestProfile -in @('Maester-83','SecureIT-Production-94','Certificate-Auth-Test')) {
     $invokeParams['ExcludeTag'] = @('Preview')
 }
 try {

@@ -133,9 +133,11 @@ Functional-area views also show a single-area trend graph below the checks table
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.
 
-The current version 2 catalog contains 101 controls across seven scored functional areas. `SecureIT-Production-101` combines the `Maester-83` baseline with 18 production-selected 365Inspect checks. `CONDITIONALACCESSWHATIF` is catalogued as a separate to-do feature and is not included in the current 100-control scored-or-excluded production reconciliation.
+The current version 3 catalog contains 95 entries across seven functional areas: 94 production controls plus `CONDITIONALACCESSWHATIF`, which remains catalogued as a separate to-do feature and is excluded from production scoring and totals. `SecureIT-Production-94` combines the retained `Maester-83` baseline controls with 18 production-selected 365Inspect checks.
 
-The version 2 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
+The six upstream controls deliberately removed from production are `APPREGISTRATIONS`, `MTAPPREGISTRATIONOWNERSWITHOUTMFA`, `MTHIGHRISKAPPPERMISSIONS`, `XSPMDEVICES`, `XSPMPRIVILEGEDIDENTITIES`, and `MTMDIHEALTHISSUES`. They are long-running, preview, or unable to provide a dependable production result with the current integration.
+
+The version 3 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
 
 Mounted version 1 catalogs remain readable during deployment when they satisfy the same structural rules. If a mounted catalog is invalid, the loader tries the bundled image seed so a stale runtime file cannot take down customer login.
 

@@ -1,5 +1,6 @@
 <?php
 
+putenv('SECUREIT_CANONICAL_CONTROLS_FILE=' . __DIR__ . '/../docker/secureit-assets/canonical-controls.json');
 require __DIR__ . '/../app/lib.php';
 
 function secureit_contract_test_assert(bool $condition, string $message): void {
@@ -12,7 +13,8 @@ function secureit_contract_test_assert(bool $condition, string $message): void {
 $catalog = secureit_load_canonical_controls();
 $validationErrors = secureit_validate_canonical_controls($catalog);
 secureit_contract_test_assert($validationErrors === [], 'The canonical control catalog is invalid: ' . implode(' ', $validationErrors));
-secureit_contract_test_assert(count($catalog['controls'] ?? []) === 101, 'The production catalog must contain 101 controls.');
+secureit_contract_test_assert(count($catalog['controls'] ?? []) === 95, 'The catalog must contain 94 production controls plus the separate Conditional Access What If TODO control.');
+secureit_contract_test_assert(secureit_total_canonical_control_count() === 94, 'The website production control total must exclude the separate TODO control and equal 94.');
 
 $legacyCatalog = $catalog;
 $legacyCatalog['version'] = 1;
@@ -42,6 +44,18 @@ foreach (($catalog['controls'] ?? []) as $control) {
     secureit_contract_test_assert(is_string($control['functionalArea'] ?? null), $controlId . ' must have one scoring functional area.');
     secureit_contract_test_assert(count($control['frameworkMappings'] ?? []) > 0, $controlId . ' must have explicit evidence mappings.');
     secureit_contract_test_assert(($control['scoring']['weight'] ?? null) === 1, $controlId . ' must have weight 1.');
+}
+
+$productionExcludedControlIds = [
+    'APPREGISTRATIONS',
+    'MTAPPREGISTRATIONOWNERSWITHOUTMFA',
+    'MTHIGHRISKAPPPERMISSIONS',
+    'XSPMDEVICES',
+    'XSPMPRIVILEGEDIDENTITIES',
+    'MTMDIHEALTHISSUES',
+];
+foreach ($productionExcludedControlIds as $controlId) {
+    secureit_contract_test_assert(!isset($controlIds[$controlId]), $controlId . ' must remain outside the production catalog.');
 }
 
 $statusCases = [
@@ -200,7 +214,7 @@ secureit_contract_test_assert($scoreCalculation['score'] === 50, 'Pass, partial,
 secureit_contract_test_assert($scoreCalculation['assessedControls'] === 3, 'Only pass, partial, and fail should be in the denominator.');
 secureit_contract_test_assert($scoreCalculation['excludedControls'] === 5, 'All non-assessed result types should be excluded.');
 
-foreach (['fabrikam-prod' => 100, 'contoso-prod' => 73] as $tenantKey => $expectedScore) {
+foreach (['fabrikam-prod' => 100, 'contoso-prod' => 70] as $tenantKey => $expectedScore) {
     $areaData = secureit_resolve_canonical_area_scores($tenantKey);
     $counts = secureit_check_summary_counts($areaData);
     secureit_contract_test_assert($counts['score'] === $expectedScore, $tenantKey . ' should have the expected assessed-control score.');
@@ -325,11 +339,53 @@ secureit_contract_test_assert(($bucketGroups[2]['bucket'] ?? '') === 'separate_f
 $productionWorkflowScript = file_get_contents(__DIR__ . '/../scripts/Invoke-MaesterRun.ps1');
 secureit_contract_test_assert(
     !str_contains($productionWorkflowScript, "'Test-ConditionalAccessWhatIf.Tests.ps1'"),
-    'SecureIT-Production-101 must not include Conditional Access What If in its production allowlist.'
+    'SecureIT-Production-94 must not include Conditional Access What If in its production allowlist.'
 );
 secureit_contract_test_assert(
     str_contains($productionWorkflowScript, 'TODO: Add Conditional Access What If as a separate dedicated feature/profile'),
     'The Conditional Access What If production exclusion should remain explicitly tracked as a follow-up feature.'
+);
+secureit_contract_test_assert(
+    str_contains($productionWorkflowScript, "[ValidateSet('Maester-83','365Inspect-18','Certificate-Auth-Test','SecureIT-Production-94')]")
+        && str_contains($productionWorkflowScript, '$_ -notin $productionExcludedTestFiles'),
+    'The runner must expose the 94-control production profile and apply its explicit exclusion list.'
+);
+$productionExcludedFiles = [
+    'Test-AppRegistrations.Tests.ps1',
+    'Test-MtAppRegistrationOwnersWithoutMFA.Tests.ps1',
+    'Test-MtHighRiskAppPermissions.Tests.ps1',
+    'Test-XspmDevices.Tests.ps1',
+    'Test-XspmPrivilegedIdentities.Tests.ps1',
+    'Test-MtMdiHealthIssues.Tests.ps1',
+];
+foreach ($productionExcludedFiles as $testFile) {
+    secureit_contract_test_assert(
+        str_contains($productionWorkflowScript, "'{$testFile}'"),
+        $testFile . ' must remain explicitly excluded from the production profile.'
+    );
+}
+
+$baselineListMatched = preg_match("/'Maester-83'\\s*=\\s*@\\((.*?)\\R\\s*\\)/s", $productionWorkflowScript, $baselineListMatch);
+$inspectorListMatched = preg_match('/\$productionInspectors\s*=\s*@\((.*?)\R\s*\)/s', $productionWorkflowScript, $inspectorListMatch);
+$exclusionListMatched = preg_match('/\$productionExcludedTestFiles\s*=\s*@\((.*?)\R\s*\)/s', $productionWorkflowScript, $exclusionListMatch);
+secureit_contract_test_assert(
+    $baselineListMatched === 1 && $inspectorListMatched === 1 && $exclusionListMatched === 1,
+    'The production runner lists could not be parsed for the 94-control contract check.'
+);
+preg_match_all("/'Test-[^']+\\.ps1'/", $baselineListMatch[1], $baselineTestFiles);
+preg_match_all("/'Inspect-[^']+'/", $inspectorListMatch[1], $productionInspectors);
+preg_match_all("/'Test-[^']+\\.ps1'/", $exclusionListMatch[1], $excludedTestFiles);
+$selectedProductionFileCount = count($baselineTestFiles[0]) - count($excludedTestFiles[0]) + count($productionInspectors[0]);
+secureit_contract_test_assert(
+    $selectedProductionFileCount === 94,
+    'The production runner must select exactly 94 test files; calculated ' . $selectedProductionFileCount . '.'
+);
+
+$productionWorkflow = file_get_contents(__DIR__ . '/../.github/workflows/secureit-production.yml');
+secureit_contract_test_assert(
+    str_contains($productionWorkflow, 'default: SecureIT-Production-94')
+        && !str_contains($productionWorkflow, 'SecureIT-Production-101'),
+    'The production workflow must default to the 94-control profile.'
 );
 
 $maesterManifest = secureit_maester_runtime_manifest();

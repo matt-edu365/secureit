@@ -498,6 +498,8 @@ function secureit_functional_area_analysis_text(array $area): string {
     $controlsPassing = (int) ($area['controlsPassing'] ?? 0);
     $controlsPartial = (int) ($area['controlsPartial'] ?? 0);
     $controlsFailing = (int) ($area['controlsFailing'] ?? 0);
+    $controlsErrored = (int) ($area['controlsErrored'] ?? 0);
+    $controlsSkipped = (int) ($area['controlsSkipped'] ?? 0);
     $controlsNotAssessed = (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
     $testsTotal = (int) ($area['testsTotal'] ?? 0);
     $testsPassed = (int) ($area['testsPassed'] ?? 0);
@@ -523,6 +525,15 @@ function secureit_functional_area_analysis_text(array $area): string {
             $controlsNotAssessed,
             $controlsNotAssessed === 1 ? 'check was' : 'checks were',
             $controlsNotAssessed === 1 ? 'was' : 'were'
+        );
+    }
+
+    if ($controlsErrored > 0 || $controlsSkipped > 0) {
+        $summary[] = sprintf(
+            'The non-scoreable results include %d %s and %d skipped.',
+            $controlsErrored,
+            $controlsErrored === 1 ? 'error' : 'errors',
+            $controlsSkipped
         );
     }
 
@@ -683,6 +694,8 @@ ob_start();
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
         <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsErrored'] ?? 0) : $counts['errors'])); ?></strong><span>Errors</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
       </div>
       <?php if ($selectedArea): ?>
         <?php $partialTests = secureit_functional_area_partial_test_count($selectedArea); ?>
@@ -747,6 +760,8 @@ ob_start();
               <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Passed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPassing'] ?? 0)); ?></div></div>
               <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Partially met</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsPartial'] ?? 0)); ?></div></div>
               <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Failed</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsFailing'] ?? 0)); ?></div></div>
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Errors</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsErrored'] ?? 0)); ?></div></div>
+              <div class="kv-row" style="grid-template-columns: 1fr auto; padding-bottom:4px;"><div class="kv-label">Skipped</div><div class="kv-value"><?php echo htmlspecialchars((string) ($area['controlsSkipped'] ?? 0)); ?></div></div>
             </div>
           </a>
         <?php endforeach; ?>
@@ -1031,6 +1046,8 @@ ob_start();
                       $controlTone = 'warn';
                   } elseif ($controlStatus === 'fail') {
                       $controlTone = 'bad';
+                  } elseif ($controlStatus === 'error') {
+                      $controlTone = 'bad';
                   }
                   $controlStatusFilterValue = strtolower(trim($controlStatus));
                   if ($controlStatusFilterValue === '') {
@@ -1100,6 +1117,8 @@ ob_start();
               <th>Passed</th>
               <th>Partially met</th>
               <th>Failed</th>
+              <th>Errors</th>
+              <th>Skipped</th>
               <th>Status</th>
               <?php if (!$selectedArea): ?>
                 <th>Report</th>
@@ -1124,6 +1143,8 @@ ob_start();
                     $rowControlsPassing = (int) ($row['controlsPassing'] ?? 0);
                     $rowControlsPartial = (int) ($row['controlsPartial'] ?? 0);
                     $rowControlsFailing = (int) ($row['controlsFailing'] ?? 0);
+                    $rowControlsErrored = (int) ($row['controlsErrored'] ?? 0);
+                    $rowControlsSkipped = (int) ($row['controlsSkipped'] ?? 0);
                     $rowScore = $row['score'] !== null ? (int) $row['score'] : null;
                     $rowStatus = secureit_functional_area_status_from_score($rowScore);
                     $rowToneClass = 'tone-' . $rowStatus['tone'];
@@ -1134,6 +1155,8 @@ ob_start();
                     $rowControlsPassing = $rowCounts['passed'];
                     $rowControlsPartial = $rowCounts['partial'];
                     $rowControlsFailing = $rowCounts['failed'];
+                    $rowControlsErrored = $rowCounts['errors'];
+                    $rowControlsSkipped = $rowCounts['skipped'];
                     $rowToneClass = 'tone-' . strtolower($rowCounts['riskTone']);
                     $rowRiskLevel = $rowCounts['riskLevel'];
                 }
@@ -1144,6 +1167,8 @@ ob_start();
                 <td><?php echo htmlspecialchars((string) $rowControlsPassing); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowControlsPartial); ?></td>
                 <td><?php echo htmlspecialchars((string) $rowControlsFailing); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsErrored); ?></td>
+                <td><?php echo htmlspecialchars((string) $rowControlsSkipped); ?></td>
                 <td><span class="badge <?php echo htmlspecialchars($rowToneClass); ?>"><?php echo htmlspecialchars($rowRiskLevel); ?></span></td>
                 <?php if (!$selectedArea): ?>
                   <td><a class="textlink" href="<?php echo htmlspecialchars($item['reportPath']); ?>">Open report</a></td>

@@ -13,6 +13,8 @@ function secureit_mail_normalize_overview_stats(array $stats): array {
     $passed = max(0, (int) ($stats['passed'] ?? 0));
     $partial = max(0, (int) ($stats['partial'] ?? 0));
     $failed = max(0, (int) ($stats['failed'] ?? 0));
+    $errors = max(0, (int) ($stats['errors'] ?? 0));
+    $skipped = max(0, (int) ($stats['skipped'] ?? 0));
     $passRate = isset($stats['passRate'])
         ? max(0, min(100, (int) $stats['passRate']))
         : ($checks > 0 ? (int) round(($passed / $checks) * 100) : 0);
@@ -47,6 +49,8 @@ function secureit_mail_normalize_overview_stats(array $stats): array {
         'passed' => $passed,
         'partial' => $partial,
         'failed' => $failed,
+        'errors' => $errors,
+        'skipped' => $skipped,
         'passRate' => $passRate,
     ];
 }
@@ -115,6 +119,22 @@ function secureit_mail_build_overview_html(array $stats, array $meta = []): stri
             'border' => '#f1c0b7',
             'accent' => '#b42318',
             'note' => 'Controls still needing attention',
+        ],
+        [
+            'label' => 'Errors',
+            'value' => $stats['errors'],
+            'background' => '#fff1f2',
+            'border' => '#fecdd3',
+            'accent' => '#be123c',
+            'note' => 'Tests that could not return a security result',
+        ],
+        [
+            'label' => 'Skipped',
+            'value' => $stats['skipped'],
+            'background' => '#f8fafc',
+            'border' => '#cbd5e1',
+            'accent' => '#475569',
+            'note' => 'Controls excluded because a prerequisite was unavailable',
         ],
     ];
 

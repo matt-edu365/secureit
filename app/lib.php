@@ -2204,6 +2204,174 @@ function secureit_pattern_matches_test_id(string $pattern, string $testId): bool
     return false;
 }
 
+function secureit_embedded_test_diagnostic_text(array $test): string {
+    $parts = [];
+
+    foreach (($test['ErrorRecord'] ?? []) as $record) {
+        if (!is_array($record)) {
+            continue;
+        }
+        foreach ([
+            $record['Exception']['Message'] ?? '',
+            $record['ErrorDetails']['Message'] ?? '',
+            $record['FullyQualifiedErrorId'] ?? '',
+        ] as $value) {
+            $value = trim((string) $value);
+            if ($value !== '') {
+                $parts[] = $value;
+            }
+        }
+    }
+
+    $resultDetail = is_array($test['ResultDetail'] ?? null) ? $test['ResultDetail'] : [];
+    foreach (['SkippedReason', 'TestResult'] as $key) {
+        $value = trim((string) ($resultDetail[$key] ?? ''));
+        if ($value !== '') {
+            $parts[] = $value;
+        }
+    }
+
+    return trim(implode("\n", array_values(array_unique($parts))));
+}
+
+function secureit_extract_permission_names_from_diagnostic(string $diagnostic): array {
+    if ($diagnostic === '') {
+        return [];
+    }
+
+    preg_match_all('/\b[A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_-]+){1,5}\b/', $diagnostic, $matches);
+    $permissions = [];
+    foreach (($matches[0] ?? []) as $candidate) {
+        $candidate = trim((string) $candidate, " \t\n\r\0\x0B.,;:()[]{}");
+        if ($candidate === '') {
+            continue;
+        }
+        if (!preg_match('/(?:^|\.)(?:Read|ReadWrite|Manage|Selected)(?:\.|$)|\.All$/i', $candidate)) {
+            continue;
+        }
+        $permissions[$candidate] = true;
+    }
+
+    return array_keys($permissions);
+}
+
+function secureit_known_permissions_for_embedded_test(array $test): array {
+    $sourceFile = basename(str_replace('\\', '/', trim((string) ($test['ScriptBlockFile'] ?? $test['sourceFile'] ?? ''))));
+    $testId = secureit_normalise_mapping_id((string) ($test['Id'] ?? $test['id'] ?? ''));
+
+    if (str_starts_with($sourceFile, 'Test-MtEntitlementManagement')) {
+        return ['EntitlementManagement.Read.All'];
+    }
+
+    if (in_array($testId, ['MT.1029', 'MT.1030', 'MT.1031', 'MT.1032'], true)) {
+        return ['RoleManagementAlert.Read.Directory'];
+    }
+
+    return [];
+}
+
+function secureit_embedded_test_execution_error(array $test): array {
+    $sourceResult = strtolower(trim((string) ($test['Result'] ?? $test['sourceResult'] ?? $test['result'] ?? 'unknown')));
+    $diagnostic = secureit_embedded_test_diagnostic_text($test);
+    $diagnosticLower = strtolower($diagnostic);
+
+    $permissionFailure = $diagnostic !== '' && (
+        str_contains($diagnosticLower, 'missing permission')
+        || str_contains($diagnosticLower, 'missing scope')
+        || str_contains($diagnosticLower, 'permissionscope')
+        || str_contains($diagnosticLower, 'insufficient privileges')
+        || str_contains($diagnosticLower, 'authorization failed')
+        || str_contains($diagnosticLower, 'authorization_requestdenied')
+        || str_contains($diagnosticLower, '403 forbidden')
+        || str_contains($diagnosticLower, 'forbidden (forbidden)')
+        || str_contains($diagnosticLower, '401 unauthorized')
+    );
+
+    $apiFailure = $diagnostic !== '' && (
+        $permissionFailure
+        || str_contains($diagnosticLower, 'invoke-mggraphrequest')
+        || str_contains($diagnosticLower, 'response status code does not indicate success')
+        || preg_match('/\b(?:http\/[0-9.]+\s+)?(?:400|401|403|404|408|409|429|5[0-9]{2})\b/i', $diagnostic) === 1
+        || str_contains($diagnosticLower, 'service unavailable')
+        || str_contains($diagnosticLower, 'bad gateway')
+        || str_contains($diagnosticLower, 'gateway timeout')
+        || str_contains($diagnosticLower, 'request timed out')
+    );
+
+    $nonAssertionError = false;
+    foreach (($test['ErrorRecord'] ?? []) as $record) {
+        if (!is_array($record)) {
+            continue;
+        }
+        $errorId = strtolower(trim((string) ($record['FullyQualifiedErrorId'] ?? '')));
+        if ($errorId === '') {
+            continue;
+        }
+        if (
+            str_contains($errorId, 'pesterassertionfailed')
+            || str_contains($errorId, 'pestertestskipped')
+            || str_contains($errorId, 'pestertestnotrun')
+        ) {
+            continue;
+        }
+        $nonAssertionError = true;
+        break;
+    }
+
+    $isErrorResult = in_array($sourceResult, ['error', 'errored'], true);
+    $isError = $isErrorResult || $permissionFailure || $apiFailure || $nonAssertionError;
+    if (!$isError) {
+        return [
+            'isError' => false,
+            'type' => '',
+            'message' => '',
+            'requiredPermissions' => [],
+        ];
+    }
+
+    $permissions = secureit_extract_permission_names_from_diagnostic($diagnostic);
+    if ($permissionFailure && $permissions === []) {
+        $permissions = secureit_known_permissions_for_embedded_test($test);
+    }
+    if ($permissions !== []) {
+        $manifestPermissionNames = array_column(secureit_maester_graph_application_permissions(), 'name');
+        $preferredPermissions = [];
+        foreach ($permissions as $permission) {
+            if (in_array($permission, $manifestPermissionNames, true)) {
+                $preferredPermissions[] = $permission;
+                continue;
+            }
+            $readOnlyPermission = str_replace('.ReadWrite.', '.Read.', $permission);
+            if ($readOnlyPermission !== $permission && in_array($readOnlyPermission, $manifestPermissionNames, true)) {
+                $preferredPermissions[] = $readOnlyPermission;
+            }
+        }
+        if ($preferredPermissions !== []) {
+            $permissions = $preferredPermissions;
+        }
+    }
+    $permissions = array_values(array_unique($permissions));
+
+    $type = $permissionFailure ? 'permission' : ($apiFailure ? 'api' : 'execution');
+    if ($type === 'permission' && $permissions !== []) {
+        $message = 'The test errored because the assessment connection is missing required permission' . (count($permissions) === 1 ? '' : 's') . ': ' . implode(', ', $permissions) . '.';
+    } elseif ($type === 'permission') {
+        $message = 'The test errored because Microsoft denied the API request. The assessment application is missing permission required by the endpoint.';
+    } elseif ($type === 'api') {
+        $message = 'The test errored because the Microsoft API request failed.';
+    } else {
+        $message = 'The test errored because its execution raised an exception rather than returning a security result.';
+    }
+
+    return [
+        'isError' => true,
+        'type' => $type,
+        'message' => $message,
+        'requiredPermissions' => $permissions,
+        'diagnostic' => substr(preg_replace('/\s+/', ' ', $diagnostic) ?? $diagnostic, 0, 600),
+    ];
+}
+
 function secureit_extract_tests_from_embedded_summary(?array $embedded): array {
     if (!$embedded) {
         return [];
@@ -2221,13 +2389,17 @@ function secureit_extract_tests_from_embedded_summary(?array $embedded): array {
             ? basename(str_replace('\\', '/', $sourcePath))
             : '';
 
+        $executionError = secureit_embedded_test_execution_error($test);
+        $sourceResult = strtolower(trim((string) ($test['Result'] ?? 'unknown')));
         $tests[] = [
             'id' => $id,
             'sourceFile' => $sourceFile,
-            'result' => strtolower(trim((string) ($test['Result'] ?? 'unknown'))),
+            'result' => !empty($executionError['isError']) ? 'error' : $sourceResult,
+            'sourceResult' => $sourceResult,
             'title' => trim((string) ($test['Title'] ?? '')),
             'severity' => trim((string) ($test['Severity'] ?? '')),
             'tags' => is_array($test['Tag'] ?? null) ? $test['Tag'] : [],
+            'executionError' => $executionError,
         ];
     }
 
@@ -2341,6 +2513,9 @@ function secureit_evaluate_control_status(array $matchedTests, string $passLogic
         static fn(array $test): string => secureit_control_status_from_result((string) ($test['result'] ?? 'unknown')),
         array_values(array_filter($matchedTests, 'is_array'))
     );
+    if (in_array('error', $statuses, true)) {
+        return 'error';
+    }
     $scoreableStatuses = array_values(array_filter(
         $statuses,
         static fn(string $status): bool => in_array($status, ['pass', 'partial', 'fail'], true)
@@ -2694,6 +2869,8 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             'controlsPassing' => 0,
             'controlsFailing' => 0,
             'controlsPartial' => 0,
+            'controlsErrored' => 0,
+            'controlsSkipped' => 0,
             'controlsUnmapped' => 0,
             'controlsNotAssessed' => 0,
             'controls' => [],
@@ -2749,6 +2926,12 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
             $areas[$area]['controlsFailing']++;
         } else {
             $areas[$area]['controlsNotAssessed']++;
+            if ($status === 'error') {
+                $areas[$area]['controlsErrored']++;
+            }
+            if ($status === 'skipped') {
+                $areas[$area]['controlsSkipped']++;
+            }
             if ($status === 'unmapped') {
                 $areas[$area]['controlsUnmapped']++;
             }
@@ -2849,6 +3032,29 @@ function secureit_control_non_assessed_reason(array $control): string {
         return 'No matching test evidence was found in the latest run.';
     }
 
+    if ($status === 'error') {
+        $messages = [];
+        foreach ($matchedTests as $test) {
+            $executionError = is_array($test['executionError'] ?? null) ? $test['executionError'] : [];
+            if (empty($executionError['isError'])) {
+                continue;
+            }
+            $message = trim((string) ($executionError['message'] ?? ''));
+            $errorType = strtolower(trim((string) ($executionError['type'] ?? '')));
+            $diagnostic = trim((string) ($executionError['diagnostic'] ?? ''));
+            if ($message !== '' && $diagnostic !== '' && $errorType !== 'permission') {
+                $message .= ' Technical detail: ' . $diagnostic;
+            }
+            if ($message !== '') {
+                $messages[$message] = true;
+            }
+        }
+        if ($messages !== []) {
+            return implode(' ', array_keys($messages));
+        }
+        return 'The test errored during execution and did not return a security result.';
+    }
+
     $resultCounts = [];
     foreach ($matchedTests as $test) {
         $result = strtolower(trim((string) ($test['result'] ?? 'unknown')));
@@ -2873,7 +3079,64 @@ function secureit_control_non_assessed_reason(array $control): string {
     return 'Matched tests returned a mix of non-scoreable results: ' . implode(', ', array_keys($resultCounts)) . '.';
 }
 
+function secureit_control_execution_error_requirements(array $control): array {
+    $permissions = [];
+    $hasApiError = false;
+    $hasExecutionError = false;
+
+    foreach (($control['matchedTests'] ?? []) as $test) {
+        if (!is_array($test)) {
+            continue;
+        }
+        $executionError = is_array($test['executionError'] ?? null) ? $test['executionError'] : [];
+        if (empty($executionError['isError'])) {
+            continue;
+        }
+        $type = strtolower(trim((string) ($executionError['type'] ?? 'execution')));
+        if ($type === 'permission' || $type === 'api') {
+            $hasApiError = true;
+        } else {
+            $hasExecutionError = true;
+        }
+        foreach (($executionError['requiredPermissions'] ?? []) as $permission) {
+            $permission = trim((string) $permission);
+            if ($permission !== '') {
+                $permissions[$permission] = true;
+            }
+        }
+    }
+
+    if ($permissions !== []) {
+        return [
+            'type' => 'permissions',
+            'summary' => 'The test requires additional Microsoft Graph or API application permission.',
+            'items' => array_keys($permissions),
+        ];
+    }
+    if ($hasApiError) {
+        return [
+            'type' => 'api',
+            'summary' => 'The test requires a successful authenticated response from the Microsoft API endpoint.',
+            'items' => [],
+        ];
+    }
+    if ($hasExecutionError) {
+        return [
+            'type' => 'execution',
+            'summary' => 'The test runner must complete without an execution exception.',
+            'items' => [],
+        ];
+    }
+
+    return [];
+}
+
 function secureit_control_assessment_requirements(array $control): array {
+    $executionRequirements = secureit_control_execution_error_requirements($control);
+    if ($executionRequirements !== []) {
+        return $executionRequirements;
+    }
+
     $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
     if ($controlId === '') {
         return [];
@@ -3102,7 +3365,25 @@ function secureit_control_non_assessed_reason_with_requirements(array $control):
         static fn(string $item): bool => $item !== ''
     ));
 
+    if ($status === 'error' && $type === 'permissions' && $items !== []) {
+        return sprintf(
+            'Errored: Microsoft denied the API request because the assessment connection is missing required %s: %s. Grant the application %s, grant admin consent, and rerun the test.',
+            count($items) === 1 ? 'permission' : 'permissions',
+            implode('; ', $items),
+            count($items) === 1 ? 'permission' : 'permissions'
+        );
+    }
+    if ($status === 'error' && in_array($type, ['api', 'execution'], true)) {
+        return $reason;
+    }
+
     $prefix = match ($status) {
+        'error' => match ($type) {
+            'permissions' => 'Errored: Microsoft denied the test API request because the assessment connection is missing required permission.',
+            'api' => 'Errored: the Microsoft API request failed before the test could return a security result.',
+            'execution' => 'Errored: the test runner raised an exception before it could return a security result.',
+            default => $reason,
+        },
         'skipped' => match ($type) {
             'permissions' => 'All matched tests were skipped because the required Microsoft Graph or API permissions are not available.',
             'license' => 'All matched tests were skipped because the required license or tenant feature is not available.',
@@ -3141,6 +3422,7 @@ function secureit_control_non_scoreable_bucket(array $control): string {
         'permissions' => 'missing_permissions',
         'license' => 'missing_license',
         'feature' => 'separate_feature',
+        'api', 'execution' => 'api_error',
         default => 'other',
     };
 }
@@ -3150,6 +3432,7 @@ function secureit_control_non_scoreable_bucket_label(string $bucket): string {
         'missing_permissions' => 'Missing permissions',
         'missing_license' => 'Missing license',
         'separate_feature' => 'To-do',
+        'api_error' => 'API or test error',
         default => '',
     };
 }
@@ -3159,6 +3442,7 @@ function secureit_control_non_scoreable_bucket_description(string $bucket): stri
         'missing_permissions' => 'The test ran, but the app or tenant did not have enough API access to return a scoreable result.',
         'missing_license' => 'The test depends on a licensed feature or service that is not present in the tenant.',
         'separate_feature' => 'The check belongs in a separate product feature or tenant workflow rather than the normal production run.',
+        'api_error' => 'The test could not return a security result because its API request or test execution failed.',
         default => 'The control did not match a known prerequisite bucket.',
     };
 }
@@ -3169,6 +3453,7 @@ function secureit_control_non_scoreable_next_step(array $control): string {
         'missing_permissions' => 'Grant the required Graph/API permissions, then rerun production.',
         'missing_license' => 'Enable or license the required feature, then rerun production.',
         'separate_feature' => 'Move this control into the separate feature workflow or expose the tenant feature/configuration it needs.',
+        'api_error' => 'Resolve the API or runner error shown for the test, then rerun production.',
         default => 'Review the latest artifact and control output to identify the missing prerequisite or failure path.',
     };
 }
@@ -3200,7 +3485,7 @@ function secureit_group_non_scoreable_controls(array $controls): array {
         $bucketsByType[$bucket]['controls'][] = $control;
     }
 
-    $bucketOrder = ['missing_permissions', 'missing_license', 'separate_feature', 'other'];
+    $bucketOrder = ['missing_permissions', 'api_error', 'missing_license', 'separate_feature', 'other'];
     $buckets = [];
     foreach ($bucketOrder as $bucketKey) {
         if (!isset($bucketsByType[$bucketKey])) {
@@ -3400,6 +3685,8 @@ function secureit_check_summary_counts(array $areaData): array {
     $passed = 0;
     $partial = 0;
     $failed = 0;
+    $errors = 0;
+    $skipped = 0;
     $unmapped = 0;
     $notAssessed = 0;
     $controls = [];
@@ -3409,6 +3696,8 @@ function secureit_check_summary_counts(array $areaData): array {
         $passed += (int) ($area['controlsPassing'] ?? 0);
         $partial += (int) ($area['controlsPartial'] ?? 0);
         $failed += (int) ($area['controlsFailing'] ?? 0);
+        $errors += (int) ($area['controlsErrored'] ?? 0);
+        $skipped += (int) ($area['controlsSkipped'] ?? 0);
         $unmapped += (int) ($area['controlsUnmapped'] ?? 0);
         $notAssessed += (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
         foreach (($area['controls'] ?? []) as $control) {
@@ -3427,6 +3716,8 @@ function secureit_check_summary_counts(array $areaData): array {
         'passed' => $passed,
         'partial' => $partial,
         'failed' => $failed,
+        'errors' => $errors,
+        'skipped' => $skipped,
         'unmapped' => $unmapped,
         'notAssessed' => $notAssessed,
         'completed' => $scoreCalculation['assessedControls'],
@@ -3488,10 +3779,12 @@ function secureit_tenant_analysis_text(?array $summary, array $areaData): string
     }
 
     return sprintf(
-        'The latest run on %s returned scoreable evidence for %d of %d SecureIT checks. The overall posture %s. The lowest-scoring area is currently %s at %s. The strongest area is %s at %s.',
+        'The latest run on %s returned scoreable evidence for %d of %d SecureIT checks, with %d errors and %d skipped. The overall posture %s. The lowest-scoring area is currently %s at %s. The strongest area is %s at %s.',
         $runDate,
         $counts['assessed'],
         $counts['total'],
+        $counts['errors'],
+        $counts['skipped'],
         $posture,
         $worstAreaName,
         $worstAreaScore,

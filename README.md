@@ -112,6 +112,8 @@ The production workflow reads its Maester `2.2.0` pin and required Graph applica
 
 Customer onboarding renders the permission list from the same runtime manifest. Before a client-secret tenant is saved, SecureIT requests a Graph application token with the supplied credentials and verifies that its application-role claims include every permission required by the pinned Maester runtime.
 
+Canonical scoring inspects each test's execution evidence before accepting Maester/Pester's top-level result. Missing scopes, denied or failed Microsoft API requests, and non-assertion execution exceptions resolve to non-scoreable `Error`, not `Fail`. When the evidence names a missing scope, or the test family has a known least-privilege requirement, the tenant view and PDF identify the permission required to rerun it. Overall and functional-area summaries list Error and Skipped counts separately from security failures.
+
 ## Tenant overview trends
 
 Tenant overview pages include an SVG trend graph for the latest ten stored reports.

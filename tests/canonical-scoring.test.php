@@ -58,6 +58,90 @@ foreach ($statusCases as $sourceStatus => $expectedStatus) {
     secureit_contract_test_assert($actualStatus === $expectedStatus, $sourceStatus . ' should resolve to ' . $expectedStatus . ', got ' . $actualStatus . '.');
 }
 secureit_contract_test_assert(secureit_evaluate_control_status([], 'direct') === 'unmapped', 'Missing evidence must resolve to unmapped.');
+secureit_contract_test_assert(
+    secureit_evaluate_control_status([['result' => 'Passed'], ['result' => 'Error']], 'majority-pass') === 'error',
+    'An execution error must make aggregated control evidence non-scoreable rather than hiding behind a pass or partial result.'
+);
+
+$executionErrorArtifact = [
+    'Tests' => [
+        [
+            'Id' => 'MT.1107',
+            'Title' => 'Entitlement management deleted groups',
+            'Result' => 'Failed',
+            'ScriptBlockFile' => '/runner/tests/Test-MtEntitlementManagementDeletedGroups.Tests.ps1',
+            'ErrorRecord' => [[
+                'Exception' => ['Message' => 'Response status code does not indicate success: Forbidden (Forbidden).'],
+                'FullyQualifiedErrorId' => 'Microsoft.PowerShell.Commands.WriteErrorException,Test-MtEntitlementManagementDeletedGroups',
+            ]],
+        ],
+        [
+            'Id' => 'CISA.TEST.NORMAL-FAILURE',
+            'Title' => 'Normal security assertion failure',
+            'Result' => 'Failed',
+            'ScriptBlockFile' => '/runner/tests/Test-NormalSecurityControl.Tests.ps1',
+            'ErrorRecord' => [[
+                'Exception' => ['Message' => 'Expected true, but got false.'],
+                'FullyQualifiedErrorId' => 'PesterAssertionFailed',
+            ]],
+        ],
+        [
+            'Id' => 'MT.1029',
+            'Title' => 'Privileged assignment alert',
+            'Result' => 'Error',
+            'ScriptBlockFile' => '/runner/tests/Test-PrivilegedAssignments.Tests.ps1',
+            'ErrorRecord' => [[
+                'Exception' => ['Message' => 'Authorization failed due to missing permission scope RoleManagementAlert.Read.Directory,RoleManagementAlert.ReadWrite.Directory.'],
+                'FullyQualifiedErrorId' => 'PermissionScopeNotGranted',
+            ]],
+        ],
+        [
+            'Id' => 'TEST.MISSING-SCOPE',
+            'Title' => 'Skipped test with missing scope',
+            'Result' => 'Skipped',
+            'ScriptBlockFile' => '/runner/tests/Test-MissingScope.Tests.ps1',
+            'ResultDetail' => [
+                'SkippedReason' => 'Missing Scope AuditLog.Read.All',
+            ],
+        ],
+    ],
+];
+$executionTests = [];
+foreach (secureit_extract_tests_from_embedded_summary($executionErrorArtifact) as $test) {
+    $executionTests[$test['id']] = $test;
+}
+secureit_contract_test_assert(($executionTests['MT.1107']['result'] ?? '') === 'error', 'A failed test backed by a 403 execution exception must resolve to error.');
+secureit_contract_test_assert(
+    ($executionTests['MT.1107']['executionError']['requiredPermissions'][0] ?? '') === 'EntitlementManagement.Read.All',
+    'A known entitlement-management API error must identify EntitlementManagement.Read.All.'
+);
+secureit_contract_test_assert(($executionTests['CISA.TEST.NORMAL-FAILURE']['result'] ?? '') === 'failed', 'A normal Pester assertion failure must remain a security failure.');
+secureit_contract_test_assert(
+    ($executionTests['MT.1029']['executionError']['requiredPermissions'] ?? []) === ['RoleManagementAlert.Read.Directory'],
+    'Permission errors must prefer the least-privilege permission in the pinned Maester manifest.'
+);
+secureit_contract_test_assert(
+    ($executionTests['TEST.MISSING-SCOPE']['result'] ?? '') === 'error'
+    && ($executionTests['TEST.MISSING-SCOPE']['executionError']['requiredPermissions'] ?? []) === ['AuditLog.Read.All'],
+    'A test skipped because of a missing permission must be reclassified as Error and name the missing scope.'
+);
+
+$executionErrorData = secureit_resolve_canonical_area_scores_from_artifact($executionErrorArtifact, null);
+$executionErrorCounts = secureit_check_summary_counts($executionErrorData);
+secureit_contract_test_assert($executionErrorCounts['errors'] === 2, 'Mapped API failures must appear in the overall canonical error count.');
+$entitlementErrorControl = null;
+foreach (($executionErrorData['areas'] ?? []) as $area) {
+    foreach (($area['controls'] ?? []) as $control) {
+        if (($control['id'] ?? '') === 'MTENTITLEMENTMANAGEMENTDELETEDGROUPS') {
+            $entitlementErrorControl = $control;
+        }
+    }
+}
+secureit_contract_test_assert(($entitlementErrorControl['status'] ?? '') === 'error', 'The entitlement-management control must be marked Error rather than Failed.');
+secureit_contract_test_assert(
+    str_contains((string) ($entitlementErrorControl['reason'] ?? ''), 'EntitlementManagement.Read.All'),
+    'The control error resolution must name the permission required to rerun the test.'
+);
 
 $sourceEvidenceArtifact = [
     'Tests' => [

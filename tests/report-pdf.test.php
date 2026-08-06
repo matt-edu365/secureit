@@ -41,6 +41,8 @@ foreach (secureit_functional_area_catalog() as $index => $catalogArea) {
         'controlsPassing' => $index === 0 ? 1 : 0,
         'controlsPartial' => $index === 0 ? 1 : 0,
         'controlsFailing' => $index === 0 ? 1 : 0,
+        'controlsErrored' => $index === 0 ? 1 : 0,
+        'controlsSkipped' => $index === 0 ? 1 : 0,
         'controlsUnmapped' => $index === 0 ? 1 : 0,
         'controlsNotAssessed' => $index === 0 ? 1 : 0,
         'controls' => $controls,
@@ -69,6 +71,8 @@ secureit_report_test_assert(str_contains($html, 'Issue and impact:'), 'Structure
 secureit_report_test_assert(str_contains($html, 'Recommended action:'), 'Structured recommended action guidance is missing.');
 secureit_report_test_assert(str_contains($html, 'Rerun the SecureIT control.'), 'Ordered remediation steps are missing.');
 secureit_report_test_assert(str_contains($html, 'Assessment coverage gaps'), 'Coverage gaps are missing.');
+secureit_report_test_assert(str_contains($html, 'Errors'), 'Overall and functional-area error counts are missing.');
+secureit_report_test_assert(str_contains($html, 'Skipped'), 'Overall and functional-area skipped counts are missing.');
 secureit_report_test_assert(str_contains($html, 'Controls meeting the baseline'), 'Passing controls are missing.');
 secureit_report_test_assert(str_contains($html, 'area-summary-bad'), 'Functional-area score traffic-light styling is missing.');
 secureit_report_test_assert(!str_contains($html, 'class="eyebrow"'), 'Uppercase section labels must not be rendered.');

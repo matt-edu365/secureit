@@ -27,7 +27,9 @@ function secureit_report_status_key(string $status): string {
         'pass', 'passed', 'healthy' => 'pass',
         'partial', 'partially met', 'watch' => 'partial',
         'fail', 'failed', 'needs attention' => 'fail',
-        'unmapped', 'not assessed', 'no data', 'not_applicable', 'not applicable', 'not_run', 'not run', 'skipped', 'error', 'unknown' => 'unmapped',
+        'error', 'errored' => 'error',
+        'skipped', 'skip' => 'skipped',
+        'unmapped', 'not assessed', 'no data', 'not_applicable', 'not applicable', 'not_run', 'not run', 'unknown' => 'unmapped',
         default => 'unknown',
     };
 }
@@ -37,6 +39,8 @@ function secureit_report_status_label(string $status): string {
         'pass' => 'PASS',
         'partial' => 'PARTIAL',
         'fail' => 'FAIL',
+        'error' => 'ERROR',
+        'skipped' => 'SKIPPED',
         'unmapped' => 'NOT ASSESSED',
         default => 'UNKNOWN',
     };
@@ -65,12 +69,17 @@ function secureit_report_area_insight(array $area): string {
     $failed = (int) ($area['controlsFailing'] ?? 0);
     $partial = (int) ($area['controlsPartial'] ?? 0);
     $unmapped = (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
+    $errors = (int) ($area['controlsErrored'] ?? 0);
+    $skipped = (int) ($area['controlsSkipped'] ?? 0);
     $passed = (int) ($area['controlsPassing'] ?? 0);
 
     if ($failed > 0) {
         $message = $failed . ' ' . ($failed === 1 ? 'control requires' : 'controls require') . ' remediation. Address failed controls first';
         if ($partial > 0) {
             $message .= ', then complete the ' . $partial . ' partially met ' . ($partial === 1 ? 'control' : 'controls');
+        }
+        if ($errors > 0 || $skipped > 0) {
+            $message .= '; also review ' . $errors . ' errors and ' . $skipped . ' skipped controls';
         }
         return $message . '.';
     }
@@ -84,6 +93,9 @@ function secureit_report_area_insight(array $area): string {
     }
 
     if ($unmapped > 0) {
+        if ($errors > 0 || $skipped > 0) {
+            return $unmapped . ' controls have no scoreable result, including ' . $errors . ' errors and ' . $skipped . ' skipped. Review assessment coverage before treating this area as complete.';
+        }
         return $unmapped . ' ' . ($unmapped === 1 ? 'control has' : 'controls have') . ' no scoreable result in the latest assessment. Review assessment coverage before treating this area as complete.';
     }
 
@@ -370,7 +382,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .posture-score span { display: block; margin-top: 5pt; color: #00635f; font-size: 9pt; font-weight: 700; }
     .posture-copy { padding: 8pt 4pt 8pt 11pt; vertical-align: middle; }
     .posture-copy strong { display: block; margin-bottom: 3pt; color: #0e2841; font-size: 14pt; }
-    .metric-cell { width: 25%; padding: 8pt; border: 1px solid #cfe3e2; border-radius: 7px; background: #f3f9f8; vertical-align: top; }
+    .metric-cell { width: 16.66%; padding: 8pt; border: 1px solid #cfe3e2; border-radius: 7px; background: #f3f9f8; vertical-align: top; }
     .metric-cell.partial { border-color: #f0cf91; background: #fff7e9; }
     .metric-cell.fail { border-color: #efb6b1; background: #fff0ee; }
     .metric-label { display: block; color: #00635f; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; }
@@ -418,7 +430,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .area-summary-neutral .area-summary-score { color: #647784; }
     .area-summary-copy { width: 80%; color: #344f62; vertical-align: middle; }
     .area-summary-copy strong { display: block; margin-bottom: 2pt; color: #0e2841; font-size: 10pt; }
-    .area-metric { width: 25%; padding: 6pt 7pt; border: 1px solid #d0dfe1; background: #ffffff; vertical-align: top; }
+    .area-metric { width: 16.66%; padding: 6pt 7pt; border: 1px solid #d0dfe1; background: #ffffff; vertical-align: top; }
     .area-metric strong { display: block; color: #0e2841; font-size: 13pt; }
     .area-metric span { color: #52697a; font-size: 7.5pt; }
     .control-group { margin-top: 13pt; }
@@ -444,6 +456,8 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .status-pass { color: #008443; }
     .status-partial { color: #a66a00; }
     .status-fail { color: #d00000; }
+    .status-error { color: #be123c; }
+    .status-skipped { color: #475569; }
     .status-unmapped, .status-unknown { color: #647784; }
     .passing-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.3pt; }
     .passing-table tr { page-break-inside: avoid; }
@@ -482,7 +496,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
 
     <table class="posture-table"><tr>
       <td class="posture-score"><strong><?php echo secureit_report_escape($scoreLabel); ?></strong><span>OVERALL SCORE</span></td>
-      <td class="posture-copy"><strong><?php echo secureit_report_escape((string) ($overallStatus['status'] ?? 'No data')); ?></strong>The latest assessment ran on <?php echo secureit_report_escape($runDate); ?> and returned scoreable evidence for <?php echo (int) ($counts['assessed'] ?? 0); ?> of <?php echo (int) ($counts['total'] ?? 0); ?> SecureIT controls.</td>
+      <td class="posture-copy"><strong><?php echo secureit_report_escape((string) ($overallStatus['status'] ?? 'No data')); ?></strong>The latest assessment ran on <?php echo secureit_report_escape($runDate); ?> and returned scoreable evidence for <?php echo (int) ($counts['assessed'] ?? 0); ?> of <?php echo (int) ($counts['total'] ?? 0); ?> SecureIT controls, with <?php echo (int) ($counts['errors'] ?? 0); ?> errors and <?php echo (int) ($counts['skipped'] ?? 0); ?> skipped.</td>
     </tr></table>
 
     <table class="metric-table"><tr>
@@ -490,6 +504,8 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
       <td class="metric-cell"><span class="metric-label">Passed</span><span class="metric-value"><?php echo (int) ($counts['passed'] ?? 0); ?></span><span class="metric-note">Controls meeting the baseline</span></td>
       <td class="metric-cell partial"><span class="metric-label">Partially met</span><span class="metric-value"><?php echo (int) ($counts['partial'] ?? 0); ?></span><span class="metric-note">Controls needing follow-up</span></td>
       <td class="metric-cell fail"><span class="metric-label">Failed</span><span class="metric-value"><?php echo (int) ($counts['failed'] ?? 0); ?></span><span class="metric-note">Controls needing attention</span></td>
+      <td class="metric-cell fail"><span class="metric-label">Errors</span><span class="metric-value"><?php echo (int) ($counts['errors'] ?? 0); ?></span><span class="metric-note">Tests unable to return a result</span></td>
+      <td class="metric-cell"><span class="metric-label">Skipped</span><span class="metric-value"><?php echo (int) ($counts['skipped'] ?? 0); ?></span><span class="metric-note">Controls with unavailable prerequisites</span></td>
     </tr></table>
 
     <table class="highlight-table"><tr>
@@ -526,7 +542,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
               <span class="area-score"><?php echo secureit_report_escape(secureit_report_area_score($area)); ?></span>
               <span class="area-status tone-<?php echo $tone; ?>"><?php echo secureit_report_escape((string) ($area['status'] ?? 'No data')); ?></span>
               <table class="area-bar"><tr><td class="bar-<?php echo $tone; ?>" style="width:<?php echo $areaScore; ?>%"></td><td style="width:<?php echo 100 - $areaScore; ?>%"></td></tr></table>
-              <div class="area-counts"><?php echo (int) ($area['controlsPassing'] ?? 0); ?> passed &nbsp; <?php echo (int) ($area['controlsPartial'] ?? 0); ?> partial &nbsp; <?php echo (int) ($area['controlsFailing'] ?? 0); ?> failed &nbsp; <?php echo (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0); ?> not assessed</div>
+              <div class="area-counts"><?php echo (int) ($area['controlsPassing'] ?? 0); ?> passed &nbsp; <?php echo (int) ($area['controlsPartial'] ?? 0); ?> partial &nbsp; <?php echo (int) ($area['controlsFailing'] ?? 0); ?> failed &nbsp; <?php echo (int) ($area['controlsErrored'] ?? 0); ?> errors &nbsp; <?php echo (int) ($area['controlsSkipped'] ?? 0); ?> skipped &nbsp; <?php echo max(0, (int) ($area['controlsNotAssessed'] ?? 0) - (int) ($area['controlsErrored'] ?? 0) - (int) ($area['controlsSkipped'] ?? 0)); ?> other not assessed</div>
             </td>
           <?php endforeach; ?>
           <?php if (count($areaRow) === 1): ?><td></td><?php endif; ?>
@@ -557,7 +573,9 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
         <td class="area-metric"><strong><?php echo (int) ($area['controlsTotal'] ?? 0); ?></strong><span>Total controls</span></td>
         <td class="area-metric"><strong><?php echo (int) ($area['controlsPassing'] ?? 0); ?></strong><span>Passed</span></td>
         <td class="area-metric"><strong><?php echo (int) ($area['controlsPartial'] ?? 0) + (int) ($area['controlsFailing'] ?? 0); ?></strong><span>Need follow-up</span></td>
-        <td class="area-metric"><strong><?php echo (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0); ?></strong><span>Not assessed</span></td>
+        <td class="area-metric"><strong><?php echo (int) ($area['controlsErrored'] ?? 0); ?></strong><span>Errors</span></td>
+        <td class="area-metric"><strong><?php echo (int) ($area['controlsSkipped'] ?? 0); ?></strong><span>Skipped</span></td>
+        <td class="area-metric"><strong><?php echo max(0, (int) ($area['controlsNotAssessed'] ?? 0) - (int) ($area['controlsErrored'] ?? 0) - (int) ($area['controlsSkipped'] ?? 0)); ?></strong><span>Other not assessed</span></td>
       </tr></table>
 
       <?php

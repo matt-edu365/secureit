@@ -65,6 +65,8 @@ Current important bridge:
 
 The production workflow reads its Maester `2.2.0` pin and Graph application-permission contract from `config/maester-runtime.json`. It uses only the tests bundled with that module, validates the manifest against `Get-MtGraphScope`, and fails closed when an allowlisted production test is absent. A production bundle is incomplete without `latest/embedded-summary.json`; both the runner and production publication step reject missing or unparsable embedded evidence. The authenticated generic import endpoint itself currently validates only `latest/summary.json`, so producers other than the production workflow must enforce the full contract.
 
+Canonical result resolution treats permission/API failures and non-assertion execution exceptions as non-scoreable `Error`, even when Pester reported the item as `Failed` or `Skipped`. Error resolutions expose the required permission where it can be extracted or mapped, and Error/Skipped totals are shown overall and for every functional area.
+
 ## Recommended priorities
 
 1. Keep the Docker-based runtime reproducible

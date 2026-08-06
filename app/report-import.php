@@ -270,17 +270,21 @@ try {
                 'title' => 'Summary of the latest report',
                 'subtitle' => 'SecureIT imported a new report bundle for ' . $tenantName . '.',
                 'summary' => sprintf(
-                    'The latest report for %s has been imported into SecureIT. %d checks are represented in the overview: %d passed, %d partially met, and %d failed.',
+                    'The latest report for %s has been imported into SecureIT. %d checks are represented in the overview: %d passed, %d partially met, %d failed, %d errored, and %d skipped.',
                     $tenantName,
                     $counts['total'],
                     $counts['passed'],
                     $counts['partial'],
-                    $counts['failed']
+                    $counts['failed'],
+                    $counts['errors'],
+                    $counts['skipped']
                 ),
                 'checks' => $counts['total'],
                 'passed' => $counts['passed'],
                 'partial' => $counts['partial'],
                 'failed' => $counts['failed'],
+                'errors' => $counts['errors'],
+                'skipped' => $counts['skipped'],
                 'passRate' => $counts['passRate'],
                 'statusLabel' => $counts['riskLevel'],
                 'statusTone' => $counts['riskTone'],

@@ -61,6 +61,11 @@ The production publication contract requires both `latest/summary.json` and `lat
 - API failures, missing permissions, and non-assertion runner exceptions are now classified as non-scoreable `Error`, with required permissions shown where known. Continue separating missing service connections, unlicensed/not-applicable features, deliberate preview exclusions, and unsupported upstream tests instead of leaving them under generic non-scoreable explanations.
 - For any future `Test-MtMdiHealthIssues.Tests.ps1` experiment, treat zero returned health issues as a pass only when the Defender for Identity request is known to have succeeded; permission, connection, and API failures must remain coverage gaps.
 
+## Portal user-interface follow-ups
+
+- [ ] **Restore line graphs in Functional Area views.** Reintroduce useful per-area score history once the view can plot meaningful historical results consistently.
+- [ ] **Remove useless trend data cards in Functional Area views.** Do not render an empty parent card or the nested "No trend data yet" placeholder when an area has no plottable history.
+
 ## Success condition
 
 The repo should converge on a state where:

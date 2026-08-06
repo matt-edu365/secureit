@@ -127,7 +127,7 @@ Current behavior:
 - the X axis uses each report date in `dd/MM` format
 - report-history area data is resolved once per history row and reused by the graph and run-history table to avoid repeated scoring work
 
-The seven functional-area cards are hidden while a functional-area view is active. Area views focus on the latest controls and run-history table; they do not render a separate trend card.
+The seven functional-area cards are hidden while a functional-area view is active. Area views currently focus on the latest controls and run-history table; they do not render a separate trend card. Planned UI work will restore meaningful per-area line graphs while continuing to suppress empty, non-useful trend cards when no history can be plotted.
 
 ## Functional-area scoring
 

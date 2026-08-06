@@ -2101,6 +2101,32 @@ function secureit_validate_canonical_controls(array $data): array {
     return $errors;
 }
 
+function secureit_production_excluded_control_ids(): array {
+    return [
+        'APPREGISTRATIONS',
+        'MTAPPREGISTRATIONOWNERSWITHOUTMFA',
+        'MTHIGHRISKAPPPERMISSIONS',
+        'XSPMDEVICES',
+        'XSPMPRIVILEGEDIDENTITIES',
+        'MTMDIHEALTHISSUES',
+    ];
+}
+
+function secureit_filter_production_controls(array $controls): array {
+    $excludedIds = array_fill_keys(array_map(
+        'secureit_normalise_mapping_id',
+        secureit_production_excluded_control_ids()
+    ), true);
+
+    return array_values(array_filter($controls, static function ($control) use ($excludedIds): bool {
+        if (!is_array($control)) {
+            return false;
+        }
+        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+        return $controlId !== '' && !isset($excludedIds[$controlId]);
+    }));
+}
+
 function secureit_load_canonical_controls(): array {
     $validationFailures = [];
     foreach (secureit_canonical_controls_candidate_paths() as $path) {
@@ -2115,7 +2141,9 @@ function secureit_load_canonical_controls(): array {
                 continue;
             }
             $descriptions = secureit_load_test_descriptions();
-            $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
+            $controls = secureit_filter_production_controls(
+                is_array($data['controls'] ?? null) ? $data['controls'] : []
+            );
             foreach ($controls as &$control) {
                 if (!is_array($control)) {
                     continue;
@@ -2160,29 +2188,15 @@ function secureit_total_canonical_control_count(): int {
         secureit_todo_feature_control_ids()
     ), true);
 
-    foreach (secureit_canonical_controls_candidate_paths() as $path) {
-        if (!file_exists($path)) {
-            continue;
+    $data = secureit_load_canonical_controls();
+    $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
+    return count(array_filter($controls, static function ($control) use ($todoFeatureIds): bool {
+        if (!is_array($control)) {
+            return false;
         }
-        $data = json_decode(file_get_contents($path), true);
-        if (!is_array($data)) {
-            continue;
-        }
-
-        $controls = is_array($data['controls'] ?? null) ? $data['controls'] : [];
-        $count = count(array_filter($controls, static function ($control) use ($todoFeatureIds): bool {
-            if (!is_array($control)) {
-                return false;
-            }
-            $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
-            return $controlId !== '' && !isset($todoFeatureIds[$controlId]);
-        }));
-        if ($count > 0) {
-            return $count;
-        }
-    }
-
-    return 0;
+        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+        return $controlId !== '' && !isset($todoFeatureIds[$controlId]);
+    }));
 }
 
 function secureit_tenant_embedded_summary(string $tenantKey): ?array {

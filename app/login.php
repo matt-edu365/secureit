@@ -32,13 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (isset($_POST['enquiry_submit'])) {
-        header('Location: login.php?enquiry=received', true, 302);
-        exit;
-    }
 }
 
-$enquiryReceived = isset($_GET['enquiry']) && $_GET['enquiry'] === 'received';
 $unknownIdentity = isset($_GET['unknown']) && $_GET['unknown'] === '1';
 $deniedAccess = isset($_GET['denied']) && $_GET['denied'] === '1';
 $authError = trim((string) ($_GET['auth_error'] ?? ''));
@@ -63,10 +58,10 @@ ob_start();
 ?>
 <section class="section">
   <div class="container">
-    <div class="split" style="grid-template-columns:minmax(0, 1fr) minmax(340px, 0.94fr); align-items:start;">
+    <div style="max-width:680px; margin:0 auto;">
       <article class="panel">
-        <div style="margin-bottom:20px;">
-          <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:left;">SecureIT Login</h2>
+        <div style="margin-bottom:20px; text-align:center;">
+          <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:center;">SecureIT Login</h2>
           <div class="muted">Use your Microsoft 365 identity to access the SecureIT portal.</div>
         </div>
 
@@ -116,70 +111,6 @@ ob_start();
           <p class="field-note" style="margin-top:0;"><?php echo secureit_entra_is_enabled() ? 'Microsoft Entra authentication is enabled for this environment. Local seeded identities are only available on localhost.' : 'Local seeded identities are still active because Microsoft Entra authentication is not configured yet.'; ?></p>
         </form>
       </article>
-
-      <aside class="panel">
-        <div style="margin-bottom:20px;">
-          <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:left;">Not a subscriber?</h2>
-          <div class="muted">Fill out the form and one of the ICT365 team will get in touch.</div>
-        </div>
-
-        <?php if ($enquiryReceived): ?>
-          <div class="success" style="margin-bottom:18px;">
-            Thanks, your enquiry has been captured.
-          </div>
-        <?php endif; ?>
-
-        <form method="post" style="display:grid; gap:14px;">
-          <div>
-            <label for="contact-name" style="margin-top:0;">Full name</label>
-            <input id="contact-name" name="contact_name" type="text" placeholder="Jane Smith" required>
-          </div>
-
-          <div>
-            <label for="company-name" style="margin-top:0;">Organisation name</label>
-            <input id="company-name" name="company_name" type="text" placeholder="Acme School or Acme Ltd" required>
-          </div>
-
-          <div>
-            <label for="contact-email" style="margin-top:0;">Email address</label>
-            <input id="contact-email" name="contact_email" type="email" placeholder="name@company.com" required>
-          </div>
-
-          <div>
-            <label for="contact-phone" style="margin-top:0;">Phone number</label>
-            <input id="contact-phone" name="contact_phone" type="tel" placeholder="+1 (345) 555-0123">
-          </div>
-
-          <div>
-            <label for="org-type" style="margin-top:0;">Organisation type</label>
-            <select id="org-type" name="org_type" required>
-              <option value="">Select one</option>
-              <option>Business</option>
-              <option>School</option>
-              <option>Non-profit</option>
-              <option>Government</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="interest" style="margin-top:0;">What are you interested in?</label>
-            <select id="interest" name="interest" required>
-              <option value="">Select one</option>
-              <option>M365 security posture reporting</option>
-              <option>Managed Microsoft 365 security</option>
-              <option>Tenant onboarding</option>
-              <option>General SecureIT enquiry</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="notes" style="margin-top:0;">Tell us a little about your environment</label>
-            <input id="notes" name="notes" type="text" placeholder="Approximate user count, any concerns, reporting needs, etc.">
-          </div>
-
-          <button type="submit" name="enquiry_submit" value="1">Request information</button>
-        </form>
-      </aside>
     </div>
   </div>
 </section>

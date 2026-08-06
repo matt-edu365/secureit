@@ -58,6 +58,41 @@ foreach ($productionExcludedControlIds as $controlId) {
     secureit_contract_test_assert(!isset($controlIds[$controlId]), $controlId . ' must remain outside the production catalog.');
 }
 
+$staleRuntimeControls = $catalog['controls'];
+$staleControlTemplate = $staleRuntimeControls[0];
+foreach ($productionExcludedControlIds as $controlId) {
+    $staleControl = $staleControlTemplate;
+    $staleControl['id'] = $controlId;
+    $staleControl['title'] = $controlId;
+    $staleControl['frameworkMappings'] = ['Test-' . $controlId . '.Tests.ps1'];
+    $staleRuntimeControls[] = $staleControl;
+}
+$filteredRuntimeControls = secureit_filter_production_controls($staleRuntimeControls);
+secureit_contract_test_assert(
+    count($filteredRuntimeControls) === count($catalog['controls']),
+    'An older mounted catalog must be filtered back to the current production contract.'
+);
+$filteredRuntimeControlIds = array_column($filteredRuntimeControls, 'id');
+foreach ($productionExcludedControlIds as $controlId) {
+    secureit_contract_test_assert(
+        !in_array($controlId, $filteredRuntimeControlIds, true),
+        $controlId . ' must be removed even when it survives in an older mounted catalog.'
+    );
+}
+
+$summaryMailHtml = secureit_mail_build_overview_html([
+    'checks' => secureit_total_canonical_control_count(),
+    'passed' => 30,
+    'partial' => 7,
+    'failed' => 43,
+    'errors' => 0,
+    'skipped' => 14,
+]);
+secureit_contract_test_assert(
+    preg_match('/>Checks<\/div><div[^>]*>94<\/div>/', $summaryMailHtml) === 1,
+    'The completion email must advertise 94 checks.'
+);
+
 $statusCases = [
     'Pass' => 'pass',
     'Failed' => 'fail',
@@ -386,6 +421,22 @@ secureit_contract_test_assert(
     str_contains($productionWorkflow, 'default: SecureIT-Production-94')
         && !str_contains($productionWorkflow, 'SecureIT-Production-101'),
     'The production workflow must default to the 94-control profile.'
+);
+
+$tenantPageSource = file_get_contents(__DIR__ . '/../app/tenant.php');
+secureit_contract_test_assert(
+    !str_contains($tenantPageSource, 'secureit_functional_area_trend_card')
+        && !str_contains($tenantPageSource, '$selectedAreaHistory'),
+    'Functional-area views must not render the dedicated trend parent or child card.'
+);
+
+$loginPageSource = file_get_contents(__DIR__ . '/../app/login.php');
+secureit_contract_test_assert(
+    !str_contains($loginPageSource, 'enquiry_submit')
+        && !str_contains($loginPageSource, 'Not a subscriber?')
+        && !str_contains($loginPageSource, '<aside')
+        && str_contains($loginPageSource, 'max-width:680px; margin:0 auto;'),
+    'The login page must contain only one centered login panel and no subscriber enquiry form.'
 );
 
 $maesterManifest = secureit_maester_runtime_manifest();

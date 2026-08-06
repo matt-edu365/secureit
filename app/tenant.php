@@ -182,29 +182,6 @@ function secureit_hydrate_history_area_data(array $history): array {
     return $history;
 }
 
-function secureit_functional_area_history_points(array $history, string $areaName): array {
-    $points = [];
-    foreach ($history as $item) {
-        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
-        $rowAreaData = secureit_history_row_area_data($item);
-        $areaScore = null;
-        foreach (($rowAreaData['areas'] ?? []) as $area) {
-            if (($area['name'] ?? '') !== $areaName) {
-                continue;
-            }
-            $areaScore = $area['score'] !== null ? (int) $area['score'] : null;
-            break;
-        }
-
-        $points[] = [
-            'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
-            'score' => $areaScore,
-        ];
-    }
-
-    return $points;
-}
-
 function secureit_tenant_history_series(array $history): array {
     $series = [
         'overall' => [
@@ -476,18 +453,6 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         . '</article>';
 }
 
-function secureit_functional_area_trend_card(string $areaName, array $points): string {
-    $series = [
-        'area' => [
-            'label' => $areaName,
-            'color' => '#0f766e',
-            'fill' => '#0f766e',
-            'points' => $points,
-        ],
-    ];
-    return secureit_line_graph_card('Score trend - ' . $areaName, $series, ['height' => 160]);
-}
-
 function secureit_functional_area_analysis_text(array $area): string {
     $controlsTotal = (int) ($area['controlsTotal'] ?? 0);
     if ($controlsTotal === 0) {
@@ -626,7 +591,6 @@ if (is_dir($historyRoot)) {
 $historyStoredCount = count($history);
 $history = array_slice($history, 0, 10);
 $history = secureit_hydrate_history_area_data($history);
-$selectedAreaHistory = $selectedArea ? secureit_functional_area_history_points($history, (string) ($selectedArea['name'] ?? '')) : [];
 $overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
 $selectedOverviewTrendOverall = true;
 
@@ -1086,9 +1050,6 @@ ob_start();
         </div>
       <?php endif; ?>
     </article>
-  </section>
-  <section class="section">
-    <?php echo secureit_functional_area_trend_card((string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaHistory); ?>
   </section>
 <?php endif; ?>
 

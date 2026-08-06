@@ -127,7 +127,7 @@ Current behavior:
 - the X axis uses each report date in `dd/MM` format
 - report-history area data is resolved once per history row and reused by the graph and run-history table to avoid repeated scoring work
 
-Functional-area views also show a single-area trend graph below the checks table and above run history. The seven functional-area cards are hidden while a functional-area view is active.
+The seven functional-area cards are hidden while a functional-area view is active. Area views focus on the latest controls and run-history table; they do not render a separate trend card.
 
 ## Functional-area scoring
 
@@ -135,7 +135,7 @@ SecureIT uses canonical functional areas rather than raw duplicate framework che
 
 The current version 3 catalog contains 95 entries across seven functional areas: 94 production controls plus `CONDITIONALACCESSWHATIF`, which remains catalogued as a separate to-do feature and is excluded from production scoring and totals. `SecureIT-Production-94` combines the retained `Maester-83` baseline controls with 18 production-selected 365Inspect checks.
 
-The six upstream controls deliberately removed from production are `APPREGISTRATIONS`, `MTAPPREGISTRATIONOWNERSWITHOUTMFA`, `MTHIGHRISKAPPPERMISSIONS`, `XSPMDEVICES`, `XSPMPRIVILEGEDIDENTITIES`, and `MTMDIHEALTHISSUES`. They are long-running, preview, or unable to provide a dependable production result with the current integration.
+The six upstream controls deliberately removed from production are `APPREGISTRATIONS`, `MTAPPREGISTRATIONOWNERSWITHOUTMFA`, `MTHIGHRISKAPPPERMISSIONS`, `XSPMDEVICES`, `XSPMPRIVILEGEDIDENTITIES`, and `MTMDIHEALTHISSUES`. They are long-running, preview, or unable to provide a dependable production result with the current integration. The application filters these IDs while loading any older mounted catalog so website, report, and completion-email totals remain on the 94-control production contract during deployment migration.
 
 The version 3 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
 

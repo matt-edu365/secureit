@@ -104,6 +104,8 @@ The onboarding flow also writes the customer application secret into Azure Key V
 
 `app/diagnostics.php` includes plain text and HTML Graph mail tests that send from the shared mailbox and let you choose the recipient on the page. The routines are intended to be reused wherever email is wired into SecureIT, but attachment sending has not been tested yet.
 
+For runtime bottleneck checks, administrators can open `runtime-diagnostics.php`. It returns JSON with PHP/container limits, cgroup CPU/memory/PID limits, mounted-data disk space, a temporary mounted-volume read/write probe, report-tree inventory and timings. Add `?tenant=ncvo&score=1` to measure that tenant's report inventory and canonical scoring, or add `&graph=1` to measure Graph application-token acquisition without sending mail. Secret values are never returned.
+
 ## Report runs
 
 Tenant overview pages can queue a single-tenant run of the `SecureIT Production` GitHub workflow when `SECUREIT_GITHUB_TOKEN` and the repository settings are configured in the environment. `SECUREIT_WORKFLOW_SYNC_TOKEN` remains the app-to-app bridge token used by the SecureIT workflow-sync endpoint. The workflow now also forwards the tenant report recipient to the import endpoint so the post-import email does not depend only on the stored tenant record. After the resulting bundle is imported back into SecureIT, the app sends the tenant's report recipient an HTML summary email using the same overview layout as the diagnostics page.

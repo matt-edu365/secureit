@@ -979,7 +979,10 @@ ob_start();
         <h3 class="section-title" style="font-size:1.35rem;">Copy-friendly output</h3>
         <div class="muted">Open the raw text version to paste the results into chat or notes.</div>
       </div>
-      <a class="textlink" href="diagnostics.php?format=raw">Open raw text</a>
+      <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+        <a class="textlink" href="runtime-diagnostics.php">Open runtime JSON</a>
+        <a class="textlink" href="diagnostics.php?format=raw">Open raw text</a>
+      </div>
     </div>
     <pre style="white-space:pre-wrap; margin:0;"><?php echo htmlspecialchars($rawOutput); ?></pre>
   </div>

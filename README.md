@@ -98,6 +98,8 @@ Typical flow:
 
 From a tenant overview, an authorised customer or administrator can download a branded PDF assessment. The PDF is rendered from a print-specific HTML template and includes a cover, executive summary, seven-area posture overview, prioritised remediation detail, coverage gaps, and a compact record of passing controls.
 
+Imported HTML reports and their assets retain the existing `/<tenant-key>/...` URLs, but Apache rewrites those requests through an authenticated PHP gateway. The gateway enforces tenant isolation, blocks path traversal and escaping symlinks, disables shared caching, and sandboxes imported HTML away from the application origin.
+
 The onboarding flow also writes the customer application secret into Azure Key Vault so the live tenant setup stays aligned with the workflow and diagnostics paths.
 
 ## Diagnostics email tests

@@ -225,6 +225,13 @@ jobs:
             }
           }
 
+          foreach ($tenant in $tenants) {
+            $resolvedTenantKey = [string]$tenant.tenantKey
+            if ($resolvedTenantKey -notmatch '^[a-z0-9-]+$') {
+              throw "SecureIT returned an invalid tenant key; refusing to create the job matrix."
+            }
+          }
+
           $matrixObject = [ordered]@{
             include = @($tenants)
           }
@@ -249,10 +256,6 @@ jobs:
 
           "tenant_matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "tenant_count=$($tenants.Count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          $summaryText = $summaryLines -join [Environment]::NewLine
-          "tenant_summary<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          $summaryText | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
   run-assessment:
     needs: discover-tenants
@@ -289,23 +292,35 @@ jobs:
 
       - name: Create runtime tenant config
         shell: pwsh
+        env:
+          MATRIX_AUTH_MODE: ${{ matrix.authMode }}
+          MATRIX_TENANT_KEY: ${{ matrix.tenantKey }}
+          MATRIX_TENANT_NAME: ${{ matrix.tenantName }}
+          MATRIX_TENANT_ID: ${{ matrix.tenantId }}
+          MATRIX_TENANT_DOMAIN: ${{ matrix.tenantDomain }}
+          MATRIX_CLIENT_ID: ${{ matrix.clientId }}
+          MATRIX_CLIENT_SECRET_NAME: ${{ matrix.clientSecretName }}
+          MATRIX_CERTIFICATE_SECRET_NAME: ${{ matrix.certificateSecretName }}
+          MATRIX_CERTIFICATE_PASSWORD_SECRET_NAME: ${{ matrix.certificatePasswordSecretName }}
+          MATRIX_REPORT_BASE_URL: ${{ matrix.reportBaseUrl }}
+          MATRIX_EMAIL_TO: ${{ matrix.emailTo }}
         run: |
           New-Item -ItemType Directory -Force -Path (Split-Path -Parent $env:CONFIG_PATH) | Out-Null
-          $authMode = "${{ matrix.authMode }}"
+          $authMode = $env:MATRIX_AUTH_MODE
           $tenant = [ordered]@{
             tenants = @(
               [ordered]@{
-                id = "${{ matrix.tenantKey }}"
-                name = "${{ matrix.tenantName }}"
-                tenantId = "${{ matrix.tenantId }}"
-                tenantDomain = "${{ matrix.tenantDomain }}"
-                clientId = "${{ matrix.clientId }}"
+                id = $env:MATRIX_TENANT_KEY
+                name = $env:MATRIX_TENANT_NAME
+                tenantId = $env:MATRIX_TENANT_ID
+                tenantDomain = $env:MATRIX_TENANT_DOMAIN
+                clientId = $env:MATRIX_CLIENT_ID
                 authMode = $authMode
-                clientSecretName = "${{ matrix.clientSecretName }}"
-                certificateSecretName = "${{ matrix.certificateSecretName }}"
-                certificatePasswordSecretName = "${{ matrix.certificatePasswordSecretName }}"
-                reportBaseUrl = "${{ matrix.reportBaseUrl }}"
-                emailTo = "${{ matrix.emailTo }}"
+                clientSecretName = $env:MATRIX_CLIENT_SECRET_NAME
+                certificateSecretName = $env:MATRIX_CERTIFICATE_SECRET_NAME
+                certificatePasswordSecretName = $env:MATRIX_CERTIFICATE_PASSWORD_SECRET_NAME
+                reportBaseUrl = $env:MATRIX_REPORT_BASE_URL
+                emailTo = $env:MATRIX_EMAIL_TO
               }
             )
           }
@@ -313,18 +328,32 @@ jobs:
 
       - name: Resolve tenant configuration
         shell: pwsh
+        env:
+          MATRIX_TENANT_KEY: ${{ matrix.tenantKey }}
         run: |
-          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey "${{ matrix.tenantKey }}" -ConfigPath "$env:CONFIG_PATH" | ConvertFrom-Json
-          "TENANT_KEY=$($tenant.id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "TENANT_NAME=$($tenant.name)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "AZURE_TENANT_ID_TARGET=$($tenant.tenantId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "AZURE_TENANT_DOMAIN_TARGET=$($tenant.tenantDomain)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "AZURE_CLIENT_ID_TARGET=$($tenant.clientId)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "MAESTER_AUTH_MODE=$($tenant.authMode)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "CLIENT_SECRET_NAME=$($tenant.clientSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "CERTIFICATE_SECRET_NAME=$($tenant.certificateSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "CERTIFICATE_PASSWORD_SECRET_NAME=$($tenant.certificatePasswordSecretName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "REPORT_BASE_URL=$($tenant.reportBaseUrl)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          function Set-GitHubEnvironmentValue {
+            param(
+              [Parameter(Mandatory = $true)][string]$Name,
+              [AllowEmptyString()][string]$Value
+            )
+
+            $delimiter = 'SECUREIT_' + [Guid]::NewGuid().ToString('N')
+            Add-Content -LiteralPath $env:GITHUB_ENV -Value "$Name<<$delimiter" -Encoding utf8
+            Add-Content -LiteralPath $env:GITHUB_ENV -Value $Value -Encoding utf8
+            Add-Content -LiteralPath $env:GITHUB_ENV -Value $delimiter -Encoding utf8
+          }
+
+          $tenant = ./scripts/Get-TenantConfig.ps1 -TenantKey $env:MATRIX_TENANT_KEY -ConfigPath $env:CONFIG_PATH | ConvertFrom-Json
+          Set-GitHubEnvironmentValue -Name 'TENANT_KEY' -Value ([string]$tenant.id)
+          Set-GitHubEnvironmentValue -Name 'TENANT_NAME' -Value ([string]$tenant.name)
+          Set-GitHubEnvironmentValue -Name 'AZURE_TENANT_ID_TARGET' -Value ([string]$tenant.tenantId)
+          Set-GitHubEnvironmentValue -Name 'AZURE_TENANT_DOMAIN_TARGET' -Value ([string]$tenant.tenantDomain)
+          Set-GitHubEnvironmentValue -Name 'AZURE_CLIENT_ID_TARGET' -Value ([string]$tenant.clientId)
+          Set-GitHubEnvironmentValue -Name 'MAESTER_AUTH_MODE' -Value ([string]$tenant.authMode)
+          Set-GitHubEnvironmentValue -Name 'CLIENT_SECRET_NAME' -Value ([string]$tenant.clientSecretName)
+          Set-GitHubEnvironmentValue -Name 'CERTIFICATE_SECRET_NAME' -Value ([string]$tenant.certificateSecretName)
+          Set-GitHubEnvironmentValue -Name 'CERTIFICATE_PASSWORD_SECRET_NAME' -Value ([string]$tenant.certificatePasswordSecretName)
+          Set-GitHubEnvironmentValue -Name 'REPORT_BASE_URL' -Value ([string]$tenant.reportBaseUrl)
 
       - name: Validate tenant payload
         shell: pwsh
@@ -342,6 +371,10 @@ jobs:
             if ([string]::IsNullOrWhiteSpace($value)) {
               $missing += $field
             }
+          }
+
+          if ($env:TENANT_KEY -notmatch '^[a-z0-9-]+$') {
+            $missing += 'invalid tenant key'
           }
 
           switch ($env:MAESTER_AUTH_MODE) {
@@ -552,8 +585,11 @@ jobs:
       - name: Fail workflow if the assessment step truly failed without fallback outputs
         if: always()
         shell: bash
+        env:
+          MAESTER_OUTCOME: ${{ steps.maester.outcome }}
+          TENANT_KEY: ${{ matrix.tenantKey }}
         run: |
-          if [ "${{ steps.maester.outcome }}" != "success" ] || [ ! -f "output/${{ matrix.tenantKey }}/latest/embedded-summary.json" ]; then
+          if [ "$MAESTER_OUTCOME" != "success" ] || [ ! -f "output/${TENANT_KEY}/latest/embedded-summary.json" ]; then
             echo "Assessment did not produce a complete report bundle with latest/embedded-summary.json." >&2
             exit 1
           fi

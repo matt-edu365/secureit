@@ -39,7 +39,9 @@ COPY docker/apache-site.conf /etc/apache2/sites-available/000-default.conf
 
 RUN chmod +x /usr/local/bin/secureit-entrypoint.sh
 
-RUN php -r 'require "/var/www/vendor/autoload.php"; require "/var/www/html/lib.php"; require "/var/www/shared/report-pdf.php"; $maester = secureit_maester_runtime_manifest(); $permissions = secureit_maester_graph_application_permissions(); exit((int) (!class_exists("Dompdf\\Dompdf") || !function_exists("secureit_functional_area_catalog") || !function_exists("secureit_resolve_canonical_area_scores") || !function_exists("secureit_report_render_pdf") || ($maester["maesterVersion"] ?? "") !== "2.2.0" || count($permissions) !== 25));'
+RUN apache2ctl configtest \
+    && php -l /var/www/html/report-asset.php \
+    && php -r 'require "/var/www/vendor/autoload.php"; require "/var/www/html/lib.php"; require "/var/www/shared/report-pdf.php"; $maester = secureit_maester_runtime_manifest(); $permissions = secureit_maester_graph_application_permissions(); exit((int) (!class_exists("Dompdf\\Dompdf") || !function_exists("secureit_functional_area_catalog") || !function_exists("secureit_resolve_canonical_area_scores") || !function_exists("secureit_tenant_report_asset_path") || !function_exists("secureit_report_render_pdf") || ($maester["maesterVersion"] ?? "") !== "2.2.0" || count($permissions) !== 25));'
 
 ENV SECUREIT_APP_NAME="SecureIT" \
     SECUREIT_BASE_URL="https://secureit.ict365.ky" \

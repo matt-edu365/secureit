@@ -1431,6 +1431,97 @@ function secureit_reports_root(): string {
     return $root;
 }
 
+function secureit_normalize_report_asset_path(string $relativePath): ?string {
+    if ($relativePath === '' || str_contains($relativePath, "\0")) {
+        return null;
+    }
+
+    $relativePath = str_replace('\\', '/', $relativePath);
+    $relativePath = ltrim($relativePath, '/');
+    if ($relativePath === '') {
+        return null;
+    }
+
+    $segments = explode('/', $relativePath);
+    foreach ($segments as $segment) {
+        if ($segment === '' || $segment === '.' || $segment === '..') {
+            return null;
+        }
+    }
+
+    return implode('/', $segments);
+}
+
+function secureit_tenant_report_asset_path(string $tenantKey, string $relativePath): ?string {
+    $tenantKey = trim(strtolower($tenantKey));
+    if (!secureit_valid_tenant_key($tenantKey)) {
+        return null;
+    }
+
+    $relativePath = secureit_normalize_report_asset_path($relativePath);
+    if ($relativePath === null) {
+        return null;
+    }
+
+    $tenantRoot = realpath(secureit_reports_root() . '/' . $tenantKey);
+    if ($tenantRoot === false || !is_dir($tenantRoot)) {
+        return null;
+    }
+
+    $assetPath = realpath($tenantRoot . '/' . $relativePath);
+    if ($assetPath === false || !is_file($assetPath)) {
+        return null;
+    }
+
+    $tenantPrefix = rtrim($tenantRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    if (!str_starts_with($assetPath, $tenantPrefix)) {
+        return null;
+    }
+
+    return $assetPath;
+}
+
+function secureit_report_asset_content_type(string $path): string {
+    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    return match ($extension) {
+        'html', 'htm' => 'text/html; charset=UTF-8',
+        'css' => 'text/css; charset=UTF-8',
+        'js', 'mjs' => 'text/javascript; charset=UTF-8',
+        'json', 'map' => 'application/json; charset=UTF-8',
+        'txt', 'log' => 'text/plain; charset=UTF-8',
+        'xml' => 'application/xml; charset=UTF-8',
+        'svg' => 'image/svg+xml',
+        'png' => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'ico' => 'image/x-icon',
+        'pdf' => 'application/pdf',
+        'woff' => 'font/woff',
+        'woff2' => 'font/woff2',
+        'wasm' => 'application/wasm',
+        default => 'application/octet-stream',
+    };
+}
+
+function secureit_report_asset_content_security_policy(): string {
+    $baseUrl = trim((string) (secureit_config()['base_url'] ?? ''));
+    $parts = parse_url($baseUrl);
+    $origin = '';
+    if (is_array($parts) && in_array(strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)) {
+        $host = trim((string) ($parts['host'] ?? ''));
+        if ($host !== '') {
+            $origin = strtolower((string) $parts['scheme']) . '://' . $host;
+            if (isset($parts['port'])) {
+                $origin .= ':' . (int) $parts['port'];
+            }
+        }
+    }
+
+    $sameOriginSources = $origin !== '' ? ' ' . $origin : '';
+    return "sandbox allow-scripts allow-downloads; default-src 'none'; script-src 'unsafe-inline' blob:{$sameOriginSources}; style-src 'unsafe-inline'{$sameOriginSources}; img-src data: blob:{$sameOriginSources}; font-src data:{$sameOriginSources}; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+}
+
 function secureit_tenant_report_web_root(string $tenantKey): string {
     return dirname(__DIR__) . '/' . trim(strtolower($tenantKey));
 }

@@ -89,7 +89,7 @@ secureit_render_shell(
     'SecureIT | ICT365',
     $content,
     [
-        'pageTitle' => 'SecureIT - Continuous, clear M365 security monitoring.',
+        'pageTitle' => 'SecureIT - M365 security made simple',
         'pageIntro' => "ICT365 are pleased to present 'SecureIT' - your security portal for M365.",
         'eyebrow' => '',
         'heroBadges' => [],

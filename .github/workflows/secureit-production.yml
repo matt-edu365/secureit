@@ -180,11 +180,29 @@ jobs:
             }
 
             $uri = $baseUrl + '/workflow-sync.php?' + ($query -join '&')
-            $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
-              Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
-              'X-SecureIT-Workflow-Token' = $env:SECUREIT_WORKFLOW_SYNC_TOKEN
-              Accept = 'application/json'
-            } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
+            $maxSyncAttempts = 4
+            $response = $null
+            for ($attempt = 1; $attempt -le $maxSyncAttempts; $attempt++) {
+              $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{
+                Authorization = "Bearer $($env:SECUREIT_WORKFLOW_SYNC_TOKEN)"
+                'X-SecureIT-Workflow-Token' = $env:SECUREIT_WORKFLOW_SYNC_TOKEN
+                Accept = 'application/json'
+              } -SkipHttpErrorCheck -TimeoutSec 30 -ErrorAction Stop
+
+              $statusCode = [int] $response.StatusCode
+              $retryableSyncFailure = $statusCode -eq 429 -or ($statusCode -ge 500 -and $statusCode -le 599)
+              if ($statusCode -eq 200 -or -not $retryableSyncFailure -or $attempt -eq $maxSyncAttempts) {
+                break
+              }
+
+              $retryDelaySeconds = [int] [Math]::Pow(2, $attempt)
+              $retryAfterSeconds = 0
+              if ([int]::TryParse([string] $response.Headers['Retry-After'], [ref] $retryAfterSeconds) -and $retryAfterSeconds -gt 0) {
+                $retryDelaySeconds = [Math]::Min($retryAfterSeconds, 30)
+              }
+              Write-Host "Workflow sync returned HTTP $statusCode; retrying attempt $($attempt + 1) of $maxSyncAttempts in $retryDelaySeconds seconds."
+              Start-Sleep -Seconds $retryDelaySeconds
+            }
 
             $statusCode = [int] $response.StatusCode
             $responseText = [string] $response.Content

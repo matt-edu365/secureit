@@ -49,6 +49,13 @@ secureit_workflow_security_test_assert(
     !str_contains($workflow, 'tenant_summary<<EOF'),
     'Untrusted tenant summary text must not use a fixed GitHub output delimiter.'
 );
+secureit_workflow_security_test_assert(
+    str_contains($workflow, '$maxSyncAttempts = 4')
+    && str_contains($workflow, '$statusCode -eq 429')
+    && str_contains($workflow, '$statusCode -ge 500')
+    && str_contains($workflow, 'Start-Sleep -Seconds $retryDelaySeconds'),
+    'Workflow sync must retry HTTP 429 and 5xx failures with bounded backoff.'
+);
 
 $apacheConfig = file_get_contents(__DIR__ . '/../docker/apache-site.conf');
 secureit_workflow_security_test_assert(is_string($apacheConfig), 'The Apache configuration could not be read.');

@@ -1,6 +1,7 @@
 <?php
 
 putenv('SECUREIT_CANONICAL_CONTROLS_FILE=' . __DIR__ . '/../docker/secureit-assets/canonical-controls.json');
+putenv('SECUREIT_REPORTS_ROOT=' . __DIR__ . '/fixtures/canonical-scoring/reports');
 require __DIR__ . '/../app/lib.php';
 
 function secureit_contract_test_assert(bool $condition, string $message): void {

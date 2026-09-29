@@ -1,0 +1,14 @@
+{
+  "Tests": [
+    { "Id": "EIDSCA.GENERATED", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-EIDSCA.Generated.Tests.ps1" },
+    { "Id": "MTMDEANTIVIRUSPOLICY", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-MtMdeAntivirusPolicy.Tests.ps1" },
+    { "Id": "APPMANAGEMENTPOLICIES", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-AppManagementPolicies.Tests.ps1" },
+    { "Id": "AUTHENTICATIONMETHODBASELINE", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-AuthenticationMethodBaseline.Tests.ps1" },
+    { "Id": "CONDITIONALACCESSBASELINE", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-ConditionalAccessBaseline.Tests.ps1" },
+    { "Id": "ENTRARECOMMENDATIONS", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-EntraRecommendations.Tests.ps1" },
+    { "Id": "GROUPS", "Title": "Fixture mapped test", "Result": "Passed", "ScriptBlockFile": "/runner/tests/Test-Groups.Tests.ps1" },
+    { "Id": "MTENTITLEMENTMANAGEMENTDELETEDGROUPS", "Title": "Fixture mapped test", "Result": "Failed", "ScriptBlockFile": "/runner/tests/Test-MtEntitlementManagementDeletedGroups.Tests.ps1" },
+    { "Id": "MTENTITLEMENTMANAGEMENTINACTIVEPOLICIES", "Title": "Fixture mapped test", "Result": "Failed", "ScriptBlockFile": "/runner/tests/Test-MtEntitlementManagementInactivePolicies.Tests.ps1" },
+    { "Id": "MTENTITLEMENTMANAGEMENTORPHANEDRESOURCES", "Title": "Fixture mapped test", "Result": "Failed", "ScriptBlockFile": "/runner/tests/Test-MtEntitlementManagementOrphanedResources.Tests.ps1" }
+  ]
+}

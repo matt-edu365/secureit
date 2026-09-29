@@ -4905,17 +4905,20 @@ function secureit_render_shell(string $title, string $content, array $options = 
       gap: 22px;
       align-items: center;
     }
-    .footer-contact-row a {
+    .footer-contact-row a,
+    .footer-contact-row span {
       color: var(--footer-text);
       font-size: 0.95rem;
       font-weight: 700;
       text-decoration: none;
       overflow-wrap: anywhere;
     }
-    .footer-contact-row a:nth-child(2) {
+    .footer-contact-row a:nth-child(2),
+    .footer-contact-row span:nth-child(2) {
       text-align: center;
     }
-    .footer-contact-row a:nth-child(3) {
+    .footer-contact-row a:nth-child(3),
+    .footer-contact-row span:nth-child(3) {
       text-align: right;
     }
     .footer-contact-row a:hover {
@@ -4942,8 +4945,11 @@ function secureit_render_shell(string $title, string $content, array $options = 
       .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid, .footer-contact-row { grid-template-columns: 1fr; }
       th, td { padding: 12px; }
       .footer-contact-row a,
+      .footer-contact-row span,
       .footer-contact-row a:nth-child(2),
-      .footer-contact-row a:nth-child(3) {
+      .footer-contact-row a:nth-child(3),
+      .footer-contact-row span:nth-child(2),
+      .footer-contact-row span:nth-child(3) {
         text-align: left;
       }
     }
@@ -5026,10 +5032,10 @@ function secureit_render_shell(string $title, string $content, array $options = 
 
   <footer class="site-footer">
     <div class="container footer-wrap">
-      <div class="footer-contact-row" aria-label="ICT365 contact details">
+      <div class="footer-contact-row" aria-label="ICT365 contact details and SecureIT version">
         <a href="mailto:helpdesk@ict365.ky">helpdesk@ict365.ky</a>
         <a href="tel:+13457450365">+1(345) 745-0365</a>
-        <a href="https://ict365.ky">https://ict365.ky</a>
+        <span>SecureIT v0.269.c3</span>
       </div>
     </div>
   </footer>

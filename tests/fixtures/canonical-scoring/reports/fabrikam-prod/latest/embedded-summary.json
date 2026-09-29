@@ -1,0 +1,10 @@
+{
+  "Tests": [
+    {
+      "Id": "EIDSCA.GENERATED",
+      "Title": "Fixture mapped test",
+      "Result": "Passed",
+      "ScriptBlockFile": "/runner/tests/Test-EIDSCA.Generated.Tests.ps1"
+    }
+  ]
+}

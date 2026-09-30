@@ -426,9 +426,12 @@ secureit_contract_test_assert(
 
 $tenantPageSource = file_get_contents(__DIR__ . '/../app/tenant.php');
 secureit_contract_test_assert(
-    !str_contains($tenantPageSource, 'secureit_functional_area_trend_card')
-        && !str_contains($tenantPageSource, '$selectedAreaHistory'),
-    'Functional-area views must not render the dedicated trend parent or child card.'
+    str_contains($tenantPageSource, 'secureit_tenant_area_history_series')
+        && str_contains($tenantPageSource, "\$_GET['historyRange'] ?? '10'")
+        && str_contains($tenantPageSource, 'Last 10 runs')
+        && str_contains($tenantPageSource, 'Last 30 days')
+        && str_contains($tenantPageSource, 'Last year'),
+    'Functional-area views must render score history with 10-run, 30-day, and one-year ranges.'
 );
 
 $loginPageSource = file_get_contents(__DIR__ . '/../app/login.php');

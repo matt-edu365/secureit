@@ -77,6 +77,10 @@ $selectedDiagnosticsView = strtolower(trim((string) ($_GET['diagnosticsView'] ??
 if (!in_array($selectedDiagnosticsView, ['failures', 'diagnostics'], true)) {
     $selectedDiagnosticsView = 'diagnostics';
 }
+$historyRange = strtolower(trim((string) ($_GET['historyRange'] ?? '10')));
+if (!in_array($historyRange, ['10', '30d', '1y'], true)) {
+    $historyRange = '10';
+}
 
 function secureit_functional_area_description(string $areaName): string {
     foreach (secureit_functional_area_catalog() as $area) {
@@ -261,6 +265,64 @@ function secureit_tenant_history_series(array $history): array {
     return $series;
 }
 
+function secureit_tenant_area_history_series(array $history, string $areaName): array {
+    $series = [
+        'area' => [
+            'label' => $areaName !== '' ? $areaName : 'Functional area',
+            'color' => '#0f766e',
+            'fill' => '#0f766e',
+            'points' => [],
+        ],
+    ];
+
+    foreach ($history as $item) {
+        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+        $rowAreaData = secureit_history_row_area_data($item);
+        $score = null;
+        foreach (($rowAreaData['areas'] ?? []) as $area) {
+            if (($area['name'] ?? '') !== $areaName) {
+                continue;
+            }
+            $score = ($area['score'] ?? null) !== null ? (int) $area['score'] : null;
+            break;
+        }
+
+        $series['area']['points'][] = [
+            'generatedAt' => (string) ($summary['generatedAt'] ?? ''),
+            'score' => $score,
+        ];
+    }
+
+    return $series;
+}
+
+function secureit_history_for_range(array $history, string $range): array {
+    if ($range === '10') {
+        return array_slice($history, 0, 10);
+    }
+
+    $cutoff = new DateTimeImmutable('now');
+    $cutoff = $range === '30d' ? $cutoff->modify('-30 days') : $cutoff->modify('-1 year');
+    $filtered = [];
+    foreach ($history as $item) {
+        $summary = is_array($item['summary'] ?? null) ? $item['summary'] : null;
+        $generatedAt = (string) ($summary['generatedAt'] ?? '');
+        if ($generatedAt === '') {
+            continue;
+        }
+
+        try {
+            if (new DateTimeImmutable($generatedAt) >= $cutoff) {
+                $filtered[] = $item;
+            }
+        } catch (Throwable $e) {
+            // Ignore malformed timestamps when filtering date-based history views.
+        }
+    }
+
+    return $filtered;
+}
+
 function secureit_series_points(array $series): array {
     $points = [];
     foreach (($series['points'] ?? []) as $point) {
@@ -336,6 +398,7 @@ function secureit_line_graph_card(string $title, array $series, array $options =
     $showSubtitle = (bool) ($options['showSubtitle'] ?? true);
     $showLatestPoint = (bool) ($options['showLatestPoint'] ?? true);
     $controlsHtml = (string) ($options['controlsHtml'] ?? '');
+    $headerActionsHtml = (string) ($options['headerActionsHtml'] ?? '');
     $controlsWidth = (int) ($options['controlsWidth'] ?? 258);
     $paddingX = 34;
     $paddingY = 28;
@@ -435,6 +498,7 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         . '<h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">' . htmlspecialchars($title) . '</h3>'
         . ($showSubtitle ? '<div class="muted">Overall score is shown by default. Select functional-area lines to compare overlays.</div>' : '')
         . '</div>'
+        . ($headerActionsHtml !== '' ? '<div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;">' . $headerActionsHtml . '</div>' : '')
         . '<div class="badge tone-good">Latest ' . htmlspecialchars((string) $latestScore) . '%</div>'
         . '</div>'
         . ($showLegend && $legend !== '' ? '<div class="inline-links" style="flex-wrap:wrap; gap:8px; margin-bottom:12px;">' . $legend . '</div>' : '')
@@ -589,9 +653,15 @@ if (is_dir($historyRoot)) {
     });
 }
 $historyStoredCount = count($history);
-$history = array_slice($history, 0, 10);
 $history = secureit_hydrate_history_area_data($history);
-$overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($history);
+$latestHistory = array_slice($history, 0, 10);
+$overviewTrendSeries = $selectedArea ? [] : secureit_tenant_history_series($latestHistory);
+$areaHistoryForTrend = $selectedArea
+    ? secureit_history_for_range($history, $historyRange)
+    : [];
+$selectedAreaTrendSeries = $selectedArea
+    ? secureit_tenant_area_history_series($areaHistoryForTrend, (string) ($selectedArea['name'] ?? ''))
+    : [];
 $selectedOverviewTrendOverall = true;
 
 ob_start();
@@ -1053,7 +1123,45 @@ ob_start();
   </section>
 <?php endif; ?>
 
-<?php if (!$selectedDiagnostics): ?>
+<?php if ($selectedArea && !$selectedDiagnostics): ?>
+<section class="section">
+  <?php
+    $historyRangeLabels = [
+        '10' => 'Last 10 runs',
+        '30d' => 'Last 30 days',
+        '1y' => 'Last year',
+    ];
+    $historyRangeLinks = '';
+    foreach ($historyRangeLabels as $rangeKey => $rangeLabel) {
+        $isActiveRange = $historyRange === $rangeKey;
+        $rangeUrl = 'tenant.php?tenant=' . rawurlencode($tenantKey)
+            . '&area=' . rawurlencode((string) ($selectedArea['name'] ?? ''))
+            . '&historyRange=' . rawurlencode($rangeKey);
+        $historyRangeLinks .= '<a class="button" href="' . htmlspecialchars($rangeUrl) . '" aria-pressed="' . ($isActiveRange ? 'true' : 'false') . '" style="padding:7px 10px; font-size:0.78rem; background:' . ($isActiveRange ? '#0f766e' : '#f7faf9') . '; color:' . ($isActiveRange ? '#fff' : '#24504a') . '; border:1px solid ' . ($isActiveRange ? '#0f766e' : '#dbe8e2') . '; box-shadow:none;">' . htmlspecialchars($rangeLabel) . '</a>';
+    }
+  ?>
+  <?php if (secureit_series_points($selectedAreaTrendSeries['area'] ?? []) !== []): ?>
+    <?php echo secureit_line_graph_card('Run history - ' . (string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaTrendSeries, [
+        'showLegend' => false,
+        'showSubtitle' => false,
+        'headerActionsHtml' => $historyRangeLinks,
+    ]); ?>
+  <?php else: ?>
+    <article class="card panel" style="margin-bottom:18px;">
+      <div class="section-header" style="margin-bottom:10px; align-items:flex-start;">
+        <div>
+          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Run history - <?php echo htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')); ?></h3>
+          <div class="muted">No scoreable history is available for this time range.</div>
+        </div>
+        <div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;"><?php echo $historyRangeLinks; ?></div>
+      </div>
+      <p class="muted" style="margin:0;">Select a wider range or publish another assessment to plot this functional area.</p>
+    </article>
+  <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<?php if (!$selectedDiagnostics && !$selectedArea): ?>
 <section class="section">
   <article class="card panel">
     <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
@@ -1063,7 +1171,7 @@ ob_start();
       </div>
       <div class="muted"><?php echo htmlspecialchars((string) min(10, $historyStoredCount)); ?> shown of <?php echo htmlspecialchars((string) $historyStoredCount); ?> stored run<?php echo $historyStoredCount === 1 ? '' : 's'; ?></div>
     </div>
-    <?php if (!$history): ?>
+    <?php if (!$latestHistory): ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No historical reports found.</strong>
         <p class="muted">Run history will appear here as SecureIT publishes archived summaries.</p>
@@ -1087,7 +1195,7 @@ ob_start();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($history as $item): ?>
+            <?php foreach ($latestHistory as $item): ?>
               <?php
                 $s = $item['summary'] ?? [];
                 $rowAreaData = secureit_history_row_area_data($item);

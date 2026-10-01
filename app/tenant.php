@@ -680,7 +680,7 @@ ob_start();
     <div class="section-header" style="margin-bottom:18px;">
       <div>
         <h2 class="section-title">
-          <?php echo htmlspecialchars(($tenant['name'] ?? $tenantKey) . ' - ' . ($selectedArea ? ($selectedArea['name'] ?? 'Functional area') : 'SecureIT Dashboard')); ?>
+          <?php echo htmlspecialchars(($tenant['name'] ?? $tenantKey) . ' - ' . ($selectedArea ? ($selectedArea['name'] ?? 'Functional area') : 'Current security posture')); ?>
         </h2>
       </div>
     </div>
@@ -717,12 +717,22 @@ ob_start();
         </div>
       </div>
     <?php endif; ?>
+    <?php if ($summary): ?>
+      <div class="stats-row tenant-posture-stats" style="margin-top:18px;">
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Checks</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsErrored'] ?? 0) : $counts['errors'])); ?></strong><span>Errors</span></div>
+        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
+      </div>
+    <?php endif; ?>
   </article>
 
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
     <div class="section-header" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:nowrap;">
       <div style="min-width:0; flex:1 1 auto;">
-        <h2 class="section-title" style="white-space:nowrap;"><?php echo $selectedArea ? 'Area Posture' : 'Current posture'; ?></h2>
+        <h2 class="section-title" style="white-space:nowrap;"><?php echo $selectedArea ? 'Area Posture' : 'Action Center'; ?></h2>
       </div>
 <?php if (!$selectedArea && !$selectedDiagnostics): ?>
         <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
@@ -747,14 +757,6 @@ ob_start();
         $displayScore = $selectedArea ? ($selectedArea['score'] ?? null) : ($counts['score'] ?? null);
         $displayScoreWidth = $displayScore !== null ? max(0, min(100, (int) $displayScore)) : 0;
       ?>
-      <div class="stats-row" style="margin-bottom:14px;">
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Checks</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsErrored'] ?? 0) : $counts['errors'])); ?></strong><span>Errors</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
-      </div>
       <?php if ($selectedArea): ?>
         <?php $partialTests = secureit_functional_area_partial_test_count($selectedArea); ?>
         <?php if ($partialTests > 0): ?>

@@ -4245,6 +4245,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
     $headerMenu = $options['headerMenu'] ?? [];
     $heroBackground = $options['heroBackground'] ?? null;
     $heroTextAlign = $options['heroTextAlign'] ?? 'left';
+    $hideSiteChrome = (bool) ($options['hideSiteChrome'] ?? false);
     $authContext = secureit_current_auth_context();
     if ($authContext !== null) {
         $headerMenu[] = ['href' => 'logout.php', 'label' => 'Logout'];
@@ -4657,6 +4658,9 @@ function secureit_render_shell(string $title, string $content, array $options = 
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
+    .tenant-posture-stats {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
     .stat-chip {
       background: var(--surface-muted);
       border-radius: 14px;
@@ -4998,6 +5002,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
   </style>
 </head>
 <body>
+  <?php if (!$hideSiteChrome): ?>
   <header class="site-header">
     <div class="container nav-wrap">
       <a class="brand-link" href="index.php" aria-label="SecureIT homepage">
@@ -5033,6 +5038,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       </div>
     </div>
   </header>
+  <?php endif; ?>
 
   <main class="app-shell">
     <?php if ($pageTitle !== null || $pageIntro !== null): ?>
@@ -5072,6 +5078,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
     <?php echo $content; ?>
   </main>
 
+  <?php if (!$hideSiteChrome): ?>
   <footer class="site-footer">
     <div class="container footer-wrap">
       <div class="footer-contact-row" aria-label="ICT365 contact details and SecureIT version">
@@ -5081,6 +5088,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       </div>
     </div>
   </footer>
+  <?php endif; ?>
   <script>
     (() => {
       const dropdowns = Array.from(document.querySelectorAll('.menu-dropdown'));

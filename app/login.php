@@ -61,7 +61,9 @@ ob_start();
     <div style="max-width:680px; margin:0 auto;">
       <article class="panel">
         <div style="margin-bottom:20px; text-align:center;">
-          <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:center;">SecureIT Login</h2>
+          <div class="brand-link" role="img" aria-label="ICT365 SecureIT" style="justify-content:center; font-size:2rem; margin-bottom:10px;">
+            <span>ICT365</span><span>SecureIT</span>
+          </div>
           <div class="muted">Use your M365 account to login to your SecureIT portal.</div>
         </div>
 
@@ -117,6 +119,7 @@ secureit_render_shell('SecureIT Login', $content, [
     'hideHeroChrome' => true,
     'heroIntroMaxWidth' => '840px',
     'heroBackground' => secureit_default_hero_background(),
+    'hideSiteChrome' => true,
     'navLinks' => [],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],

@@ -472,6 +472,22 @@ secureit_contract_test_assert(
         && str_contains($loginPageSource, 'max-width:680px; margin:0 auto;'),
     'The login page must contain only one centered login panel and no subscriber enquiry form.'
 );
+secureit_contract_test_assert(
+    preg_match('/<input\\b[^>]*\\bname="m365_email"[^>]*>/s', $loginPageSource) === 1
+        && preg_match('/<input\\b[^>]*\\bname="m365_email"[^>]*\\brequired\\b[^>]*>/s', $loginPageSource) !== 1,
+    'The Microsoft sign-in email field must remain optional so the sign-in button can be clicked immediately.'
+);
+secureit_contract_test_assert(
+    !str_contains($loginPageSource, "'pageTitle' => 'Sign in to SecureIT'")
+        && !str_contains($loginPageSource, "'pageIntro' => '")
+        && !str_contains($loginPageSource, "'navCta' =>")
+        && !str_contains($loginPageSource, '<strong>Existing customers</strong>')
+        && str_contains($loginPageSource, 'Use your M365 account to login to your SecureIT portal.')
+        && str_contains($loginPageSource, 'SecureIT will redirect you to Microsoft after you press the button.')
+        && !str_contains($loginPageSource, 'Microsoft Entra authentication is enabled for this environment.')
+        && !str_contains($loginPageSource, 'Existing customers use your business / school email address'),
+    'The login page must not render the redundant hero, header CTA, customer card, or environment-specific authentication copy.'
+);
 
 $maesterManifest = secureit_maester_runtime_manifest();
 $maesterPermissions = secureit_maester_graph_application_permissions();

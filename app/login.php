@@ -62,7 +62,7 @@ ob_start();
       <article class="panel">
         <div style="margin-bottom:20px; text-align:center;">
           <h2 class="section-title" style="font-size:2rem; margin-bottom:10px; text-align:center;">SecureIT Login</h2>
-          <div class="muted">Use your Microsoft 365 identity to access the SecureIT portal.</div>
+          <div class="muted">Use your M365 account to login to your SecureIT portal.</div>
         </div>
 
         <?php if ($authErrorMessage !== ''): ?>
@@ -71,11 +71,6 @@ ob_start();
             <p class="muted" style="margin:8px 0 0;"><?php echo htmlspecialchars($authErrorMessage); ?></p>
           </div>
         <?php endif; ?>
-
-        <div class="empty-state" style="margin-bottom:22px;">
-          <strong>Existing customers</strong>
-          <p class="muted" style="margin:8px 0 0;">Use your business or school Microsoft account to sign in and access your SecureIT tenant.</p>
-        </div>
 
         <?php if ($unknownIdentity): ?>
           <div class="empty-state" style="margin-bottom:22px; border-color: rgba(175, 77, 26, 0.3); background: #fff7f2;">
@@ -94,8 +89,8 @@ ob_start();
         <form method="post" style="display:grid; gap:16px;">
           <div>
             <label for="m365-email" style="margin-top:0;">Business or school email address</label>
-            <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com" required>
-            <p class="field-note">When Microsoft Entra sign-in is configured, SecureIT will redirect you to Microsoft after you press the button below. On localhost only, `fab@local` and `con@local` can still use the seeded development identities.</p>
+            <input id="m365-email" name="m365_email" type="text" inputmode="email" autocomplete="username" placeholder="name@company.com">
+            <p class="field-note">SecureIT will redirect you to Microsoft after you press the button.</p>
           </div>
 
           <button type="submit" name="ms_login" value="1" style="min-height:54px; font-size:1rem;">
@@ -108,7 +103,6 @@ ob_start();
             Sign in with Microsoft
           </button>
 
-          <p class="field-note" style="margin-top:0;"><?php echo secureit_entra_is_enabled() ? 'Microsoft Entra authentication is enabled for this environment. Local seeded identities are only available on localhost.' : 'Local seeded identities are still active because Microsoft Entra authentication is not configured yet.'; ?></p>
         </form>
       </article>
     </div>
@@ -117,14 +111,13 @@ ob_start();
 <?php
 $content = ob_get_clean();
 secureit_render_shell('SecureIT Login', $content, [
-    'pageTitle' => 'Sign in to SecureIT',
-    'pageIntro' => "Existing customers use your business / school email address to access your SecureIT portal.",
+    'pageTitle' => null,
+    'pageIntro' => null,
     'eyebrow' => '',
     'hideHeroChrome' => true,
     'heroIntroMaxWidth' => '840px',
     'heroBackground' => secureit_default_hero_background(),
     'navLinks' => [],
-    'navCta' => ['href' => 'login.php', 'label' => 'SecureIT Login'],
     'footerLinks' => [
         ['href' => 'login.php', 'label' => 'SecureIT Login'],
         ['href' => 'login.php', 'label' => 'Customer login'],

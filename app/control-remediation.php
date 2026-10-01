@@ -35,6 +35,8 @@ $assignRoute([
     'MTCISAWEAKFACTOR',
 ], 'Microsoft Entra admin center', 'Protection > Authentication methods');
 
+$routes['AUTHENTICATIONMETHODBASELINE']['path'] = 'Protection > Authentication methods > Policies; review each policy\'s included and excluded groups and remove any deleted or non-existent group references';
+
 $assignRoute([
     'CONDITIONALACCESSBASELINE',
     'CONDITIONALACCESSWHATIF',

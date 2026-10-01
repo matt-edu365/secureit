@@ -1103,6 +1103,7 @@ ob_start();
           <table data-guidance-table>
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Check</th>
                 <th>
                   <details class="status-filter-menu" data-status-filter-menu>
@@ -1158,6 +1159,7 @@ ob_start();
                   };
                 ?>
                 <tr data-status-value="<?php echo htmlspecialchars($controlStatusFilterValue); ?>">
+                  <td><strong><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></strong></td>
                   <td>
                     <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
                   </td>

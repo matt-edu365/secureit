@@ -3,7 +3,7 @@
 putenv('SECUREIT_CANONICAL_CONTROLS_FILE=' . __DIR__ . '/../docker/secureit-assets/canonical-controls.json');
 putenv('SECUREIT_REPORTS_ROOT=' . __DIR__ . '/fixtures/canonical-scoring/reports');
 $appVersionFile = tempnam(sys_get_temp_dir(), 'secureit-app-version-');
-file_put_contents($appVersionFile, "0.270.c3\n");
+file_put_contents($appVersionFile, "0.270.c4\n");
 putenv('SECUREIT_APP_VERSION_FILE=' . $appVersionFile);
 require __DIR__ . '/../app/lib.php';
 
@@ -19,6 +19,21 @@ $validationErrors = secureit_validate_canonical_controls($catalog);
 secureit_contract_test_assert($validationErrors === [], 'The canonical control catalog is invalid: ' . implode(' ', $validationErrors));
 secureit_contract_test_assert(count($catalog['controls'] ?? []) === 95, 'The catalog must contain 94 production controls plus the separate Conditional Access What If TODO control.');
 secureit_contract_test_assert(secureit_total_canonical_control_count() === 94, 'The website production control total must exclude the separate TODO control and equal 94.');
+secureit_contract_test_assert(($catalog['controls'][3]['id'] ?? '') === 'C0004', 'Authentication method baseline should use the fourth stable display/control ID.');
+secureit_contract_test_assert(($catalog['controls'][3]['aliases'][0] ?? '') === 'AUTHENTICATIONMETHODBASELINE', 'Authentication method baseline must retain its upstream identifier as an alias.');
+secureit_contract_test_assert(($catalog['controls'][3]['title'] ?? '') === 'Authentication method policies use valid groups', 'Authentication method baseline wording should describe its actual check.');
+secureit_contract_test_assert(($catalog['controls'][44]['id'] ?? '') === 'C0044', 'Weak authentication methods should retain the established stable display/control ID.');
+secureit_contract_test_assert(($catalog['controls'][44]['aliases'][0] ?? '') === 'MTCISWEAKAUTHENTICATIONMETHODSDISABLED', 'Weak authentication methods must retain its upstream identifier as an alias.');
+$authRoute = secureit_control_remediation_route($catalog['controls'][3]);
+secureit_contract_test_assert(
+    str_contains((string) ($authRoute['path'] ?? ''), 'included and excluded groups'),
+    'Authentication method baseline remediation must point to policy group assignments.'
+);
+$authDetails = secureit_control_details_for_resolved_control($catalog['controls'][3]);
+secureit_contract_test_assert(
+    str_contains($authDetails, 'valid group') && str_contains($authDetails, 'invalid group'),
+    'Authentication method baseline detail text must describe valid group references.'
+);
 
 $legacyCatalog = $catalog;
 $legacyCatalog['version'] = 1;
@@ -97,7 +112,7 @@ secureit_contract_test_assert(
     'The completion email must advertise 94 checks.'
 );
 
-secureit_contract_test_assert(secureit_app_version() === '0.270.c3', 'The footer version should be read from the generated build metadata file.');
+secureit_contract_test_assert(secureit_app_version() === '0.270.c4', 'The footer version should be read from the generated build metadata file.');
 @unlink($appVersionFile);
 
 $statusCases = [
@@ -188,7 +203,7 @@ secureit_contract_test_assert($executionErrorCounts['errors'] === 2, 'Mapped API
 $entitlementErrorControl = null;
 foreach (($executionErrorData['areas'] ?? []) as $area) {
     foreach (($area['controls'] ?? []) as $control) {
-        if (($control['id'] ?? '') === 'MTENTITLEMENTMANAGEMENTDELETEDGROUPS') {
+        if (($control['id'] ?? '') === 'C0008') {
             $entitlementErrorControl = $control;
         }
     }
@@ -229,15 +244,15 @@ foreach (($sourceEvidenceData['areas'] ?? []) as $area) {
     }
 }
 secureit_contract_test_assert(
-    ($sourceEvidenceControls['MTCISABLOCKLEGACYAUTH']['status'] ?? '') === 'pass',
+    ($sourceEvidenceControls['C0055']['status'] ?? '') === 'pass',
     'A Maester result must match its explicit source-file evidence mapping.'
 );
 secureit_contract_test_assert(
-    ($sourceEvidenceControls['MTMDEANTIVIRUSPOLICY']['status'] ?? '') === 'partial',
+    ($sourceEvidenceControls['C0002']['status'] ?? '') === 'partial',
     'Multiple results from one explicitly mapped source file must be evaluated together.'
 );
 secureit_contract_test_assert(
-    count($sourceEvidenceControls['MTMDEANTIVIRUSPOLICY']['matchedIds'] ?? []) === 2,
+    count($sourceEvidenceControls['C0002']['matchedIds'] ?? []) === 2,
     'Every result emitted by an explicitly mapped source file must be retained as evidence.'
 );
 
@@ -285,7 +300,7 @@ foreach (['fabrikam-prod' => 100, 'contoso-prod' => 70] as $tenantKey => $expect
                 $emailArea = $area;
             }
             foreach (($area['controls'] ?? []) as $control) {
-                if (($control['id'] ?? '') === 'INSPECTDOMAINEXPIRATION') {
+                if (($control['id'] ?? '') === 'C0079') {
                     $domainControl = $control;
                 }
             }

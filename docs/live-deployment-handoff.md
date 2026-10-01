@@ -75,6 +75,8 @@ Additional runtime files:
 - `/var/www/data/admin-config.json`
 - `/var/www/data/canonical-controls.json` for canonical scoring; container startup seeds or refreshes it from the versioned image copy, and the loader can fall back to the image if it is missing or invalid
 
+The canonical control source of truth is `docker/secureit-assets/canonical-controls.json`; increment the adjacent `docker/secureit-assets/canonical-controls.version` file whenever the catalog contract changes. Published app versions then receive the new `cC` suffix automatically from the Docker workflow. Customer-facing control IDs use the `C0001` format and retain upstream identifiers in each control's `aliases` array.
+
 ## Minimum environment variables
 
 Required minimum runtime variables:

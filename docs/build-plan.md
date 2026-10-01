@@ -39,7 +39,7 @@ Already present:
 The container should assume:
 - tenant metadata lives in `/var/www/data/tenants.json`
 - reports live in `/var/www/data/reports`
-- canonical controls live in `/var/www/data/canonical-controls.json`; the versioned image seed is used to create or refresh that runtime copy and remains the loader fallback
+- canonical controls are maintained in `docker/secureit-assets/canonical-controls.json`, with the catalog version in the adjacent `canonical-controls.version` file; the versioned image seed is used to create or refresh `/var/www/data/canonical-controls.json` and remains the loader fallback
 - shared runtime helpers are baked into the image
 
 ## Workflow-to-app bridge

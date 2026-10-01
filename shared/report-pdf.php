@@ -248,12 +248,14 @@ function secureit_report_control_table(string $heading, string $intro, array $co
 
     $rows = '';
     foreach ($controls as $control) {
+        $controlId = (string) ($control['id'] ?? '');
         $title = (string) ($control['title'] ?? $control['id'] ?? 'Control');
         $status = secureit_report_status_key((string) ($control['status'] ?? ''));
         $details = $includeRemediation
             ? secureit_report_control_guidance_html($control)
             : '<p class="guidance-block">The latest assessment returned no scoreable evidence for this control. It is excluded from the score until a pass, partial, or fail result is available.</p>';
         $rows .= '<tr>';
+        $rows .= '<td class="control-id">' . secureit_report_escape($controlId) . '</td>';
         $rows .= '<td class="control-title">' . secureit_report_escape($title) . '</td>';
         $rows .= '<td><span class="table-status status-' . secureit_report_escape($status) . '">' . secureit_report_escape(secureit_report_status_label($status)) . '</span></td>';
         $rows .= '<td>' . $details . '</td>';
@@ -266,7 +268,7 @@ function secureit_report_control_table(string $heading, string $intro, array $co
         . '<h3>' . secureit_report_escape($heading) . '</h3>'
         . '<p class="group-intro">' . secureit_report_escape($intro) . '</p>'
         . '<table class="control-table">'
-        . '<thead><tr><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">' . ($includeRemediation ? 'Issue, impact and recommended action' : 'Assessment detail') . '</th></tr></thead>'
+        . '<thead><tr><th class="col-id">ID</th><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">' . ($includeRemediation ? 'Issue, impact and recommended action' : 'Assessment detail') . '</th></tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table></div>';
 }
@@ -303,6 +305,7 @@ function secureit_report_todo_summary(array $controls): string {
 
     $rows = '';
     foreach ($controls as $control) {
+        $controlId = (string) ($control['id'] ?? '');
         $title = (string) ($control['title'] ?? $control['id'] ?? 'To-do item');
         $reason = trim((string) ($control['reason'] ?? ''));
         $requirements = is_array($control['requirements'] ?? null) ? $control['requirements'] : [];
@@ -314,6 +317,7 @@ function secureit_report_todo_summary(array $controls): string {
         $required = trim($requirementSummary . ' ' . implode('; ', $requirementItems));
 
         $rows .= '<tr>';
+        $rows .= '<td class="control-id">' . secureit_report_escape($controlId) . '</td>';
         $rows .= '<td class="control-title">' . secureit_report_escape($title) . '</td>';
         $rows .= '<td><span class="table-status status-unmapped">TO-DO</span></td>';
         $rows .= '<td><p class="guidance-block"><strong>Why it is separate:</strong> ' . secureit_report_escape($reason !== '' ? $reason : $requirementSummary) . '</p>';
@@ -325,7 +329,7 @@ function secureit_report_todo_summary(array $controls): string {
         . '<h3>To-do</h3>'
         . '<p class="group-intro">These items are intentionally excluded from the production test set and are tracked as separate feature work.</p>'
         . '<table class="control-table">'
-        . '<thead><tr><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">Why it is separate</th></tr></thead>'
+        . '<thead><tr><th class="col-id">ID</th><th class="col-control">Control</th><th class="col-status">Status</th><th class="col-description">Why it is separate</th></tr></thead>'
         . '<tbody>' . $rows . '</tbody>'
         . '</table></div>';
 }
@@ -443,9 +447,11 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .control-table th { padding: 7pt 6pt; border: 1px solid #00635f; background: #00635f; color: #ffffff; font-size: 8.5pt; text-align: left; vertical-align: middle; }
     .control-table td { padding: 7pt 6pt; border: 1px solid #b8cbd2; color: #344f62; vertical-align: top; }
     .control-table tbody tr:nth-child(even) td { background: #f5f8f9; }
-    .control-table .col-control { width: 27.5%; }
+    .control-table .col-id { width: 10%; }
+    .control-table .col-control { width: 23%; }
     .control-table .col-status { width: 13%; }
-    .control-table .col-description { width: 59.5%; }
+    .control-table .col-description { width: 54%; }
+    .control-id { color: #0e2841 !important; font-family: monospace; font-weight: 700; white-space: nowrap; }
     .control-title { color: #0e2841 !important; font-weight: 700; }
     .guidance-block { margin: 0 0 4pt; }
     .guidance-block:last-child { margin-bottom: 0; }

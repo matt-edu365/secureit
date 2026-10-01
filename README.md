@@ -20,7 +20,7 @@ SecureIT is currently in beta. Its app version uses the format `M.N.cC`:
 
 - `M` is the major release stage: `0` during beta, becoming `1` at public release.
 - `N` is the GitHub Actions `run_number` of the `Publish SecureIT Container` workflow, so each published image receives a new implementation number automatically.
-- `C` is the canonical-controls catalog version, currently `3`.
+- `C` is the canonical-controls catalog version, currently `4`.
 
 Published images receive their app version during the Docker build from `release-major`, the workflow run number, and `canonical-controls.version`; the footer reads that generated value from `/usr/local/share/secureit/app-version`. Local Docker builds without a workflow-provided build argument use the safe development fallback `0.0.c0`. Keep the app release number distinct from the canonical-controls catalog version and from the immutable Git-SHA image tag used to identify an exact build.
 
@@ -75,7 +75,7 @@ Expected uses:
 - `reports/<tenant-key>/...`
 - `canonical-controls.json` for the live canonical scoring catalog
 
-The image contains a versioned seed at `/usr/local/share/secureit/canonical-controls.json`, while the active runtime copy normally lives at `/var/www/data/canonical-controls.json`. On container startup, the entrypoint creates the runtime copy when it is missing and refreshes it when the seed version differs. The loader reads a valid runtime catalog first and falls back to the image seed if the runtime file is missing or invalid. The diagnostics page can also reset the runtime copy manually.
+The canonical-controls source of truth is `docker/secureit-assets/canonical-controls.json`; its catalog version is maintained beside it in `docker/secureit-assets/canonical-controls.version`. The Docker workflow reads that version directly when generating the portal footer version, so a catalog change only needs one version bump in that directory. The image contains the versioned seed at `/usr/local/share/secureit/canonical-controls.json`, while the active runtime copy normally lives at `/var/www/data/canonical-controls.json`. On container startup, the entrypoint creates the runtime copy when it is missing and refreshes it when the seed version differs. The loader reads a valid runtime catalog first and falls back to the image seed if the runtime file is missing or invalid. The diagnostics page can also reset the runtime copy manually.
 
 ## Local Docker workflow
 
@@ -147,11 +147,11 @@ The seven functional-area cards are hidden while a functional-area view is activ
 
 SecureIT uses canonical functional areas rather than raw duplicate framework checks.
 
-The current version 3 catalog contains 95 entries across seven functional areas: 94 production controls plus `CONDITIONALACCESSWHATIF`, which remains catalogued as a separate to-do feature and is excluded from production scoring and totals. `SecureIT-Production-94` combines the retained `Maester-83` baseline controls with 18 production-selected 365Inspect checks.
+The current version 4 catalog contains 95 entries across seven functional areas: 94 production controls plus `CONDITIONALACCESSWHATIF`, which remains catalogued as a separate to-do feature and is excluded from production scoring and totals. `SecureIT-Production-94` combines the retained `Maester-83` baseline controls with 18 production-selected 365Inspect checks.
 
 The six upstream controls deliberately removed from production are `APPREGISTRATIONS`, `MTAPPREGISTRATIONOWNERSWITHOUTMFA`, `MTHIGHRISKAPPPERMISSIONS`, `XSPMDEVICES`, `XSPMPRIVILEGEDIDENTITIES`, and `MTMDIHEALTHISSUES`. They are long-running, preview, or unable to provide a dependable production result with the current integration. The application filters these IDs while loading any older mounted catalog so website, report, and completion-email totals remain on the 94-control production contract during deployment migration.
 
-The version 3 canonical contract requires every control to have a stable uppercase ID, exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`. Only explicitly mapped evidence can affect a score.
+The version 4 canonical contract gives each control a stable customer-facing `C0001`-style display/control ID. The previous Maester or 365Inspect identifier is retained in the control's `aliases` array for source traceability and backwards-compatible remediation/detail lookup. Every control still has exactly one declared functional area, one or more explicit evidence IDs, and a scoring weight of `1`; only explicitly mapped evidence can affect a score. The 94 scored controls use `C0001` through `C0094` in catalog order, while the separate What-If to-do item is `C0095`.
 
 Mounted version 1 catalogs remain readable during deployment when they satisfy the same structural rules. If a mounted catalog is invalid, the loader tries the bundled image seed so a stale runtime file cannot take down customer login.
 

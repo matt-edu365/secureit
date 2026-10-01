@@ -31,10 +31,10 @@ return [
         'why' => 'compromised or poorly governed apps can access tenant data without going through normal user sign-in controls',
     ],
     'AUTHENTICATIONMETHODBASELINE' => [
-        'inspect' => 'authentication method policies for approved and blocked sign-in methods',
-        'pass' => 'only approved authentication methods are enabled and weaker methods are restricted',
-        'fail' => 'legacy or weak authentication methods remain available to users',
-        'why' => 'attackers often target weak authentication methods to bypass stronger sign-in protection',
+        'inspect' => 'authentication method policies and the groups assigned to them',
+        'pass' => 'every policy references valid groups that exist and can be resolved in the tenant',
+        'fail' => 'a policy references a deleted, missing, or otherwise invalid group',
+        'why' => 'stale group references can leave authentication policies mis-scoped and make the tenant security position difficult to trust',
     ],
     'CONDITIONALACCESSBASELINE' => [
         'inspect' => 'Conditional Access policies that enforce the tenant access baseline',

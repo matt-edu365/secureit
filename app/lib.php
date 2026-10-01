@@ -1662,10 +1662,17 @@ function secureit_365inspect_runtime_family_for_mapping(string $mapping): string
 
 function secureit_control_remediation_route(array $control): array {
     $remediationCatalog = secureit_load_control_remediation_catalog();
-    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
     $areaName = trim((string) ($control['functionalArea'] ?? ''));
 
-    $route = $remediationCatalog['controlRoutes'][$controlId]
+    $route = null;
+    foreach (secureit_control_reference_ids($control) as $controlId) {
+        if (isset($remediationCatalog['controlRoutes'][$controlId])) {
+            $route = $remediationCatalog['controlRoutes'][$controlId];
+            break;
+        }
+    }
+
+    $route = $route
         ?? $remediationCatalog['areaDefaults'][$areaName]
         ?? [
             'method' => 'GUI',
@@ -1848,9 +1855,10 @@ function secureit_control_description_for_title(string $title, array $descriptio
 }
 
 function secureit_control_description_for_control(array $control, array $descriptions): string {
-    $controlId = trim((string) ($control['id'] ?? ''));
-    if ($controlId !== '' && isset($descriptions[$controlId])) {
-        return (string) $descriptions[$controlId];
+    foreach (secureit_control_reference_ids($control) as $controlId) {
+        if (isset($descriptions[$controlId])) {
+            return (string) $descriptions[$controlId];
+        }
     }
 
     foreach (($control['frameworkMappings'] ?? []) as $mapping) {
@@ -2178,12 +2186,37 @@ function secureit_validate_canonical_controls(array $data): array {
         }
 
         $controlId = trim((string) ($control['id'] ?? ''));
-        if ($controlId === '' || preg_match('/^[A-Z0-9][A-Z0-9._-]*$/', $controlId) !== 1) {
-            $errors[] = $prefix . '.id must be a stable uppercase identifier.';
+        $catalogVersion = (int) ($data['version'] ?? 0);
+        $idPattern = $catalogVersion >= 4 ? '/^C[0-9]{4}$/' : '/^[A-Z0-9][A-Z0-9._-]*$/';
+        if ($controlId === '' || preg_match($idPattern, $controlId) !== 1) {
+            $errors[] = $prefix . '.id must be a stable ' . ($catalogVersion >= 4 ? 'C#### display/control ID.' : 'uppercase identifier.') ;
         } elseif (isset($controlIds[$controlId])) {
             $errors[] = 'control IDs must be unique: ' . $controlId . '.';
         } else {
             $controlIds[$controlId] = true;
+        }
+
+        $aliases = $control['aliases'] ?? [];
+        if (!is_array($aliases)) {
+            $errors[] = $prefix . '.aliases must be an array when present.';
+        } else {
+            if ($catalogVersion >= 4 && $aliases === []) {
+                $errors[] = $prefix . '.aliases must retain at least one upstream identifier.';
+            }
+            foreach ($aliases as $aliasIndex => $alias) {
+                $alias = trim((string) $alias);
+                if ($alias === '' || preg_match('/^[A-Z0-9][A-Z0-9._-]*$/', $alias) !== 1) {
+                    $errors[] = $prefix . '.aliases[' . $aliasIndex . '] must be a stable uppercase identifier.';
+                    continue;
+                }
+                if ($alias === $controlId) {
+                    $errors[] = $prefix . '.aliases[' . $aliasIndex . '] must differ from the canonical ID.';
+                }
+                if (isset($controlIds[$alias])) {
+                    $errors[] = 'control IDs and aliases must be unique: ' . $alias . '.';
+                }
+                $controlIds[$alias] = true;
+            }
         }
 
         if (trim((string) ($control['title'] ?? '')) === '') {
@@ -2249,8 +2282,8 @@ function secureit_filter_production_controls(array $controls): array {
         if (!is_array($control)) {
             return false;
         }
-        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
-        return $controlId !== '' && !isset($excludedIds[$controlId]);
+        $controlIds = secureit_control_reference_ids($control);
+        return $controlIds !== [] && count(array_intersect($controlIds, array_keys($excludedIds))) === 0;
     }));
 }
 
@@ -2321,8 +2354,8 @@ function secureit_total_canonical_control_count(): int {
         if (!is_array($control)) {
             return false;
         }
-        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
-        return $controlId !== '' && !isset($todoFeatureIds[$controlId]);
+        $controlIds = secureit_control_reference_ids($control);
+        return $controlIds !== [] && count(array_intersect($controlIds, array_keys($todoFeatureIds))) === 0;
     }));
 }
 
@@ -2337,6 +2370,31 @@ function secureit_tenant_embedded_summary(string $tenantKey): ?array {
 
 function secureit_normalise_mapping_id(string $value): string {
     return strtoupper(trim($value));
+}
+
+function secureit_control_reference_ids(array $control): array {
+    $ids = [];
+    foreach (array_merge(
+        [(string) ($control['id'] ?? '')],
+        is_array($control['aliases'] ?? null) ? $control['aliases'] : []
+    ) as $value) {
+        $value = secureit_normalise_mapping_id((string) $value);
+        if ($value !== '' && !in_array($value, $ids, true)) {
+            $ids[] = $value;
+        }
+    }
+
+    return $ids;
+}
+
+function secureit_control_legacy_lookup_id(array $control): string {
+    foreach (secureit_control_reference_ids($control) as $controlId) {
+        if (!preg_match('/^C[0-9]{4}$/', $controlId)) {
+            return $controlId;
+        }
+    }
+
+    return secureit_control_reference_ids($control)[0] ?? '';
 }
 
 function secureit_pattern_matches_test_id(string $pattern, string $testId): bool {
@@ -2861,9 +2919,7 @@ function secureit_load_control_remediation_catalog(): array {
 
 function secureit_control_detail_catalog_entry(array $control): ?array {
     $catalog = secureit_load_control_details_catalog();
-    $candidateKeys = [
-        secureit_normalise_mapping_id((string) ($control['id'] ?? '')),
-    ];
+    $candidateKeys = secureit_control_reference_ids($control);
 
     foreach (($control['matchedTests'] ?? []) as $test) {
         if (!is_array($test)) {
@@ -2919,9 +2975,15 @@ function secureit_control_guidance_for_resolved_control(array $control): array {
     $why = trim((string) ($entry['why'] ?? 'the control affects the tenant security posture'));
 
     $remediationCatalog = secureit_load_control_remediation_catalog();
-    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
     $areaName = trim((string) ($control['functionalArea'] ?? ''));
-    $route = $remediationCatalog['controlRoutes'][$controlId]
+    $route = null;
+    foreach (secureit_control_reference_ids($control) as $controlId) {
+        if (isset($remediationCatalog['controlRoutes'][$controlId])) {
+            $route = $remediationCatalog['controlRoutes'][$controlId];
+            break;
+        }
+    }
+    $route = $route
         ?? $remediationCatalog['areaDefaults'][$areaName]
         ?? [
             'method' => 'GUI',
@@ -2929,7 +2991,13 @@ function secureit_control_guidance_for_resolved_control(array $control): array {
             'path' => 'use the portal search to open the setting named by this control',
         ];
 
-    $steps = $remediationCatalog['controlSteps'][$controlId] ?? null;
+    $steps = null;
+    foreach (secureit_control_reference_ids($control) as $controlId) {
+        if (isset($remediationCatalog['controlSteps'][$controlId])) {
+            $steps = $remediationCatalog['controlSteps'][$controlId];
+            break;
+        }
+    }
     if (!is_array($steps) || $steps === []) {
         $method = trim((string) ($route['method'] ?? 'GUI')) ?: 'GUI';
         $portal = trim((string) ($route['portal'] ?? 'the relevant Microsoft 365 admin center'));
@@ -2969,7 +3037,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
 
     $functionalAreas = $mapping['functionalAreas'] ?? [];
     $controls = $mapping['controls'] ?? [];
-    $todoFeatureIds = array_fill_keys(secureit_todo_feature_control_ids(), true);
+    $todoFeatureIds = array_fill_keys(array_map('secureit_normalise_mapping_id', secureit_todo_feature_control_ids()), true);
     $tests = secureit_extract_tests_from_embedded_summary($embedded);
     $availableIds = array_values(array_unique(array_map(static fn(array $test): string => $test['id'], $tests)));
 
@@ -3031,11 +3099,12 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
     }
 
     foreach ($controls as $control) {
-        $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
-        if ($controlId !== '' && isset($todoFeatureIds[$controlId])) {
+        $controlIds = secureit_control_reference_ids($control);
+        if (count(array_intersect($controlIds, array_keys($todoFeatureIds))) > 0) {
             $todoRequirements = secureit_control_assessment_requirements($control);
             $todoControls[] = [
                 'id' => (string) ($control['id'] ?? ''),
+                'aliases' => $control['aliases'] ?? [],
                 'title' => (string) ($control['title'] ?? ''),
                 'functionalArea' => (string) ($control['functionalArea'] ?? ''),
                 'status' => 'todo',
@@ -3091,6 +3160,7 @@ function secureit_resolve_canonical_area_scores_from_artifact(?array $embedded, 
 
         $resolvedControl = [
             'id' => $control['id'] ?? '',
+            'aliases' => $control['aliases'] ?? [],
             'title' => $control['title'] ?? '',
             'description' => $control['description'] ?? '',
             'functionalArea' => $area,
@@ -3289,7 +3359,7 @@ function secureit_control_assessment_requirements(array $control): array {
         return $executionRequirements;
     }
 
-    $controlId = secureit_normalise_mapping_id((string) ($control['id'] ?? ''));
+    $controlId = secureit_control_legacy_lookup_id($control);
     if ($controlId === '') {
         return [];
     }

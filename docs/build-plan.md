@@ -64,7 +64,7 @@ The production publication contract requires both `latest/summary.json` and `lat
 ## Portal user-interface follow-ups
 
 - [x] **Restore line graphs in Functional Area views.** Functional-area views now plot per-area score history with latest-10-run, 30-day, and one-year range toggles.
-- [ ] **Remove useless trend data cards in Functional Area views.** Do not render an empty parent card or the nested "No trend data yet" placeholder when an area has no plottable history.
+- [x] **Remove useless trend data cards in Functional Area views.** Functional-area views no longer render the empty overview trend card; their Run History graph now sits above the selected area's checks.
 
 ## Success condition
 

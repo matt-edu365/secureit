@@ -23,6 +23,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Calculate application version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          major="$(tr -d '[:space:]' < docker/secureit-assets/release-major)"
+          catalog="$(tr -d '[:space:]' < docker/secureit-assets/canonical-controls.version)"
+          [[ "$major" =~ ^[0-9]+$ ]] || { echo "Invalid release major: $major" >&2; exit 1; }
+          [[ "$catalog" =~ ^[0-9]+$ ]] || { echo "Invalid canonical-controls version: $catalog" >&2; exit 1; }
+          echo "app_version=${major}.${GITHUB_RUN_NUMBER}.c${catalog}" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -39,3 +50,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SECUREIT_APP_VERSION=${{ steps.version.outputs.app_version }}

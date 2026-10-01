@@ -958,7 +958,7 @@ ob_start();
   </section>
 <?php endif; ?>
 
-<?php if (!$selectedDiagnostics): ?>
+<?php if (!$selectedDiagnostics && !$selectedArea): ?>
   <section class="section">
     <?php
       $overviewColors = [
@@ -1031,6 +1031,44 @@ ob_start();
       $overviewControlsHtml .= '</div>';
     ?>
     <?php echo secureit_line_graph_card('Tenant overview score trend', $overviewSeriesForGraph, ['height' => 213, 'showLegend' => false, 'showSubtitle' => false, 'showLatestPoint' => false, 'controlsHtml' => $overviewControlsHtml, 'controlsWidth' => 238]); ?>
+</section>
+<?php endif; ?>
+
+<?php if ($selectedArea && !$selectedDiagnostics): ?>
+<section class="section">
+  <?php
+    $historyRangeLabels = [
+        '10' => 'Last 10 runs',
+        '30d' => 'Last 30 days',
+        '1y' => 'Last year',
+    ];
+    $historyRangeLinks = '';
+    foreach ($historyRangeLabels as $rangeKey => $rangeLabel) {
+        $isActiveRange = $historyRange === $rangeKey;
+        $rangeUrl = 'tenant.php?tenant=' . rawurlencode($tenantKey)
+            . '&area=' . rawurlencode((string) ($selectedArea['name'] ?? ''))
+            . '&historyRange=' . rawurlencode($rangeKey);
+        $historyRangeLinks .= '<a class="button" href="' . htmlspecialchars($rangeUrl) . '" aria-pressed="' . ($isActiveRange ? 'true' : 'false') . '" style="padding:7px 10px; font-size:0.78rem; background:' . ($isActiveRange ? '#0f766e' : '#f7faf9') . '; color:' . ($isActiveRange ? '#fff' : '#24504a') . '; border:1px solid ' . ($isActiveRange ? '#0f766e' : '#dbe8e2') . '; box-shadow:none;">' . htmlspecialchars($rangeLabel) . '</a>';
+    }
+  ?>
+  <?php if (secureit_series_points($selectedAreaTrendSeries['area'] ?? []) !== []): ?>
+    <?php echo secureit_line_graph_card('Run history - ' . (string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaTrendSeries, [
+        'showLegend' => false,
+        'showSubtitle' => false,
+        'headerActionsHtml' => $historyRangeLinks,
+    ]); ?>
+  <?php else: ?>
+    <article class="card panel" style="margin-bottom:18px;">
+      <div class="section-header" style="margin-bottom:10px; align-items:flex-start;">
+        <div>
+          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Run history - <?php echo htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')); ?></h3>
+          <div class="muted">No scoreable history is available for this time range.</div>
+        </div>
+        <div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;"><?php echo $historyRangeLinks; ?></div>
+      </div>
+      <p class="muted" style="margin:0;">Select a wider range or publish another assessment to plot this functional area.</p>
+    </article>
+  <?php endif; ?>
 </section>
 <?php endif; ?>
 
@@ -1121,44 +1159,6 @@ ob_start();
       <?php endif; ?>
     </article>
   </section>
-<?php endif; ?>
-
-<?php if ($selectedArea && !$selectedDiagnostics): ?>
-<section class="section">
-  <?php
-    $historyRangeLabels = [
-        '10' => 'Last 10 runs',
-        '30d' => 'Last 30 days',
-        '1y' => 'Last year',
-    ];
-    $historyRangeLinks = '';
-    foreach ($historyRangeLabels as $rangeKey => $rangeLabel) {
-        $isActiveRange = $historyRange === $rangeKey;
-        $rangeUrl = 'tenant.php?tenant=' . rawurlencode($tenantKey)
-            . '&area=' . rawurlencode((string) ($selectedArea['name'] ?? ''))
-            . '&historyRange=' . rawurlencode($rangeKey);
-        $historyRangeLinks .= '<a class="button" href="' . htmlspecialchars($rangeUrl) . '" aria-pressed="' . ($isActiveRange ? 'true' : 'false') . '" style="padding:7px 10px; font-size:0.78rem; background:' . ($isActiveRange ? '#0f766e' : '#f7faf9') . '; color:' . ($isActiveRange ? '#fff' : '#24504a') . '; border:1px solid ' . ($isActiveRange ? '#0f766e' : '#dbe8e2') . '; box-shadow:none;">' . htmlspecialchars($rangeLabel) . '</a>';
-    }
-  ?>
-  <?php if (secureit_series_points($selectedAreaTrendSeries['area'] ?? []) !== []): ?>
-    <?php echo secureit_line_graph_card('Run history - ' . (string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaTrendSeries, [
-        'showLegend' => false,
-        'showSubtitle' => false,
-        'headerActionsHtml' => $historyRangeLinks,
-    ]); ?>
-  <?php else: ?>
-    <article class="card panel" style="margin-bottom:18px;">
-      <div class="section-header" style="margin-bottom:10px; align-items:flex-start;">
-        <div>
-          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Run history - <?php echo htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')); ?></h3>
-          <div class="muted">No scoreable history is available for this time range.</div>
-        </div>
-        <div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;"><?php echo $historyRangeLinks; ?></div>
-      </div>
-      <p class="muted" style="margin:0;">Select a wider range or publish another assessment to plot this functional area.</p>
-    </article>
-  <?php endif; ?>
-</section>
 <?php endif; ?>
 
 <?php if (!$selectedDiagnostics && !$selectedArea): ?>

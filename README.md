@@ -19,10 +19,10 @@ There is no separate simulated or shared-host test environment.
 SecureIT is currently in beta. Its app version uses the format `M.N.cC`:
 
 - `M` is the major release stage: `0` during beta, becoming `1` at public release.
-- `N` is the sequential implementation number, advanced for each run of the `Publish SecureIT Container` workflow. The currently deployed counter is `268`; this implementation is the next run, `269`.
+- `N` is the GitHub Actions `run_number` of the `Publish SecureIT Container` workflow, so each published image receives a new implementation number automatically.
 - `C` is the canonical-controls catalog version, currently `3`.
 
-The currently deployed app version is **`0.268.c3`**. This implementation will be **`0.269.c3`** (implementation counter 269, catalog version 3); the following implementation will be **`0.270.c3`** if the catalog remains at version 3. Keep the app release number distinct from the canonical-controls catalog version and from the immutable Git-SHA image tag used to identify an exact build.
+Published images receive their app version during the Docker build from `release-major`, the workflow run number, and `canonical-controls.version`; the footer reads that generated value from `/usr/local/share/secureit/app-version`. Local Docker builds without a workflow-provided build argument use the safe development fallback `0.0.c0`. Keep the app release number distinct from the canonical-controls catalog version and from the immutable Git-SHA image tag used to identify an exact build.
 
 ## Core rule
 

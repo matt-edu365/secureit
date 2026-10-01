@@ -2091,6 +2091,42 @@ function secureit_canonical_controls_version_path(): string {
     return '';
 }
 
+function secureit_app_version_path(): string {
+    $config = secureit_config();
+    $paths = [
+        $config['app_version_file'] ?? '',
+        '/usr/local/share/secureit/app-version',
+    ];
+
+    foreach ($paths as $path) {
+        if ($path && file_exists($path)) {
+            return $path;
+        }
+    }
+
+    return '';
+}
+
+function secureit_app_version(): string {
+    static $version = null;
+    if ($version !== null) {
+        return $version;
+    }
+
+    $path = secureit_app_version_path();
+    $candidate = $path !== '' ? trim((string) @file_get_contents($path)) : '';
+    if (preg_match('/^\d+\.\d+\.c\d+$/', $candidate) === 1) {
+        return $version = $candidate;
+    }
+
+    $catalogVersion = secureit_canonical_controls_version_value();
+    if (preg_match('/^\d+$/', $catalogVersion) === 1) {
+        return $version = '0.0.c' . $catalogVersion;
+    }
+
+    return $version = '0.0.c0';
+}
+
 function secureit_canonical_controls_version_value(): string {
     $path = secureit_canonical_controls_version_path();
     if ($path === '') {
@@ -5035,7 +5071,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       <div class="footer-contact-row" aria-label="ICT365 contact details and SecureIT version">
         <a href="mailto:helpdesk@ict365.ky">helpdesk@ict365.ky</a>
         <a href="tel:+13457450365">+1(345) 745-0365</a>
-        <span>SecureIT v0.269.c3</span>
+        <span>SecureIT v<?php echo htmlspecialchars(secureit_app_version()); ?></span>
       </div>
     </div>
   </footer>

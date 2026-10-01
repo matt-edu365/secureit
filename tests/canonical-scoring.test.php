@@ -2,6 +2,9 @@
 
 putenv('SECUREIT_CANONICAL_CONTROLS_FILE=' . __DIR__ . '/../docker/secureit-assets/canonical-controls.json');
 putenv('SECUREIT_REPORTS_ROOT=' . __DIR__ . '/fixtures/canonical-scoring/reports');
+$appVersionFile = tempnam(sys_get_temp_dir(), 'secureit-app-version-');
+file_put_contents($appVersionFile, "0.270.c3\n");
+putenv('SECUREIT_APP_VERSION_FILE=' . $appVersionFile);
 require __DIR__ . '/../app/lib.php';
 
 function secureit_contract_test_assert(bool $condition, string $message): void {
@@ -93,6 +96,9 @@ secureit_contract_test_assert(
     preg_match('/>Checks<\/div><div[^>]*>94<\/div>/', $summaryMailHtml) === 1,
     'The completion email must advertise 94 checks.'
 );
+
+secureit_contract_test_assert(secureit_app_version() === '0.270.c3', 'The footer version should be read from the generated build metadata file.');
+@unlink($appVersionFile);
 
 $statusCases = [
     'Pass' => 'pass',
@@ -430,8 +436,32 @@ secureit_contract_test_assert(
         && str_contains($tenantPageSource, "\$_GET['historyRange'] ?? '10'")
         && str_contains($tenantPageSource, 'Last 10 runs')
         && str_contains($tenantPageSource, 'Last 30 days')
-        && str_contains($tenantPageSource, 'Last year'),
-    'Functional-area views must render score history with 10-run, 30-day, and one-year ranges.'
+        && str_contains($tenantPageSource, 'Last year')
+        && str_contains($tenantPageSource, '<?php if (!$selectedDiagnostics && !$selectedArea): ?>'),
+    'Functional-area views must render score history with 10-run, 30-day, and one-year ranges without the overview trend card.'
+);
+$areaRunHistoryPosition = strpos($tenantPageSource, '<?php if ($selectedArea && !$selectedDiagnostics): ?>');
+$areaChecksPosition = strpos($tenantPageSource, 'Pass and fail detail for the selected functional area.');
+secureit_contract_test_assert(
+    $areaRunHistoryPosition !== false
+        && $areaChecksPosition !== false
+        && $areaRunHistoryPosition < $areaChecksPosition,
+    'Functional-area Run History must appear above the selected area checks panel.'
+);
+
+$librarySource = file_get_contents(__DIR__ . '/../app/lib.php');
+secureit_contract_test_assert(
+    str_contains($librarySource, 'secureit_app_version()')
+        && !str_contains($librarySource, 'SecureIT v0.269.c3'),
+    'The footer must render the generated application version rather than a hard-coded release number.'
+);
+
+$dockerPublishWorkflow = file_get_contents(__DIR__ . '/../.github/workflows/docker-publish.yml');
+secureit_contract_test_assert(
+    str_contains($dockerPublishWorkflow, 'GITHUB_RUN_NUMBER')
+        && str_contains($dockerPublishWorkflow, 'SECUREIT_APP_VERSION=${{ steps.version.outputs.app_version }}')
+        && str_contains($dockerPublishWorkflow, 'canonical-controls.version'),
+    'The container publish workflow must pass its generated application version into the Docker build.'
 );
 
 $loginPageSource = file_get_contents(__DIR__ . '/../app/login.php');

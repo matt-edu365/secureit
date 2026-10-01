@@ -33,6 +33,8 @@ COPY shared/ /var/www/shared/
 COPY config/maester-runtime.json /usr/local/share/secureit/maester-runtime.json
 COPY docker/secureit-assets/canonical-controls.json /usr/local/share/secureit/canonical-controls.json
 COPY docker/secureit-assets/canonical-controls.version /usr/local/share/secureit/canonical-controls.version
+ARG SECUREIT_APP_VERSION=0.0.c0
+RUN printf '%s\n' "$SECUREIT_APP_VERSION" > /usr/local/share/secureit/app-version
 COPY docker/php-secureit.ini /usr/local/etc/php/conf.d/zz-secureit.ini
 COPY docker/secureit-entrypoint.sh /usr/local/bin/secureit-entrypoint.sh
 COPY docker/apache-site.conf /etc/apache2/sites-available/000-default.conf

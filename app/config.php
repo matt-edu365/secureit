@@ -7,6 +7,7 @@ return [
     'identity_seeds_file' => getenv('SECUREIT_IDENTITY_SEEDS_FILE') ?: (file_exists(__DIR__ . '/../.local/identity-seeds.json') ? __DIR__ . '/../.local/identity-seeds.json' : ''),
     'canonical_controls_file' => getenv('SECUREIT_CANONICAL_CONTROLS_FILE') ?: __DIR__ . '/../data/canonical-controls.json',
     'canonical_controls_version_file' => getenv('SECUREIT_CANONICAL_CONTROLS_VERSION_FILE') ?: __DIR__ . '/../data/canonical-controls.version',
+    'app_version_file' => getenv('SECUREIT_APP_VERSION_FILE') ?: '/usr/local/share/secureit/app-version',
     'canonical_controls_example_file' => __DIR__ . '/../config/canonical-controls.example.json',
     'maester_runtime_manifest_file' => getenv('SECUREIT_MAESTER_RUNTIME_MANIFEST_FILE') ?: (file_exists('/usr/local/share/secureit/maester-runtime.json') ? '/usr/local/share/secureit/maester-runtime.json' : __DIR__ . '/../config/maester-runtime.json'),
     'test_descriptions_dir' => getenv('SECUREIT_TEST_DESCRIPTIONS_DIR') ?: __DIR__ . '/../data/maester-test-descriptions',

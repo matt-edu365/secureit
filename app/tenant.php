@@ -672,6 +672,23 @@ $selectedAreaTrendSeries = $selectedArea
     ? secureit_tenant_area_history_series($areaHistoryForTrend, (string) ($selectedArea['name'] ?? ''))
     : [];
 $selectedOverviewTrendOverall = true;
+$postureStats = $selectedArea
+    ? [
+        'checks' => (int) ($selectedArea['controlsTotal'] ?? 0),
+        'passed' => (int) ($selectedArea['controlsPassing'] ?? 0),
+        'failed' => (int) ($selectedArea['controlsFailing'] ?? 0),
+        'other' => (int) ($selectedArea['controlsPartial'] ?? 0)
+            + (int) ($selectedArea['controlsErrored'] ?? 0)
+            + (int) ($selectedArea['controlsSkipped'] ?? 0),
+    ]
+    : [
+        'checks' => (int) ($counts['total'] ?? 0),
+        'passed' => (int) ($counts['passed'] ?? 0),
+        'failed' => (int) ($counts['failed'] ?? 0),
+        'other' => (int) ($counts['partial'] ?? 0)
+            + (int) ($counts['errors'] ?? 0)
+            + (int) ($counts['skipped'] ?? 0),
+    ];
 
 ob_start();
 ?>
@@ -718,33 +735,57 @@ ob_start();
       </div>
     <?php endif; ?>
     <?php if ($summary): ?>
-      <div class="stats-row tenant-posture-stats" style="margin-top:18px;">
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsTotal'] ?? 0) : $counts['total'])); ?></strong><span>Checks</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPassing'] ?? 0) : $counts['passed'])); ?></strong><span>Passed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsPartial'] ?? 0) : $counts['partial'])); ?></strong><span>Partially met</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsFailing'] ?? 0) : $counts['failed'])); ?></strong><span>Failed</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsErrored'] ?? 0) : $counts['errors'])); ?></strong><span>Errors</span></div>
-        <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea ? ($selectedArea['controlsSkipped'] ?? 0) : $counts['skipped'])); ?></strong><span>Skipped</span></div>
-      </div>
+      <?php if (!$selectedArea): ?>
+        <?php
+          $displayScore = $counts['score'] ?? null;
+          $displayScoreWidth = $displayScore !== null ? max(0, min(100, (int) $displayScore)) : 0;
+        ?>
+        <div class="tenant-posture-summary" style="margin-top:18px;">
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['checks']); ?></strong><span>Checks</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['passed']); ?></strong><span>Passed</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['failed']); ?></strong><span>Failed</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['other']); ?></strong><span>Other</span></div>
+          <div class="tenant-score-card">
+            <div class="muted">Overall score</div>
+            <div class="progress" aria-label="SecureIT score progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $displayScoreWidth); ?>%"></div></div>
+            <div class="tenant-score-value">
+              <?php if ($displayScore !== null): ?>
+                <?php echo htmlspecialchars((string) $displayScore); ?>%
+              <?php else: ?>
+                Unavailable
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+      <?php else: ?>
+        <div class="stats-row tenant-posture-stats" style="margin-top:18px;">
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsTotal'] ?? 0)); ?></strong><span>Checks</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsPassing'] ?? 0)); ?></strong><span>Passed</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsPartial'] ?? 0)); ?></strong><span>Partially met</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsFailing'] ?? 0)); ?></strong><span>Failed</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsErrored'] ?? 0)); ?></strong><span>Errors</span></div>
+          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) ($selectedArea['controlsSkipped'] ?? 0)); ?></strong><span>Skipped</span></div>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
   </article>
 
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
-    <div class="section-header" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:nowrap;">
-      <div style="min-width:0; flex:1 1 auto;">
-        <h2 class="section-title" style="white-space:nowrap;"><?php echo $selectedArea ? 'Area Posture' : 'Action Center'; ?></h2>
+    <div class="section-header tenant-action-header" style="margin-bottom:18px;">
+      <div>
+        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Action Center'; ?></h2>
       </div>
+    </div>
 <?php if (!$selectedArea && !$selectedDiagnostics): ?>
-        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end; flex:0 0 auto;">
-          <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
-            <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap; padding:14px 18px; min-width:150px;">Run tests now</button>
-          </form>
-          <?php if ($summary): ?>
-            <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Download results</a>
-          <?php endif; ?>
-        </div>
+    <div class="tenant-action-actions">
+      <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
+        <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap; padding:14px 18px; min-width:150px;">Run tests now</button>
+      </form>
+      <?php if ($summary): ?>
+        <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Download results</a>
       <?php endif; ?>
     </div>
+  <?php endif; ?>
 
     <?php if (is_array($manualReportRunNotice ?? null)): ?>
       <div class="<?php echo !empty($manualReportRunNotice['ok']) ? 'success' : 'error'; ?>" style="margin-bottom:16px;">
@@ -752,7 +793,7 @@ ob_start();
       </div>
     <?php endif; ?>
 
-    <?php if ($summary): ?>
+    <?php if ($selectedArea && $summary): ?>
       <?php
         $displayScore = $selectedArea ? ($selectedArea['score'] ?? null) : ($counts['score'] ?? null);
         $displayScoreWidth = $displayScore !== null ? max(0, min(100, (int) $displayScore)) : 0;
@@ -772,7 +813,7 @@ ob_start();
           Score unavailable because no controls returned a scoreable result on <?php echo htmlspecialchars(secureit_format_datetime($summary['generatedAt'] ?? null)); ?>.
         <?php endif; ?>
       </div>
-    <?php else: ?>
+    <?php elseif (!$summary): ?>
       <div class="empty-state" style="box-shadow:none;">
         <strong>No published report yet.</strong>
         <p class="muted">Once SecureIT publishes a latest summary for this tenant, the posture snapshot will appear here.</p>
@@ -1159,7 +1200,7 @@ ob_start();
                   };
                 ?>
                 <tr data-status-value="<?php echo htmlspecialchars($controlStatusFilterValue); ?>">
-                  <td><strong><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></strong></td>
+                  <td><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></td>
                   <td>
                     <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
                   </td>
@@ -1273,6 +1314,54 @@ ob_start();
 </section>
 <?php endif; ?>
 <style>
+  .tenant-posture-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(170px, 1.25fr);
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .tenant-score-card {
+    display: flex;
+    min-width: 0;
+    min-height: 78px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(0, 99, 95, 0.08);
+    border-radius: 14px;
+    background: var(--surface-soft);
+  }
+
+  .tenant-score-card .muted {
+    font-size: 0.82rem;
+    line-height: 1.2;
+  }
+
+  .tenant-score-value {
+    color: var(--eden);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .tenant-action-header {
+    align-items: flex-start;
+  }
+
+  .tenant-action-header .section-title {
+    transform: translateY(-2px);
+  }
+
+  .tenant-action-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
   .guidance-column-heading {
     display: flex;
     align-items: center;
@@ -1337,6 +1426,12 @@ ob_start();
 
   .control-guidance-details {
     margin-top: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .tenant-posture-summary {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 <script>

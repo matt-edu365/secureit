@@ -465,6 +465,17 @@ secureit_contract_test_assert(
         && str_contains($tenantPageSource, 'row.open = false'),
     'The tenant overview must use the structured latest-analysis copy and omit the overview diagnostics tile.'
 );
+secureit_contract_test_assert(
+    str_contains($tenantPageSource, 'tenant-posture-summary')
+        && str_contains($tenantPageSource, '<span>Other</span>')
+        && str_contains($tenantPageSource, 'tenant-score-card')
+        && str_contains($tenantPageSource, 'tenant-action-actions')
+        && str_contains($tenantPageSource, "<td><?php echo htmlspecialchars((string) (\$control['id'] ?? '')); ?></td>")
+        && !str_contains($tenantPageSource, "<td><strong><?php echo htmlspecialchars((string) (\$control['id'] ?? '')); ?></strong></td>")
+        && str_contains($tenantPageSource, "(int) (\$counts['partial'] ?? 0)\n            + (int) (\$counts['errors'] ?? 0)\n            + (int) (\$counts['skipped'] ?? 0)")
+        && str_contains($tenantPageSource, "(int) (\$selectedArea['controlsPartial'] ?? 0)\n            + (int) (\$selectedArea['controlsErrored'] ?? 0)\n            + (int) (\$selectedArea['controlsSkipped'] ?? 0)"),
+    'The tenant overview must use four posture cards plus a compact overall score, while functional-area IDs remain regular-weight values.'
+);
 $areaRunHistoryPosition = strpos($tenantPageSource, '<?php if ($selectedArea && !$selectedDiagnostics): ?>');
 $areaChecksPosition = strpos($tenantPageSource, 'Pass and fail detail for the selected functional area.');
 secureit_contract_test_assert(

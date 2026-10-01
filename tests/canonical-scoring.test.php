@@ -440,6 +440,11 @@ secureit_contract_test_assert(
         && str_contains($tenantPageSource, '<?php if (!$selectedDiagnostics && !$selectedArea): ?>'),
     'Functional-area views must render score history with 10-run, 30-day, and one-year ranges without the overview trend card.'
 );
+secureit_contract_test_assert(
+    str_contains($tenantPageSource, 'secureit_tenant_analysis(')
+        && !str_contains($tenantPageSource, 'Failures and Diagnostics'),
+    'The tenant overview must use the structured latest-analysis copy and omit the overview diagnostics tile.'
+);
 $areaRunHistoryPosition = strpos($tenantPageSource, '<?php if ($selectedArea && !$selectedDiagnostics): ?>');
 $areaChecksPosition = strpos($tenantPageSource, 'Pass and fail detail for the selected functional area.');
 secureit_contract_test_assert(
@@ -452,7 +457,11 @@ secureit_contract_test_assert(
 $librarySource = file_get_contents(__DIR__ . '/../app/lib.php');
 secureit_contract_test_assert(
     str_contains($librarySource, 'secureit_app_version()')
-        && !str_contains($librarySource, 'SecureIT v0.269.c3'),
+        && !str_contains($librarySource, 'SecureIT v0.269.c3')
+        && str_contains($librarySource, 'returned data for %d of %d tests, with %d errors and %d skipped.')
+        && str_contains($librarySource, 'The overall posture %s.')
+        && str_contains($librarySource, 'The lowest-scoring area is currently %s at %s.')
+        && str_contains($librarySource, 'The strongest area is %s at %s.'),
     'The footer must render the generated application version rather than a hard-coded release number.'
 );
 

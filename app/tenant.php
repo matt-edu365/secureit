@@ -60,7 +60,7 @@ $areaData = secureit_resolve_canonical_area_scores($tenantKey);
 $counts = secureit_check_summary_counts($areaData);
 $diagnostics = secureit_resolve_tenant_report_diagnostics($tenantKey);
 $functionalAreas = array_values(array_filter($areaData['areas'] ?? [], 'is_array'));
-$analysisText = secureit_tenant_analysis_text($summary, $areaData);
+$analysis = secureit_tenant_analysis($summary, $areaData);
 $selectedAreaName = trim((string) ($_GET['area'] ?? ''));
 $selectedArea = null;
 if ($selectedAreaName !== '') {
@@ -690,7 +690,22 @@ ob_start();
       <div class="kv">
         <div class="kv-row"><div class="kv-label">Tenant ID</div><div class="kv-value"><?php echo htmlspecialchars($tenant['tenantId'] ?? 'Unknown'); ?></div></div>
         <div class="kv-row"><div class="kv-label">Report recipient</div><div class="kv-value"><?php echo htmlspecialchars($tenant['emailTo'] ?? ''); ?></div></div>
-        <div class="kv-row"><div class="kv-label">Latest analysis</div><div class="kv-value"><?php echo htmlspecialchars($analysisText); ?></div></div>
+        <div class="kv-row">
+          <div class="kv-label">Latest analysis</div>
+          <div class="kv-value">
+            <p style="margin:0 0 8px;"><?php echo htmlspecialchars((string) ($analysis['summary'] ?? '')); ?></p>
+            <?php if (($analysis['posture'] ?? '') !== ''): ?>
+              <p style="margin:0 0 8px;"><?php echo htmlspecialchars((string) $analysis['posture']); ?></p>
+            <?php endif; ?>
+            <?php if (!empty($analysis['highlights'])): ?>
+              <ul style="margin:0; padding-left:20px;">
+                <?php foreach ($analysis['highlights'] as $highlight): ?>
+                  <li><?php echo htmlspecialchars((string) $highlight); ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
     <?php endif; ?>
   </article>
@@ -799,18 +814,6 @@ ob_start();
             </div>
           </a>
         <?php endforeach; ?>
-        <a class="card feature-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&area=Diagnostics" style="display:block; text-decoration:none; color:inherit;">
-          <div class="inline-links" style="justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px;">
-            <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:#eef7f6; box-shadow:0 10px 20px rgba(15, 118, 110, 0.10); color:#0f766e; flex:0 0 auto; border:1px solid rgba(15, 23, 42, 0.08);">
-              <span style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10.5 8v5M8 10.5h5"/></svg>
-              </span>
-            </span>
-            <span class="badge tone-neutral">Diagnostics</span>
-          </div>
-          <h3 style="min-height:2.8em;">Failures and Diagnostics</h3>
-          <p style="margin-top:0; color:var(--muted); line-height:1.6;">Deal with failures and diagnose tests not producing clean results.</p>
-        </a>
       <?php endif; ?>
     </div>
   <?php endif; ?>

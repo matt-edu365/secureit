@@ -3883,9 +3883,13 @@ function secureit_check_summary_counts(array $areaData): array {
     ];
 }
 
-function secureit_tenant_analysis_text(?array $summary, array $areaData): string {
+function secureit_tenant_analysis(?array $summary, array $areaData): array {
     if (!$summary) {
-        return 'No report summary is available yet for this tenant.';
+        return [
+            'summary' => 'No report summary is available yet for this tenant.',
+            'posture' => '',
+            'highlights' => [],
+        ];
     }
 
     $counts = secureit_check_summary_counts($areaData);
@@ -3930,19 +3934,21 @@ function secureit_tenant_analysis_text(?array $summary, array $areaData): string
         $bestAreaScore = $bestScore !== null ? (string) $bestScore . '%' : 'n/a';
     }
 
-    return sprintf(
-        'The latest run on %s returned scoreable evidence for %d of %d SecureIT checks, with %d errors and %d skipped. The overall posture %s. The lowest-scoring area is currently %s at %s. The strongest area is %s at %s.',
-        $runDate,
-        $counts['assessed'],
-        $counts['total'],
-        $counts['errors'],
-        $counts['skipped'],
-        $posture,
-        $worstAreaName,
-        $worstAreaScore,
-        $bestAreaName,
-        $bestAreaScore
-    );
+    return [
+        'summary' => sprintf(
+            'The latest run on %s returned data for %d of %d tests, with %d errors and %d skipped.',
+            $runDate,
+            $counts['assessed'],
+            $counts['total'],
+            $counts['errors'],
+            $counts['skipped']
+        ),
+        'posture' => sprintf('The overall posture %s.', $posture),
+        'highlights' => [
+            sprintf('The lowest-scoring area is currently %s at %s.', $worstAreaName, $worstAreaScore),
+            sprintf('The strongest area is %s at %s.', $bestAreaName, $bestAreaScore),
+        ],
+    ];
 }
 
 function secureit_format_datetime(?string $value): string {

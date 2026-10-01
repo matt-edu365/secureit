@@ -125,10 +125,18 @@ function secureit_tenant_control_guidance_html(array $control): string {
     $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
     $bucket = trim((string) ($control['bucket'] ?? ''));
     $bucketLabel = $bucket !== '' ? secureit_control_non_scoreable_bucket_label($bucket) : '';
+    $summaryLabel = $status === 'pass'
+        ? 'No remediation required.'
+        : (!in_array($status, ['fail', 'partial'], true) ? 'Not scored.' : 'Issue and impact');
 
     ob_start();
     ?>
-    <div class="control-guidance">
+    <details class="control-guidance" data-guidance-row>
+      <summary class="control-guidance-summary">
+        <span><?php echo htmlspecialchars($summaryLabel); ?></span>
+        <span class="control-guidance-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="control-guidance-details">
       <?php if ($status === 'pass'): ?>
         <div class="control-guidance-result"><strong>No remediation required.</strong> The latest evidence meets this control.</div>
         <div><strong>Control context</strong></div>
@@ -163,7 +171,8 @@ function secureit_tenant_control_guidance_html(array $control): string {
           </ol>
         <?php endif; ?>
       <?php endif; ?>
-    </div>
+      </div>
+    </details>
     <?php
     return (string) ob_get_clean();
 }
@@ -1089,7 +1098,7 @@ ob_start();
       </div>
       <?php if (!empty($selectedArea['controls'])): ?>
         <div class="table-wrap">
-          <table>
+          <table data-guidance-table>
             <thead>
               <tr>
                 <th>Check</th>
@@ -1107,7 +1116,12 @@ ob_start();
                     </div>
                   </details>
                 </th>
-                <th>Issue, impact and recommended action</th>
+                <th>
+                  <div class="guidance-column-heading">
+                    <span>Analysis and actions</span>
+                    <button type="button" class="guidance-bulk-toggle" data-guidance-toggle-all aria-label="Expand all analysis and actions">Expand all</button>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1254,6 +1268,73 @@ ob_start();
   </article>
 </section>
 <?php endif; ?>
+<style>
+  .guidance-column-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 190px;
+  }
+
+  .guidance-bulk-toggle {
+    flex: 0 0 auto;
+    padding: 6px 11px;
+    border: 1px solid #cfe0da;
+    border-radius: 999px;
+    background: #f7faf9;
+    color: #24504a;
+    box-shadow: none;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .guidance-bulk-toggle:hover,
+  .guidance-bulk-toggle:focus-visible {
+    background: #e8f3ef;
+    border-color: #9fc8bc;
+  }
+
+  .control-guidance {
+    margin: 0;
+  }
+
+  .control-guidance-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    list-style: none;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .control-guidance-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .control-guidance-chevron {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+  }
+
+  .control-guidance[open] .control-guidance-chevron {
+    transform: rotate(225deg);
+  }
+
+  .control-guidance-details {
+    margin-top: 12px;
+  }
+</style>
 <script>
 (function () {
   const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase() || 'unknown';
@@ -1347,6 +1428,35 @@ ob_start();
     });
 
     applyFilter();
+  });
+
+  document.querySelectorAll('[data-guidance-table]').forEach((table) => {
+    const rows = Array.from(table.querySelectorAll('[data-guidance-row]'));
+    const toggleAll = table.querySelector('[data-guidance-toggle-all]');
+    if (!toggleAll || rows.length === 0) {
+      return;
+    }
+
+    function updateToggleAllLabel() {
+      const allExpanded = rows.every((row) => row.open);
+      toggleAll.textContent = allExpanded ? 'Collapse all' : 'Expand all';
+      toggleAll.setAttribute('aria-label', allExpanded ? 'Collapse all analysis and actions' : 'Expand all analysis and actions');
+    }
+
+    rows.forEach((row) => {
+      row.open = false;
+      row.addEventListener('toggle', updateToggleAllLabel);
+    });
+
+    toggleAll.addEventListener('click', () => {
+      const allExpanded = rows.every((row) => row.open);
+      rows.forEach((row) => {
+        row.open = !allExpanded;
+      });
+      updateToggleAllLabel();
+    });
+
+    updateToggleAllLabel();
   });
 })();
 </script>

@@ -442,7 +442,12 @@ secureit_contract_test_assert(
 );
 secureit_contract_test_assert(
     str_contains($tenantPageSource, 'secureit_tenant_analysis(')
-        && !str_contains($tenantPageSource, 'Failures and Diagnostics'),
+        && !str_contains($tenantPageSource, 'Failures and Diagnostics')
+        && str_contains($tenantPageSource, 'Analysis and actions')
+        && str_contains($tenantPageSource, 'data-guidance-table')
+        && str_contains($tenantPageSource, 'data-guidance-toggle-all')
+        && str_contains($tenantPageSource, 'control-guidance-summary')
+        && str_contains($tenantPageSource, 'row.open = false'),
     'The tenant overview must use the structured latest-analysis copy and omit the overview diagnostics tile.'
 );
 $areaRunHistoryPosition = strpos($tenantPageSource, '<?php if ($selectedArea && !$selectedDiagnostics): ?>');

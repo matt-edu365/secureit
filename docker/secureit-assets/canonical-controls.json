@@ -125,7 +125,7 @@
         },
         {
             "id": "C0007",
-            "title": "Groups",
+            "title": "Microsoft 365 group creation is not restricted",
             "functionalArea": "Collaboration & Communication",
             "frameworkMappings": [
                 "Test-Groups.Tests.ps1"

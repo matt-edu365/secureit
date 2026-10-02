@@ -42,11 +42,26 @@ foreach (($catalog['controls'] ?? []) as $control) {
     }
 }
 secureit_contract_test_assert(is_array($groupsControl), 'C0007 must remain present in the canonical control catalog.');
+secureit_contract_test_assert(
+    ($groupsControl['title'] ?? '') === 'Microsoft 365 group creation is not restricted',
+    'C0007 should use a customer-facing title that describes the risk.'
+);
 $groupsRoute = secureit_control_remediation_route($groupsControl);
 secureit_contract_test_assert(($groupsRoute['method'] ?? '') === 'PowerShell', 'C0007 remediation must use PowerShell.');
 secureit_contract_test_assert(str_contains((string) ($groupsRoute['portal'] ?? ''), 'Graph PowerShell'), 'C0007 remediation must identify Microsoft Graph PowerShell.');
 $groupsDetails = secureit_control_details_for_resolved_control($groupsControl);
 secureit_contract_test_assert(str_contains($groupsDetails, 'EnableGroupCreation') && str_contains($groupsDetails, 'false'), 'C0007 detail text must describe its exact setting and pass value.');
+$groupsGuidance = secureit_control_guidance_for_resolved_control($groupsControl);
+secureit_contract_test_assert(
+    ($groupsGuidance['recommendedAction'] ?? '') === 'Use Microsoft Graph PowerShell to restrict Microsoft 365 group creation to an approved group of users.',
+    'C0007 should have a plain-language recommended action.'
+);
+secureit_contract_test_assert(
+    (($groupsGuidance['presentation']['targetSummary'] ?? '') !== '')
+        && count($groupsGuidance['steps'] ?? []) === 5
+        && str_contains((string) ($groupsGuidance['steps'][3]['code'] ?? ''), 'EnableGroupCreation'),
+    'C0007 should expose its guided outcome and five actionable remediation steps.'
+);
 
 $legacyCatalog = $catalog;
 $legacyCatalog['version'] = 1;

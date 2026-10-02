@@ -137,7 +137,7 @@ def title_for(test_name: str) -> str:
         "AppManagementPolicies": "App management policies",
         "AppRegistrations": "App registrations",
         "AuthenticationMethodBaseline": "Authentication method baseline",
-        "Groups": "Groups",
+        "Groups": "Microsoft 365 group creation is not restricted",
         "MtAppRegistrationOwnersWithoutMFA": "App registration owners without MFA",
         "MtEntitlementManagementDeletedGroups": "Entitlement management deleted groups",
         "MtEntitlementManagementInactivePolicies": "Entitlement management inactive policies",

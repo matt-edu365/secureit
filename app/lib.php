@@ -2973,6 +2973,8 @@ function secureit_control_guidance_for_resolved_control(array $control): array {
     $pass = trim((string) ($entry['pass'] ?? 'the configuration matches the expected SecureIT baseline'));
     $fail = trim((string) ($entry['fail'] ?? 'the configuration is missing, too broad, or does not match the expected SecureIT baseline'));
     $why = trim((string) ($entry['why'] ?? 'the control affects the tenant security posture'));
+    $recommendedAction = trim((string) ($entry['recommendedAction'] ?? ''));
+    $presentation = is_array($entry['presentation'] ?? null) ? $entry['presentation'] : [];
 
     $remediationCatalog = secureit_load_control_remediation_catalog();
     $areaName = trim((string) ($control['functionalArea'] ?? ''));
@@ -3025,7 +3027,8 @@ function secureit_control_guidance_for_resolved_control(array $control): array {
     return [
         'issue' => secureit_control_guidance_sentence('The control fails when ' . $fail),
         'impact' => secureit_control_guidance_sentence($why),
-        'recommendedAction' => secureit_control_guidance_sentence('Configure ' . $inspect . ' so that ' . $pass),
+        'recommendedAction' => secureit_control_guidance_sentence($recommendedAction !== '' ? $recommendedAction : 'Configure ' . $inspect . ' so that ' . $pass),
+        'presentation' => $presentation,
         'steps' => array_values(array_filter($steps, static function ($step): bool {
             return is_array($step) && trim((string) ($step['instruction'] ?? '')) !== '';
         })),
@@ -4924,11 +4927,50 @@ function secureit_render_shell(string $title, string $content, array $options = 
       padding-left: 10px;
       border-left: 3px solid var(--line);
     }
+    .control-guidance-result-good {
+      border-left-color: var(--good);
+    }
+    .control-guidance-result-bad {
+      border-left-color: var(--bad);
+    }
+    .control-guidance-outcome-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 14px;
+    }
+    .control-guidance-outcome-grid > div {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+    }
+    .control-guidance-outcome-grid p {
+      margin-bottom: 0;
+    }
     .control-guidance-steps {
       display: grid;
       gap: 7px;
       margin: 7px 0 0;
       padding-left: 22px;
+    }
+    .control-guidance-steps-guided {
+      gap: 12px;
+    }
+    .control-guidance-steps-guided li {
+      padding-left: 2px;
+    }
+    .control-guidance-code {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 8px 0 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f5f8f7;
+      color: var(--text);
+      font: 0.78rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre;
     }
     .control-guidance-method {
       display: inline-block;
@@ -5059,6 +5101,7 @@ function secureit_render_shell(string $title, string $content, array $options = 
       .header-actions { justify-content: flex-start; }
       .hero { padding: 22px; border-radius: 20px; }
       .metrics-grid, .feature-grid, .tenant-grid, .stats-row, .portal-grid, .partner-grid, .footer-contact-row { grid-template-columns: 1fr; }
+      .control-guidance-outcome-grid { grid-template-columns: 1fr; }
       th, td { padding: 12px; }
       .footer-contact-row a,
       .footer-contact-row span,

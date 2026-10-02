@@ -165,11 +165,68 @@ $assignRoute([
 
 $powerShellSteps = [
     'GROUPS' => [
-        ['method' => 'PowerShell', 'instruction' => 'Import Microsoft.Graph.Beta.Identity.DirectoryManagement and Microsoft.Graph.Beta.Groups, then connect with Connect-MgGraph -Scopes "Directory.ReadWrite.All","Group.Read.All".'],
-        ['method' => 'Review', 'instruction' => 'Create or identify the approved Microsoft 365 Group Creators group. Add approved users as members, and assign accountable owners to that group.'],
-        ['method' => 'PowerShell', 'instruction' => 'Set $GroupName = "Microsoft 365 Group Creators"; resolve $Group = Get-MgBetaGroup -All | Where-Object DisplayName -eq $GroupName; stop if the approved group is not found.'],
-        ['method' => 'PowerShell', 'instruction' => 'Build $Parameters = @{ values = @(@{ name = "EnableGroupCreation"; value = "false" }, @{ name = "GroupCreationAllowedGroupId"; value = $Group.Id }) }; update the existing Group.Unified setting with Update-MgBetaDirectorySetting -DirectorySettingId $Setting.Id -BodyParameter $Parameters, or create it with templateId "62375ab9-6b52-47ed-826b-58e47e0e304b" and New-MgBetaDirectorySetting when it does not exist.'],
-        ['method' => 'Verification', 'instruction' => 'Read back the Group.Unified setting with Get-MgBetaDirectorySetting and confirm EnableGroupCreation is exactly "false" and GroupCreationAllowedGroupId is the approved group ID, then rerun this SecureIT control.'],
+        [
+            'method' => 'Connect',
+            'instruction' => 'Open PowerShell and connect to Microsoft Graph with permission to read groups and change directory settings.',
+            'code' => <<<'POWERSHELL'
+Import-Module Microsoft.Graph.Authentication
+Import-Module Microsoft.Graph.Beta.Identity.DirectoryManagement
+Import-Module Microsoft.Graph.Beta.Groups
+
+Connect-MgGraph -Scopes "Directory.ReadWrite.All","Group.Read.All"
+POWERSHELL,
+        ],
+        [
+            'method' => 'Prepare',
+            'instruction' => 'Create or identify the approved creator group. Add only approved users as members and assign at least one accountable owner. Use its exact display name in the next step.',
+        ],
+        [
+            'method' => 'PowerShell',
+            'instruction' => 'Find the approved group and stop if the name is missing or not unique.',
+            'code' => <<<'POWERSHELL'
+$GroupName = "Microsoft 365 Group Creators"
+$Group = @(Get-MgBetaGroup -All | Where-Object DisplayName -eq $GroupName)
+if ($Group.Count -ne 1) {
+    throw "Expected exactly one group named '$GroupName'; found $($Group.Count)."
+}
+$GroupId = $Group[0].Id
+POWERSHELL,
+        ],
+        [
+            'method' => 'PowerShell',
+            'instruction' => 'Set the directory setting so ordinary users cannot create groups and the approved creator group is allowed to do so.',
+            'code' => <<<'POWERSHELL'
+$TemplateId = "62375ab9-6b52-47ed-826b-58e47e0e304b"
+$Setting = @(Get-MgBetaDirectorySetting -All | Where-Object TemplateId -eq $TemplateId)
+if ($Setting.Count -gt 1) {
+    throw "More than one Group.Unified directory setting was found."
+}
+$Parameters = @{
+    values = @(
+        @{ name = "EnableGroupCreation"; value = "false" }
+        @{ name = "GroupCreationAllowedGroupId"; value = $GroupId }
+    )
+}
+if ($Setting.Count -eq 1) {
+    Update-MgBetaDirectorySetting -DirectorySettingId $Setting[0].Id -BodyParameter $Parameters
+} else {
+    New-MgBetaDirectorySetting -BodyParameter (@{ templateId = $TemplateId; values = $Parameters.values })
+}
+POWERSHELL,
+        ],
+        [
+            'method' => 'Verify',
+            'instruction' => 'Read the setting back, confirm both values, allow the change to propagate, and rerun this SecureIT control.',
+            'code' => <<<'POWERSHELL'
+$Setting = Get-MgBetaDirectorySetting -All | Where-Object TemplateId -eq $TemplateId
+$Values = @{}
+$Setting.Values | ForEach-Object { $Values[$_.Name] = $_.Value }
+$Values | Format-Table
+if ($Values["EnableGroupCreation"] -ne "false" -or $Values["GroupCreationAllowedGroupId"] -ne $GroupId) {
+    throw "Verification failed: the Group.Unified setting does not match the approved creator group."
+}
+POWERSHELL,
+        ],
     ],
     'INSPECTEXOFULLACCESS' => [
         ['method' => 'PowerShell', 'instruction' => 'Connect to Exchange Online PowerShell with an account permitted to manage recipients.'],

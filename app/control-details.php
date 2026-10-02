@@ -55,10 +55,19 @@ return [
         'why' => 'unresolved recommendations often identify known configuration weaknesses or missed hardening opportunities',
     ],
     'GROUPS' => [
-        'inspect' => 'the Microsoft Graph Group.Unified directory setting that controls Microsoft 365 group creation',
-        'pass' => 'EnableGroupCreation exists and is set to false, preventing ordinary users from creating Microsoft 365 groups',
-        'fail' => 'EnableGroupCreation is missing, true, or has any value other than false',
-        'why' => 'groups control access to Teams, SharePoint, mailboxes, and other shared business data',
+        'inspect' => 'who is allowed to create Microsoft 365 groups',
+        'pass' => 'Microsoft 365 group creation is disabled for ordinary users because EnableGroupCreation is set to false',
+        'fail' => 'ordinary users can create Microsoft 365 groups, or the restriction is missing',
+        'why' => 'uncontrolled group creation can result in unmanaged Teams, SharePoint sites, shared mailboxes, and other collaboration spaces',
+        'recommendedAction' => 'Use Microsoft Graph PowerShell to restrict Microsoft 365 group creation to an approved group of users',
+        'presentation' => [
+            'failureSummary' => 'Ordinary users can currently create new Microsoft 365 groups without the approved restriction.',
+            'currentSummary' => 'The tenant is not currently limiting group creation to approved users.',
+            'successSummary' => 'The tenant prevents ordinary users from creating new Microsoft 365 groups.',
+            'checkedSummary' => 'The Microsoft Graph Group.Unified setting has EnableGroupCreation set to false.',
+            'targetSummary' => 'Only members of an approved Microsoft 365 group should be able to create new Microsoft 365 groups.',
+            'intro' => 'Run the five steps below in order. You will need the exact name of the approved creator group and an account that can manage Microsoft Graph directory settings.',
+        ],
     ],
     'MTAPPREGISTRATIONOWNERSWITHOUTMFA' => [
         'inspect' => 'owners of app registrations and whether their accounts are protected by MFA',

@@ -125,9 +125,16 @@ function secureit_tenant_control_guidance_html(array $control): string {
     $requirementSummary = trim((string) ($requirements['summary'] ?? ''));
     $bucket = trim((string) ($control['bucket'] ?? ''));
     $bucketLabel = $bucket !== '' ? secureit_control_non_scoreable_bucket_label($bucket) : '';
+    $presentation = is_array($guidance['presentation'] ?? null) ? $guidance['presentation'] : [];
+    $isGroupsControl = (string) ($control['id'] ?? '') === 'C0007' && $presentation !== [];
     $summaryLabel = $status === 'pass'
         ? 'No remediation required.'
         : (!in_array($status, ['fail', 'partial'], true) ? 'Not scored.' : 'Issue and impact');
+    if ($isGroupsControl && $status === 'pass') {
+        $summaryLabel = 'Restriction in place';
+    } elseif ($isGroupsControl && in_array($status, ['fail', 'partial'], true)) {
+        $summaryLabel = 'Action required';
+    }
 
     ob_start();
     ?>
@@ -137,7 +144,37 @@ function secureit_tenant_control_guidance_html(array $control): string {
         <span class="control-guidance-chevron" aria-hidden="true"></span>
       </summary>
       <div class="control-guidance-details">
-      <?php if ($status === 'pass'): ?>
+      <?php if ($isGroupsControl && $status === 'pass'): ?>
+        <div class="control-guidance-result control-guidance-result-good"><strong>Restriction in place.</strong> <?php echo htmlspecialchars((string) ($presentation['successSummary'] ?? 'The tenant meets this control.')); ?></div>
+        <div class="control-guidance-outcome-grid">
+          <div><strong>What good looks like</strong><p><?php echo htmlspecialchars((string) ($presentation['targetSummary'] ?? 'The expected secure configuration is in place.')); ?></p></div>
+          <div><strong>What is checked</strong><p><?php echo htmlspecialchars((string) ($presentation['checkedSummary'] ?? $issue . ' ' . $impact)); ?></p></div>
+        </div>
+      <?php elseif ($isGroupsControl && in_array($status, ['fail', 'partial'], true)): ?>
+        <div class="control-guidance-result control-guidance-result-bad"><strong>Action required.</strong> <?php echo htmlspecialchars((string) ($presentation['failureSummary'] ?? 'This control needs remediation.')); ?></div>
+        <div class="control-guidance-outcome-grid">
+          <div><strong>Current result</strong><p><?php echo htmlspecialchars((string) ($presentation['currentSummary'] ?? $issue)); ?></p></div>
+          <div><strong>What good looks like</strong><p><?php echo htmlspecialchars((string) ($presentation['targetSummary'] ?? 'The expected secure configuration is in place.')); ?></p></div>
+        </div>
+        <div><strong>Recommended action</strong></div>
+        <p><?php echo htmlspecialchars($recommendedAction); ?></p>
+        <div><strong>How to fix it</strong></div>
+        <p><?php echo htmlspecialchars((string) ($presentation['intro'] ?? 'Complete the steps below in order.')); ?></p>
+        <?php if ($steps !== []): ?>
+          <ol class="control-guidance-steps control-guidance-steps-guided">
+            <?php foreach ($steps as $step): ?>
+              <?php if (!is_array($step) || trim((string) ($step['instruction'] ?? '')) === '') { continue; } ?>
+              <li>
+                <span class="control-guidance-method"><?php echo htmlspecialchars((string) ($step['method'] ?? 'Action')); ?></span>
+                <span><?php echo htmlspecialchars((string) $step['instruction']); ?></span>
+                <?php if (trim((string) ($step['code'] ?? '')) !== ''): ?>
+                  <pre class="control-guidance-code"><code><?php echo htmlspecialchars((string) $step['code']); ?></code></pre>
+                <?php endif; ?>
+              </li>
+            <?php endforeach; ?>
+          </ol>
+        <?php endif; ?>
+      <?php elseif ($status === 'pass'): ?>
         <div class="control-guidance-result"><strong>No remediation required.</strong> The latest evidence meets this control.</div>
         <div><strong>Control context</strong></div>
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>

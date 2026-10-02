@@ -34,6 +34,19 @@ secureit_contract_test_assert(
     str_contains($authDetails, 'valid group') && str_contains($authDetails, 'invalid group'),
     'Authentication method baseline detail text must describe valid group references.'
 );
+$groupsControl = null;
+foreach (($catalog['controls'] ?? []) as $control) {
+    if (($control['id'] ?? '') === 'C0007') {
+        $groupsControl = $control;
+        break;
+    }
+}
+secureit_contract_test_assert(is_array($groupsControl), 'C0007 must remain present in the canonical control catalog.');
+$groupsRoute = secureit_control_remediation_route($groupsControl);
+secureit_contract_test_assert(($groupsRoute['method'] ?? '') === 'PowerShell', 'C0007 remediation must use PowerShell.');
+secureit_contract_test_assert(str_contains((string) ($groupsRoute['portal'] ?? ''), 'Graph PowerShell'), 'C0007 remediation must identify Microsoft Graph PowerShell.');
+$groupsDetails = secureit_control_details_for_resolved_control($groupsControl);
+secureit_contract_test_assert(str_contains($groupsDetails, 'EnableGroupCreation') && str_contains($groupsDetails, 'false'), 'C0007 detail text must describe its exact setting and pass value.');
 
 $legacyCatalog = $catalog;
 $legacyCatalog['version'] = 1;

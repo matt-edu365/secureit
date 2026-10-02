@@ -70,10 +70,15 @@ $assignRoute([
     'MTSECURITYGROUPCREATIONRESTRICTED',
     'MTTENANTCREATIONRESTRICTED',
     'MTCISCREATETENANTDISALLOWED',
-    'GROUPS',
     'MTCIS365PUBLICGROUP',
     'MTCISENSUREGUESTUSERDYNAMICGROUP',
 ], 'Microsoft Entra admin center', 'Identity > Groups > All groups, then open the relevant group or group setting');
+
+$routes['GROUPS'] = [
+    'method' => 'PowerShell',
+    'portal' => 'Microsoft Graph PowerShell',
+    'path' => 'Group.Unified directory setting (Microsoft Graph beta)',
+];
 
 $assignRoute([
     'MTCISACROSSTENANTINBOUNDDEFAULT',
@@ -159,6 +164,13 @@ $assignRoute([
 ], 'Microsoft 365 admin center', 'Settings > Domains');
 
 $powerShellSteps = [
+    'GROUPS' => [
+        ['method' => 'PowerShell', 'instruction' => 'Import Microsoft.Graph.Beta.Identity.DirectoryManagement and Microsoft.Graph.Beta.Groups, then connect with Connect-MgGraph -Scopes "Directory.ReadWrite.All","Group.Read.All".'],
+        ['method' => 'Review', 'instruction' => 'Create or identify the approved Microsoft 365 Group Creators group. Add approved users as members, and assign accountable owners to that group.'],
+        ['method' => 'PowerShell', 'instruction' => 'Set $GroupName = "Microsoft 365 Group Creators"; resolve $Group = Get-MgBetaGroup -All | Where-Object DisplayName -eq $GroupName; stop if the approved group is not found.'],
+        ['method' => 'PowerShell', 'instruction' => 'Build $Parameters = @{ values = @(@{ name = "EnableGroupCreation"; value = "false" }, @{ name = "GroupCreationAllowedGroupId"; value = $Group.Id }) }; update the existing Group.Unified setting with Update-MgBetaDirectorySetting -DirectorySettingId $Setting.Id -BodyParameter $Parameters, or create it with templateId "62375ab9-6b52-47ed-826b-58e47e0e304b" and New-MgBetaDirectorySetting when it does not exist.'],
+        ['method' => 'Verification', 'instruction' => 'Read back the Group.Unified setting with Get-MgBetaDirectorySetting and confirm EnableGroupCreation is exactly "false" and GroupCreationAllowedGroupId is the approved group ID, then rerun this SecureIT control.'],
+    ],
     'INSPECTEXOFULLACCESS' => [
         ['method' => 'PowerShell', 'instruction' => 'Connect to Exchange Online PowerShell with an account permitted to manage recipients.'],
         ['method' => 'PowerShell', 'instruction' => 'Review delegates with Get-MailboxPermission -Identity <mailbox> and confirm each non-inherited FullAccess assignment has an approved owner and purpose.'],

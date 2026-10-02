@@ -55,9 +55,9 @@ return [
         'why' => 'unresolved recommendations often identify known configuration weaknesses or missed hardening opportunities',
     ],
     'GROUPS' => [
-        'inspect' => 'Microsoft 365 group settings, ownership, and creation controls',
-        'pass' => 'group creation and ownership are controlled and groups remain accountable',
-        'fail' => 'groups can be created too freely, lack owners, or have governance issues',
+        'inspect' => 'the Microsoft Graph Group.Unified directory setting that controls Microsoft 365 group creation',
+        'pass' => 'EnableGroupCreation exists and is set to false, preventing ordinary users from creating Microsoft 365 groups',
+        'fail' => 'EnableGroupCreation is missing, true, or has any value other than false',
         'why' => 'groups control access to Teams, SharePoint, mailboxes, and other shared business data',
     ],
     'MTAPPREGISTRATIONOWNERSWITHOUTMFA' => [

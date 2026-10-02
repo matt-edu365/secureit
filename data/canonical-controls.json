@@ -1,5 +1,5 @@
 {
-    "version": 4,
+    "version": 5,
     "description": "SecureIT canonical control contract. Each control has a stable C#### display/control ID, its upstream Maester or 365Inspect identifier in aliases, one scoring functional area, explicit evidence mappings, and a scoring weight of 1.",
     "functionalAreas": [
         "Identity & Access Management",

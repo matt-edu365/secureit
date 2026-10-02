@@ -19,7 +19,7 @@ foreach (secureit_functional_area_catalog() as $index => $catalogArea) {
             'impact' => 'The gap increases avoidable tenant risk.',
             'recommendedAction' => 'Update the related Microsoft 365 policy.',
             'steps' => [
-                ['method' => 'GUI', 'instruction' => 'Open the relevant Microsoft 365 admin center.'],
+                ['method' => 'PowerShell', 'instruction' => 'Apply the setting.', 'code' => '$Setting = Get-MgBetaDirectorySetting -All'],
                 ['method' => 'GUI', 'instruction' => 'Update and save the policy.'],
                 ['method' => 'Verification', 'instruction' => 'Rerun the SecureIT control.'],
             ],
@@ -70,6 +70,7 @@ secureit_report_test_assert(str_contains($html, 'Action required'), 'Priority co
 secureit_report_test_assert(str_contains($html, 'Issue and impact:'), 'Structured issue and impact guidance is missing.');
 secureit_report_test_assert(str_contains($html, 'Recommended action:'), 'Structured recommended action guidance is missing.');
 secureit_report_test_assert(str_contains($html, 'Rerun the SecureIT control.'), 'Ordered remediation steps are missing.');
+secureit_report_test_assert(str_contains($html, '$Setting = Get-MgBetaDirectorySetting -All'), 'PowerShell remediation commands are missing.');
 secureit_report_test_assert(str_contains($html, 'Assessment coverage gaps'), 'Coverage gaps are missing.');
 secureit_report_test_assert(str_contains($html, 'Errors'), 'Overall and functional-area error counts are missing.');
 secureit_report_test_assert(str_contains($html, 'Skipped'), 'Overall and functional-area skipped counts are missing.');

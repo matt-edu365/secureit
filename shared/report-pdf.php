@@ -46,6 +46,15 @@ function secureit_report_status_label(string $status): string {
     };
 }
 
+function secureit_report_control_title(array $control): string {
+    $title = (string) ($control['title'] ?? $control['id'] ?? 'Control');
+    if (($control['id'] ?? '') === 'C0007' && secureit_report_status_key((string) ($control['status'] ?? '')) === 'pass') {
+        return 'Microsoft 365 group creation is restricted';
+    }
+
+    return $title;
+}
+
 function secureit_report_area_tone(array $area): string {
     return match (strtolower(trim((string) ($area['tone'] ?? '')))) {
         'good' => 'good',
@@ -233,7 +242,11 @@ function secureit_report_control_guidance_html(array $control): string {
                 continue;
             }
             $html .= '<li><strong>' . secureit_report_escape((string) ($step['method'] ?? 'Action')) . ':</strong> '
-                . secureit_report_escape((string) $step['instruction']) . '</li>';
+                . secureit_report_escape((string) $step['instruction']);
+            if (trim((string) ($step['code'] ?? '')) !== '') {
+                $html .= '<pre class="guidance-code">' . secureit_report_escape((string) $step['code']) . '</pre>';
+            }
+            $html .= '</li>';
         }
         $html .= '</ol>';
     }
@@ -249,7 +262,7 @@ function secureit_report_control_table(string $heading, string $intro, array $co
     $rows = '';
     foreach ($controls as $control) {
         $controlId = (string) ($control['id'] ?? '');
-        $title = (string) ($control['title'] ?? $control['id'] ?? 'Control');
+        $title = secureit_report_control_title($control);
         $status = secureit_report_status_key((string) ($control['status'] ?? ''));
         $details = $includeRemediation
             ? secureit_report_control_guidance_html($control)
@@ -282,7 +295,7 @@ function secureit_report_passing_summary(array $controls): string {
     foreach (array_chunk($controls, 2) as $controlRow) {
         $rows .= '<tr>';
         foreach ($controlRow as $control) {
-            $title = (string) ($control['title'] ?? $control['id'] ?? 'Control');
+            $title = secureit_report_control_title($control);
             $rows .= '<td><span class="passing-name">' . secureit_report_escape($title) . '</span><span class="table-status status-pass">PASS</span></td>';
         }
         if (count($controlRow) === 1) {
@@ -458,6 +471,7 @@ function secureit_report_build_html(string $tenantName, string $generatedAt, arr
     .guidance-block strong, .guidance-steps strong { color: #0e2841; }
     .guidance-steps { margin: 4pt 0 0 14pt; padding: 0; }
     .guidance-steps li { margin-bottom: 3pt; padding-left: 2pt; }
+    .guidance-code { margin: 3pt 0 0; padding: 4pt; border: 0.5pt solid #b8cbd2; background: #f5f8f9; color: #243b4a; font-family: monospace; font-size: 7pt; white-space: pre-wrap; }
     .table-status { font-size: 7.5pt; font-weight: 700; }
     .status-pass { color: #008443; }
     .status-partial { color: #a66a00; }

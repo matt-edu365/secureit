@@ -1235,11 +1235,15 @@ ob_start();
                       'unknown' => 'Not assessed',
                       default => ucfirst($controlStatus),
                   };
+                  $controlTitle = (string) ($control['title'] ?? $control['id'] ?? 'Check');
+                  if (($control['id'] ?? '') === 'C0007' && $controlStatus === 'pass') {
+                      $controlTitle = 'Microsoft 365 group creation is restricted';
+                  }
                 ?>
                 <tr data-status-value="<?php echo htmlspecialchars($controlStatusFilterValue); ?>">
                   <td><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></td>
                   <td>
-                    <strong><?php echo htmlspecialchars($control['title'] ?? $control['id'] ?? 'Check'); ?></strong>
+                    <strong><?php echo htmlspecialchars($controlTitle); ?></strong>
                   </td>
                   <td><span class="badge tone-<?php echo htmlspecialchars($controlTone); ?>"><?php echo htmlspecialchars($controlStatusLabel); ?></span></td>
                   <td>

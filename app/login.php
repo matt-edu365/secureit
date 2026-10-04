@@ -56,12 +56,12 @@ if ($authMessage !== '') {
 
 ob_start();
 ?>
-<section class="section">
+<section class="section login-page">
   <div class="container">
     <div style="max-width:680px; margin:0 auto;">
       <article class="panel">
         <div style="margin-bottom:20px; text-align:center;">
-          <div class="brand-link" role="img" aria-label="ICT365 SecureIT" style="justify-content:center; font-size:2rem; margin-bottom:10px;">
+          <div class="brand-link login-brand" role="img" aria-label="ICT365 SecureIT" style="justify-content:center;">
             <span>ICT365</span><span>SecureIT</span>
           </div>
           <div class="muted">Use your M365 account to login to your SecureIT portal.</div>
@@ -110,6 +110,26 @@ ob_start();
     </div>
   </div>
 </section>
+<style>
+  .login-page {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    transform: translateY(-15vh);
+  }
+
+  .login-brand {
+    margin-bottom: 16px;
+    font-size: 2.3rem;
+  }
+
+  @media (max-width: 640px) {
+    .login-page {
+      min-height: calc(100vh - 48px);
+      transform: translateY(-9vh);
+    }
+  }
+</style>
 <?php
 $content = ob_get_clean();
 secureit_render_shell('SecureIT Login', $content, [

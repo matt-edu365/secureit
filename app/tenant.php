@@ -77,6 +77,10 @@ $selectedDiagnosticsView = strtolower(trim((string) ($_GET['diagnosticsView'] ??
 if (!in_array($selectedDiagnosticsView, ['failures', 'diagnostics'], true)) {
     $selectedDiagnosticsView = 'diagnostics';
 }
+$selectedPostureStatus = strtolower(trim((string) ($_GET['posture'] ?? '')));
+if (!in_array($selectedPostureStatus, ['passed', 'failed', 'other'], true)) {
+    $selectedPostureStatus = '';
+}
 $historyRange = strtolower(trim((string) ($_GET['historyRange'] ?? '10')));
 if (!in_array($historyRange, ['10', '30d', '1y'], true)) {
     $historyRange = '10';
@@ -726,6 +730,29 @@ $postureStats = $selectedArea
             + (int) ($counts['errors'] ?? 0)
             + (int) ($counts['skipped'] ?? 0),
     ];
+$postureControls = [];
+if ($selectedPostureStatus !== '') {
+    foreach ($functionalAreas as $area) {
+        $areaName = (string) ($area['name'] ?? 'Functional area');
+        foreach (($area['controls'] ?? []) as $control) {
+            if (!is_array($control)) {
+                continue;
+            }
+            $controlStatus = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+            $matches = match ($selectedPostureStatus) {
+                'passed' => $controlStatus === 'pass',
+                'failed' => $controlStatus === 'fail',
+                default => !in_array($controlStatus, ['pass', 'fail'], true),
+            };
+            if ($matches) {
+                $postureControls[] = [
+                    'area' => $areaName,
+                    'control' => $control,
+                ];
+            }
+        }
+    }
+}
 
 ob_start();
 ?>
@@ -779,9 +806,9 @@ ob_start();
         ?>
         <div class="tenant-posture-summary" style="margin-top:18px;">
           <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['checks']); ?></strong><span>Checks</span></div>
-          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['passed']); ?></strong><span>Passed</span></div>
-          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['failed']); ?></strong><span>Failed</span></div>
-          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['other']); ?></strong><span>Other</span></div>
+          <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=passed" aria-label="View passed checks"><strong><?php echo htmlspecialchars((string) $postureStats['passed']); ?></strong><span>Passed</span></a>
+          <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=failed" aria-label="View failed checks"><strong><?php echo htmlspecialchars((string) $postureStats['failed']); ?></strong><span>Failed</span></a>
+          <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=other" aria-label="View other checks"><strong><?php echo htmlspecialchars((string) $postureStats['other']); ?></strong><span>Other</span></a>
           <div class="tenant-score-card">
             <div class="muted">Overall score</div>
             <div class="progress" aria-label="SecureIT score progress"><div class="progress-bar" style="width: <?php echo htmlspecialchars((string) $displayScoreWidth); ?>%"></div></div>
@@ -810,17 +837,19 @@ ob_start();
   <article class="card panel" style="height:100%; display:flex; flex-direction:column;">
     <div class="section-header tenant-action-header" style="margin-bottom:18px;">
       <div>
-        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : 'Action Center'; ?></h2>
+        <h2 class="section-title"><?php echo $selectedArea ? 'Area Posture' : ($selectedPostureStatus !== '' ? 'Posture detail' : 'Action Center'); ?></h2>
       </div>
     </div>
 <?php if (!$selectedArea && !$selectedDiagnostics): ?>
     <div class="tenant-action-actions">
       <form method="post" action="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="margin:0;">
-        <button type="submit" name="run_latest_report" value="1" style="white-space:nowrap; padding:14px 18px; min-width:150px;">Run tests now</button>
+        <button type="submit" name="run_latest_report" value="1" class="tenant-action-button tenant-run-button">Run tests now</button>
       </form>
       <?php if ($summary): ?>
-        <a class="button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:#0f766e; color:#fff; box-shadow:none; white-space:nowrap; padding:10px 14px; min-width:150px;">Download results</a>
+        <a class="button tenant-action-button" href="report-download.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>">Download results</a>
       <?php endif; ?>
+      <button type="button" class="tenant-action-button tenant-disabled-action" disabled>Domains and DNS</button>
+      <button type="button" class="tenant-action-button tenant-disabled-action" disabled>Conditional Access</button>
     </div>
   <?php endif; ?>
 
@@ -858,7 +887,71 @@ ob_start();
     <?php endif; ?>
   </article>
 </section>
-<?php if (!$selectedArea && !$selectedDiagnostics): ?>
+<?php if ($selectedPostureStatus !== ''): ?>
+<section class="section">
+  <article class="card panel">
+    <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
+      <div>
+        <h2 class="section-title"><?php echo htmlspecialchars(match ($selectedPostureStatus) {
+            'passed' => 'Passed checks',
+            'failed' => 'Failed checks',
+            default => 'Other checks',
+        }); ?></h2>
+        <div class="muted">Only the latest checks in this posture category are shown.</div>
+      </div>
+      <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to overview</a>
+    </div>
+    <?php if ($postureControls !== []): ?>
+      <div class="table-wrap">
+        <table data-guidance-table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Check</th>
+              <th>Functional area</th>
+              <th>
+                <div class="guidance-column-heading">
+                  <span>Analysis and actions</span>
+                  <button type="button" class="guidance-bulk-toggle" data-guidance-toggle-all aria-label="Expand all analysis and actions">Expand all</button>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($postureControls as $postureControl): ?>
+              <?php
+                $control = $postureControl['control'];
+                $areaName = (string) $postureControl['area'];
+                $areaVisual = secureit_functional_area_visual($areaName);
+                $controlTitle = (string) ($control['title'] ?? $control['id'] ?? 'Check');
+                if (($control['id'] ?? '') === 'C0007' && ($control['status'] ?? '') === 'pass') {
+                    $controlTitle = 'Microsoft 365 group creation is restricted';
+                }
+              ?>
+              <tr>
+                <td><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></td>
+                <td><strong><?php echo htmlspecialchars($controlTitle); ?></strong></td>
+                <td>
+                  <span class="posture-area-icon" title="<?php echo htmlspecialchars($areaName); ?>" aria-label="<?php echo htmlspecialchars($areaName); ?>" style="background:<?php echo htmlspecialchars($areaVisual['bg']); ?>; color:<?php echo htmlspecialchars($areaVisual['stroke']); ?>; box-shadow:0 6px 14px <?php echo htmlspecialchars($areaVisual['shadow']); ?>;">
+                    <?php echo $areaVisual['svg']; ?>
+                  </span>
+                </td>
+                <td><?php echo secureit_tenant_control_guidance_html($control); ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php else: ?>
+      <div class="empty-state" style="box-shadow:none;">
+        <strong>No checks in this category.</strong>
+        <p class="muted">The latest report contains no checks matching this posture category.</p>
+      </div>
+    <?php endif; ?>
+  </article>
+</section>
+<?php endif; ?>
+<?php if (!$selectedArea && !$selectedDiagnostics && $selectedPostureStatus === ''): ?>
 <section class="section">
   <div class="section-header">
     <div>
@@ -1396,11 +1489,71 @@ ob_start();
   }
 
   .tenant-action-actions {
-    display: flex;
-    align-items: center;
+    display: grid;
+    justify-items: start;
     gap: 10px;
-    flex-wrap: wrap;
     margin-bottom: 18px;
+  }
+
+  .tenant-action-actions form,
+  .tenant-action-button {
+    width: min(100%, 250px);
+  }
+
+  .tenant-action-button {
+    justify-content: flex-start;
+    text-align: left;
+    white-space: nowrap;
+    padding: 13px 16px;
+  }
+
+  .tenant-run-button {
+    font-size: 1.05rem;
+  }
+
+  .tenant-action-actions .tenant-action-button {
+    background: #0f766e;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .tenant-action-actions .tenant-disabled-action {
+    background: #e5e7eb;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+
+  .posture-drilldown-card {
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .posture-drilldown-card:hover,
+  .posture-drilldown-card:focus-visible {
+    border-color: rgba(0, 99, 95, 0.35);
+    box-shadow: 0 10px 24px rgba(10, 61, 50, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .posture-area-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 11px;
+    vertical-align: middle;
+  }
+
+  .posture-area-icon svg {
+    width: 22px;
+    height: 22px;
   }
 
   .guidance-column-heading {

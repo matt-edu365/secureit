@@ -556,6 +556,23 @@ secureit_contract_test_assert(
         && !str_contains($loginPageSource, 'Existing customers use your business / school email address'),
     'The login page must not render the redundant hero, header CTA, customer card, or environment-specific authentication copy.'
 );
+secureit_contract_test_assert(
+    str_contains($loginPageSource, 'class="section login-page"')
+        && str_contains($loginPageSource, 'class="brand-link login-brand"')
+        && str_contains($loginPageSource, 'transform: translateY(-15vh);')
+        && str_contains($loginPageSource, 'font-size: 2.3rem;'),
+    'The login panel should sit above vertical centre and use the enlarged, separated logo treatment.'
+);
+secureit_contract_test_assert(
+    str_contains($tenantPageSource, 'posture=passed')
+        && str_contains($tenantPageSource, 'posture=failed')
+        && str_contains($tenantPageSource, 'posture=other')
+        && str_contains($tenantPageSource, 'posture-area-icon')
+        && str_contains($tenantPageSource, 'title="<?php echo htmlspecialchars($areaName); ?>"')
+        && str_contains($tenantPageSource, 'Domains and DNS')
+        && str_contains($tenantPageSource, 'Conditional Access'),
+    'The tenant overview must expose posture drill-downs, functional-area icon tooltips, and the disabled follow-up actions.'
+);
 
 $maesterManifest = secureit_maester_runtime_manifest();
 $maesterPermissions = secureit_maester_graph_application_permissions();

@@ -509,8 +509,8 @@ $areaChecksPosition = strpos($tenantPageSource, 'Pass and fail detail for the se
 secureit_contract_test_assert(
     $areaRunHistoryPosition !== false
         && $areaChecksPosition !== false
-        && $areaRunHistoryPosition < $areaChecksPosition,
-    'Functional-area Run History must appear above the selected area checks panel.'
+        && $areaChecksPosition < $areaRunHistoryPosition,
+    'Functional-area checks must appear above the selected area Run History panel.'
 );
 
 $librarySource = file_get_contents(__DIR__ . '/../app/lib.php');
@@ -567,6 +567,15 @@ secureit_contract_test_assert(
     str_contains($tenantPageSource, 'posture=passed')
         && str_contains($tenantPageSource, 'posture=failed')
         && str_contains($tenantPageSource, 'posture=other')
+        && str_contains($tenantPageSource, 'posture=all')
+        && str_contains($tenantPageSource, '<span>All Checks</span>')
+        && str_contains($tenantPageSource, "'all' => true")
+        && str_contains($tenantPageSource, "'all' => 'All checks'")
+        && str_contains($tenantPageSource, "'axisLabelMode' => \$historyRange === '1y' ? 'month' : 'point'")
+        && str_contains($tenantPageSource, 'What this covers')
+        && str_contains($tenantPageSource, 'This area did not meet any of the %d assessed checks')
+        && !str_contains($tenantPageSource, '<strong>No remediation required.</strong> The latest evidence meets this control.')
+        && !str_contains($tenantPageSource, '<strong>Not scored.</strong> The latest assessment returned no scoreable evidence for this control.')
         && str_contains($tenantPageSource, 'posture-area-icon')
         && str_contains($tenantPageSource, 'title="<?php echo htmlspecialchars($areaName); ?>"')
         && str_contains($tenantPageSource, 'Domains and DNS')

@@ -78,7 +78,7 @@ if (!in_array($selectedDiagnosticsView, ['failures', 'diagnostics'], true)) {
     $selectedDiagnosticsView = 'diagnostics';
 }
 $selectedPostureStatus = strtolower(trim((string) ($_GET['posture'] ?? '')));
-if (!in_array($selectedPostureStatus, ['passed', 'failed', 'other'], true)) {
+if (!in_array($selectedPostureStatus, ['all', 'passed', 'failed', 'other'], true)) {
     $selectedPostureStatus = '';
 }
 $historyRange = strtolower(trim((string) ($_GET['historyRange'] ?? '10')));
@@ -149,13 +149,13 @@ function secureit_tenant_control_guidance_html(array $control): string {
       </summary>
       <div class="control-guidance-details">
       <?php if ($isGroupsControl && $status === 'pass'): ?>
-        <div class="control-guidance-result control-guidance-result-good"><strong>Restriction in place.</strong> <?php echo htmlspecialchars((string) ($presentation['successSummary'] ?? 'The tenant meets this control.')); ?></div>
+        <div class="control-guidance-result control-guidance-result-good"><?php echo htmlspecialchars((string) ($presentation['successSummary'] ?? 'The tenant meets this control.')); ?></div>
         <div class="control-guidance-outcome-grid">
           <div><strong>What good looks like</strong><p><?php echo htmlspecialchars((string) ($presentation['targetSummary'] ?? 'The expected secure configuration is in place.')); ?></p></div>
           <div><strong>What is checked</strong><p><?php echo htmlspecialchars((string) ($presentation['checkedSummary'] ?? $issue . ' ' . $impact)); ?></p></div>
         </div>
       <?php elseif ($isGroupsControl && in_array($status, ['fail', 'partial'], true)): ?>
-        <div class="control-guidance-result control-guidance-result-bad"><strong>Action required.</strong> <?php echo htmlspecialchars((string) ($presentation['failureSummary'] ?? 'This control needs remediation.')); ?></div>
+        <div class="control-guidance-result control-guidance-result-bad"><?php echo htmlspecialchars((string) ($presentation['failureSummary'] ?? 'This control needs remediation.')); ?></div>
         <div class="control-guidance-outcome-grid">
           <div><strong>Current result</strong><p><?php echo htmlspecialchars((string) ($presentation['currentSummary'] ?? $issue)); ?></p></div>
           <div><strong>What good looks like</strong><p><?php echo htmlspecialchars((string) ($presentation['targetSummary'] ?? 'The expected secure configuration is in place.')); ?></p></div>
@@ -179,11 +179,11 @@ function secureit_tenant_control_guidance_html(array $control): string {
           </ol>
         <?php endif; ?>
       <?php elseif ($status === 'pass'): ?>
-        <div class="control-guidance-result"><strong>No remediation required.</strong> The latest evidence meets this control.</div>
+        <div class="control-guidance-result">The latest evidence meets this control.</div>
         <div><strong>Control context</strong></div>
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
       <?php elseif (!in_array($status, ['fail', 'partial'], true)): ?>
-        <div class="control-guidance-result"><strong>Not scored.</strong> The latest assessment returned no scoreable evidence for this control.</div>
+        <div class="control-guidance-result">The latest assessment returned no scoreable evidence for this control.</div>
         <?php if ($bucketLabel !== ''): ?>
           <div><strong>Classification</strong></div>
           <p><?php echo htmlspecialchars($bucketLabel); ?></p>
@@ -199,7 +199,6 @@ function secureit_tenant_control_guidance_html(array $control): string {
         <div><strong>Control context</strong></div>
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
       <?php else: ?>
-        <div><strong>Issue and impact</strong></div>
         <p><?php echo htmlspecialchars($issue . ' ' . $impact); ?></p>
         <div><strong>Recommended action</strong></div>
         <p><?php echo htmlspecialchars($recommendedAction); ?></p>
@@ -441,12 +440,25 @@ function secureit_graph_axis_date(?string $value): string {
     }
 }
 
+function secureit_graph_axis_month(?string $value): string {
+    if (!$value) {
+        return '';
+    }
+
+    try {
+        return (new DateTimeImmutable($value))->format('M Y');
+    } catch (Throwable $e) {
+        return substr($value, 0, 7);
+    }
+}
+
 function secureit_line_graph_card(string $title, array $series, array $options = []): string {
     $width = 640;
     $height = (int) ($options['height'] ?? 160);
     $showLegend = (bool) ($options['showLegend'] ?? true);
     $showSubtitle = (bool) ($options['showSubtitle'] ?? true);
     $showLatestPoint = (bool) ($options['showLatestPoint'] ?? true);
+    $axisLabelMode = (string) ($options['axisLabelMode'] ?? 'point');
     $controlsHtml = (string) ($options['controlsHtml'] ?? '');
     $headerActionsHtml = (string) ($options['headerActionsHtml'] ?? '');
     $controlsWidth = (int) ($options['controlsWidth'] ?? 258);
@@ -488,10 +500,28 @@ function secureit_line_graph_card(string $title, array $series, array $options =
         $axisStep = $axisCount > 1 ? $plotWidth / ($axisCount - 1) : 0;
         $axisY = $height - $paddingY;
         $axisLabels .= '<line x1="' . $paddingX . '" y1="' . number_format($axisY, 2, '.', '') . '" x2="' . ($width - $paddingX) . '" y2="' . number_format($axisY, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.18)" stroke-width="1"/>';
+        $axisMarkers = [];
         foreach ($axisPoints as $index => $point) {
+            if ($axisLabelMode === 'month') {
+                try {
+                    $monthKey = (new DateTimeImmutable((string) ($point['generatedAt'] ?? '')))->format('Y-m');
+                } catch (Throwable $e) {
+                    $monthKey = (string) ($point['generatedAt'] ?? '');
+                }
+                if (isset($axisMarkers[$monthKey])) {
+                    continue;
+                }
+                $axisMarkers[$monthKey] = [
+                    'index' => $index,
+                    'point' => $point,
+                ];
+                $label = secureit_graph_axis_month($point['generatedAt'] ?? null);
+            } else {
+                $label = secureit_graph_axis_date($point['generatedAt'] ?? null);
+            }
             $x = $paddingX + ($axisStep * $index);
             $axisLabels .= '<line x1="' . number_format($x, 2, '.', '') . '" y1="' . number_format($axisY, 2, '.', '') . '" x2="' . number_format($x, 2, '.', '') . '" y2="' . number_format($axisY + 5, 2, '.', '') . '" stroke="rgba(15, 23, 42, 0.18)" stroke-width="1"/>';
-            $axisLabels .= '<text x="' . number_format($x, 2, '.', '') . '" y="' . number_format($height - 8, 2, '.', '') . '" text-anchor="middle" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . htmlspecialchars(secureit_graph_axis_date($point['generatedAt'] ?? null)) . '</text>';
+            $axisLabels .= '<text x="' . number_format($x, 2, '.', '') . '" y="' . number_format($height - 8, 2, '.', '') . '" text-anchor="middle" fill="#6b7c77" font-size="11" font-family="Arial,Helvetica,sans-serif">' . htmlspecialchars($label) . '</text>';
         }
     }
 
@@ -573,60 +603,70 @@ function secureit_functional_area_analysis_text(array $area): string {
         return 'No canonical checks are currently mapped to this functional area, so SecureIT cannot calculate an area score yet.';
     }
 
-    $score = $area['score'];
+    $score = $area['score'] ?? null;
     $controlsPassing = (int) ($area['controlsPassing'] ?? 0);
     $controlsPartial = (int) ($area['controlsPartial'] ?? 0);
     $controlsFailing = (int) ($area['controlsFailing'] ?? 0);
-    $controlsErrored = (int) ($area['controlsErrored'] ?? 0);
-    $controlsSkipped = (int) ($area['controlsSkipped'] ?? 0);
     $controlsNotAssessed = (int) ($area['controlsNotAssessed'] ?? $area['controlsUnmapped'] ?? 0);
-    $testsTotal = (int) ($area['testsTotal'] ?? 0);
-    $testsPassed = (int) ($area['testsPassed'] ?? 0);
-    $testsFailed = (int) ($area['testsFailed'] ?? 0);
-    $testsNotAssessed = (int) ($area['testsNotAssessed'] ?? $area['testsSkipped'] ?? 0);
+    $assessedChecks = $controlsPassing + $controlsPartial + $controlsFailing;
+    if ($assessedChecks === 0 || $score === null) {
+        return sprintf(
+            'This area has no scoreable checks yet. Review the %d checks that were not assessed before drawing conclusions about its security posture.',
+            $controlsNotAssessed > 0 ? $controlsNotAssessed : $controlsTotal
+        );
+    }
 
-    $summary = [];
-    $summary[] = sprintf(
-        'This area scores %s across %d assessed checks.',
-        $score !== null ? (string) $score . '%' : 'unavailable',
-        $controlsPassing + $controlsPartial + $controlsFailing
-    );
-    $summary[] = sprintf(
-        '%d checks passed, %d were partially met, and %d failed.',
-        $controlsPassing,
-        $controlsPartial,
-        $controlsFailing
-    );
+    $areaName = (string) ($area['name'] ?? 'functional area');
+    $variantSeed = hexdec(substr(hash('sha256', $areaName . '|' . $assessedChecks . '|' . $controlsFailing), 0, 8));
+    $choose = static function (array $sentences) use ($variantSeed): string {
+        return $sentences[$variantSeed % count($sentences)];
+    };
+
+    $score = (int) $score;
+    if ($score < 30) {
+        if ($controlsPassing === 0 && $controlsPartial === 0) {
+            $message = sprintf($choose([
+                'This area did not meet any of the %d assessed checks; no checks currently meet or partially meet the expected standard. Treat it as a priority for remediation.',
+                'None of the %d assessed checks currently meet the expected standard, making this area a significant priority for attention.',
+                'This area is a clear remediation priority: all %d assessed checks fell short of the expected standard and none currently meet or partially meet it.',
+            ]), $assessedChecks);
+        } else {
+            $message = sprintf($choose([
+                'This area requires significant attention: only %d of %d assessed checks meet the expected standard, while %d are partially met and %d failed. Prioritise the failed checks first.',
+                'The current result shows a material gap. %d of %d assessed checks meet the standard, with %d partially met and %d failed; begin with the failed controls and then close the partial results.',
+                'This area is below the level expected for a healthy baseline: %d of %d assessed checks meet the standard, %d are partially met, and %d failed. Make remediation here a priority.',
+            ]), $controlsPassing, $assessedChecks, $controlsPartial, $controlsFailing);
+        }
+    } elseif ($score > 65) {
+        $message = sprintf($choose([
+            'This area is performing strongly: %d of %d assessed checks meet the expected standard, with %d partially met and %d failed. Keep it under routine review and close the remaining gaps.',
+            'This area is a current strength at %d%%, with %d of %d assessed checks meeting the expected standard. Focus on the %d partial and %d failed results to sustain that position.',
+            'The area is in good shape overall: %d of %d assessed checks meet the expected standard. The remaining %d partial and %d failed results are targeted follow-up rather than an urgent area-wide concern.',
+        ]), ...match ($variantSeed % 3) {
+            0 => [$controlsPassing, $assessedChecks, $controlsPartial, $controlsFailing],
+            1 => [$score, $controlsPassing, $assessedChecks, $controlsPartial, $controlsFailing],
+            default => [$controlsPassing, $assessedChecks, $controlsPartial, $controlsFailing],
+        });
+    } else {
+        $message = sprintf($choose([
+            'This area is mixed: %d of %d assessed checks meet the expected standard, %d are partially met, and %d failed. Prioritise the failed checks while converting partial results into passes.',
+            'The area is making progress but still needs follow-up. %d of %d assessed checks meet the standard, with %d partially met and %d failed.',
+            'This area sits in the middle range at %d%%. Protect the %d checks already meeting the standard, then work through the %d partial and %d failed results.',
+        ]), ...match ($variantSeed % 3) {
+            2 => [$score, $controlsPassing, $controlsPartial, $controlsFailing],
+            default => [$controlsPassing, $assessedChecks, $controlsPartial, $controlsFailing],
+        });
+    }
 
     if ($controlsNotAssessed > 0) {
-        $summary[] = sprintf(
-            '%d additional %s not assessed and %s excluded from the score.',
+        $message .= sprintf(
+            ' Review the remaining %d not-assessed %s separately so coverage gaps do not obscure this result.',
             $controlsNotAssessed,
-            $controlsNotAssessed === 1 ? 'check was' : 'checks were',
-            $controlsNotAssessed === 1 ? 'was' : 'were'
+            $controlsNotAssessed === 1 ? 'check' : 'checks'
         );
     }
 
-    if ($controlsErrored > 0 || $controlsSkipped > 0) {
-        $summary[] = sprintf(
-            'The non-scoreable results include %d %s and %d skipped.',
-            $controlsErrored,
-            $controlsErrored === 1 ? 'error' : 'errors',
-            $controlsSkipped
-        );
-    }
-
-    if ($testsTotal > 0) {
-        $summary[] = sprintf(
-            'Those checks are backed by %d underlying assessment items with %d passed, %d failed, and %d not assessed.',
-            $testsTotal,
-            $testsPassed,
-            $testsFailed,
-            $testsNotAssessed
-        );
-    }
-
-    return implode(' ', $summary);
+    return $message;
 }
 
 function secureit_functional_area_visual(string $areaName): array {
@@ -740,6 +780,7 @@ if ($selectedPostureStatus !== '') {
             }
             $controlStatus = strtolower(trim((string) ($control['status'] ?? 'unknown')));
             $matches = match ($selectedPostureStatus) {
+                'all' => true,
                 'passed' => $controlStatus === 'pass',
                 'failed' => $controlStatus === 'fail',
                 default => !in_array($controlStatus, ['pass', 'fail'], true),
@@ -751,6 +792,14 @@ if ($selectedPostureStatus !== '') {
                 ];
             }
         }
+    }
+    if ($selectedPostureStatus === 'all') {
+        usort($postureControls, static function (array $left, array $right): int {
+            return strnatcasecmp(
+                (string) (($left['control']['id'] ?? '')),
+                (string) (($right['control']['id'] ?? ''))
+            );
+        });
     }
 }
 
@@ -768,7 +817,7 @@ ob_start();
     <?php if ($selectedArea): ?>
       <div class="kv">
         <div class="kv-row">
-          <div class="kv-label">Technologies encompassed</div>
+          <div class="kv-label">What this covers</div>
           <div class="kv-value"><?php echo htmlspecialchars(secureit_functional_area_description((string) ($selectedArea['name'] ?? ''))); ?></div>
         </div>
         <div class="kv-row">
@@ -805,7 +854,7 @@ ob_start();
           $displayScoreWidth = $displayScore !== null ? max(0, min(100, (int) $displayScore)) : 0;
         ?>
         <div class="tenant-posture-summary" style="margin-top:18px;">
-          <div class="stat-chip"><strong><?php echo htmlspecialchars((string) $postureStats['checks']); ?></strong><span>Checks</span></div>
+          <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=all" aria-label="View all checks"><strong><?php echo htmlspecialchars((string) $postureStats['checks']); ?></strong><span>All Checks</span></a>
           <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=passed" aria-label="View passed checks"><strong><?php echo htmlspecialchars((string) $postureStats['passed']); ?></strong><span>Passed</span></a>
           <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=failed" aria-label="View failed checks"><strong><?php echo htmlspecialchars((string) $postureStats['failed']); ?></strong><span>Failed</span></a>
           <a class="stat-chip posture-drilldown-card" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>&posture=other" aria-label="View other checks"><strong><?php echo htmlspecialchars((string) $postureStats['other']); ?></strong><span>Other</span></a>
@@ -893,11 +942,12 @@ ob_start();
     <div class="section-header" style="margin-bottom:14px; align-items:flex-start;">
       <div>
         <h2 class="section-title"><?php echo htmlspecialchars(match ($selectedPostureStatus) {
+            'all' => 'All checks',
             'passed' => 'Passed checks',
             'failed' => 'Failed checks',
             default => 'Other checks',
         }); ?></h2>
-        <div class="muted">Only the latest checks in this posture category are shown.</div>
+        <div class="muted"><?php echo $selectedPostureStatus === 'all' ? 'All latest checks are shown in numerical control-ID order.' : 'Only the latest checks in this posture category are shown.'; ?></div>
       </div>
       <a class="button" href="tenant.php?tenant=<?php echo htmlspecialchars(rawurlencode($tenantKey)); ?>" style="background:var(--brand); color:#fff; box-shadow:none;">Back to overview</a>
     </div>
@@ -908,7 +958,11 @@ ob_start();
             <tr>
               <th>ID</th>
               <th>Check</th>
-              <th>Functional area</th>
+                  <?php if ($selectedPostureStatus === 'all'): ?>
+                    <th>Status</th>
+                  <?php else: ?>
+                    <th>Functional area</th>
+                  <?php endif; ?>
               <th>
                 <div class="guidance-column-heading">
                   <span>Analysis and actions</span>
@@ -931,11 +985,28 @@ ob_start();
               <tr>
                 <td><?php echo htmlspecialchars((string) ($control['id'] ?? '')); ?></td>
                 <td><strong><?php echo htmlspecialchars($controlTitle); ?></strong></td>
-                <td>
-                  <span class="posture-area-icon" title="<?php echo htmlspecialchars($areaName); ?>" aria-label="<?php echo htmlspecialchars($areaName); ?>" style="background:<?php echo htmlspecialchars($areaVisual['bg']); ?>; color:<?php echo htmlspecialchars($areaVisual['stroke']); ?>; box-shadow:0 6px 14px <?php echo htmlspecialchars($areaVisual['shadow']); ?>;">
-                    <?php echo $areaVisual['svg']; ?>
-                  </span>
-                </td>
+                <?php if ($selectedPostureStatus === 'all'): ?>
+                  <?php
+                    $allStatus = strtolower(trim((string) ($control['status'] ?? 'unknown')));
+                    $allTone = in_array($allStatus, ['fail', 'error'], true) ? 'bad' : ($allStatus === 'partial' ? 'warn' : ($allStatus === 'pass' ? 'good' : 'neutral'));
+                    $allStatusLabel = match ($allStatus) {
+                        'not_applicable' => 'Not applicable',
+                        'not_run' => 'Not run',
+                        'skipped' => 'Skipped',
+                        'unmapped' => 'Unmapped',
+                        'error' => 'Error',
+                        'unknown' => 'Not assessed',
+                        default => ucfirst($allStatus),
+                    };
+                  ?>
+                  <td><span class="badge tone-<?php echo htmlspecialchars($allTone); ?>"><?php echo htmlspecialchars($allStatusLabel); ?></span></td>
+                <?php else: ?>
+                  <td>
+                    <span class="posture-area-icon" title="<?php echo htmlspecialchars($areaName); ?>" aria-label="<?php echo htmlspecialchars($areaName); ?>" style="background:<?php echo htmlspecialchars($areaVisual['bg']); ?>; color:<?php echo htmlspecialchars($areaVisual['stroke']); ?>; box-shadow:0 6px 14px <?php echo htmlspecialchars($areaVisual['shadow']); ?>;">
+                      <?php echo $areaVisual['svg']; ?>
+                    </span>
+                  </td>
+                <?php endif; ?>
                 <td><?php echo secureit_tenant_control_guidance_html($control); ?></td>
               </tr>
             <?php endforeach; ?>
@@ -1219,44 +1290,6 @@ ob_start();
 </section>
 <?php endif; ?>
 
-<?php if ($selectedArea && !$selectedDiagnostics): ?>
-<section class="section">
-  <?php
-    $historyRangeLabels = [
-        '10' => 'Last 10 runs',
-        '30d' => 'Last 30 days',
-        '1y' => 'Last year',
-    ];
-    $historyRangeLinks = '';
-    foreach ($historyRangeLabels as $rangeKey => $rangeLabel) {
-        $isActiveRange = $historyRange === $rangeKey;
-        $rangeUrl = 'tenant.php?tenant=' . rawurlencode($tenantKey)
-            . '&area=' . rawurlencode((string) ($selectedArea['name'] ?? ''))
-            . '&historyRange=' . rawurlencode($rangeKey);
-        $historyRangeLinks .= '<a class="button" href="' . htmlspecialchars($rangeUrl) . '" aria-pressed="' . ($isActiveRange ? 'true' : 'false') . '" style="padding:7px 10px; font-size:0.78rem; background:' . ($isActiveRange ? '#0f766e' : '#f7faf9') . '; color:' . ($isActiveRange ? '#fff' : '#24504a') . '; border:1px solid ' . ($isActiveRange ? '#0f766e' : '#dbe8e2') . '; box-shadow:none;">' . htmlspecialchars($rangeLabel) . '</a>';
-    }
-  ?>
-  <?php if (secureit_series_points($selectedAreaTrendSeries['area'] ?? []) !== []): ?>
-    <?php echo secureit_line_graph_card('Run history - ' . (string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaTrendSeries, [
-        'showLegend' => false,
-        'showSubtitle' => false,
-        'headerActionsHtml' => $historyRangeLinks,
-    ]); ?>
-  <?php else: ?>
-    <article class="card panel" style="margin-bottom:18px;">
-      <div class="section-header" style="margin-bottom:10px; align-items:flex-start;">
-        <div>
-          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Run history - <?php echo htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')); ?></h3>
-          <div class="muted">No scoreable history is available for this time range.</div>
-        </div>
-        <div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;"><?php echo $historyRangeLinks; ?></div>
-      </div>
-      <p class="muted" style="margin:0;">Select a wider range or publish another assessment to plot this functional area.</p>
-    </article>
-  <?php endif; ?>
-</section>
-<?php endif; ?>
-
 <?php if ($selectedArea): ?>
   <section class="section">
     <article class="card panel" style="margin-bottom:18px;">
@@ -1355,6 +1388,45 @@ ob_start();
       <?php endif; ?>
     </article>
   </section>
+<?php endif; ?>
+
+<?php if ($selectedArea && !$selectedDiagnostics): ?>
+<section class="section">
+  <?php
+    $historyRangeLabels = [
+        '10' => 'Last 10 runs',
+        '30d' => 'Last 30 days',
+        '1y' => 'Last year',
+    ];
+    $historyRangeLinks = '';
+    foreach ($historyRangeLabels as $rangeKey => $rangeLabel) {
+        $isActiveRange = $historyRange === $rangeKey;
+        $rangeUrl = 'tenant.php?tenant=' . rawurlencode($tenantKey)
+            . '&area=' . rawurlencode((string) ($selectedArea['name'] ?? ''))
+            . '&historyRange=' . rawurlencode($rangeKey);
+        $historyRangeLinks .= '<a class="button" href="' . htmlspecialchars($rangeUrl) . '" aria-pressed="' . ($isActiveRange ? 'true' : 'false') . '" style="padding:7px 10px; font-size:0.78rem; background:' . ($isActiveRange ? '#0f766e' : '#f7faf9') . '; color:' . ($isActiveRange ? '#fff' : '#24504a') . '; border:1px solid ' . ($isActiveRange ? '#0f766e' : '#dbe8e2') . '; box-shadow:none;">' . htmlspecialchars($rangeLabel) . '</a>';
+    }
+  ?>
+  <?php if (secureit_series_points($selectedAreaTrendSeries['area'] ?? []) !== []): ?>
+    <?php echo secureit_line_graph_card('Run history - ' . (string) ($selectedArea['name'] ?? 'Functional area'), $selectedAreaTrendSeries, [
+        'showLegend' => false,
+        'showSubtitle' => false,
+        'axisLabelMode' => $historyRange === '1y' ? 'month' : 'point',
+        'headerActionsHtml' => $historyRangeLinks,
+    ]); ?>
+  <?php else: ?>
+    <article class="card panel" style="margin-bottom:18px;">
+      <div class="section-header" style="margin-bottom:10px; align-items:flex-start;">
+        <div>
+          <h3 class="section-title" style="font-size:1.08rem; margin-bottom:4px;">Run history - <?php echo htmlspecialchars((string) ($selectedArea['name'] ?? 'Functional area')); ?></h3>
+          <div class="muted">No scoreable history is available for this time range.</div>
+        </div>
+        <div class="inline-links" style="flex-wrap:wrap; justify-content:flex-end; gap:6px;"><?php echo $historyRangeLinks; ?></div>
+      </div>
+      <p class="muted" style="margin:0;">Select a wider range or publish another assessment to plot this functional area.</p>
+    </article>
+  <?php endif; ?>
+</section>
 <?php endif; ?>
 
 <?php if (!$selectedDiagnostics && !$selectedArea): ?>
